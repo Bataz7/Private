@@ -14,7 +14,14 @@ def load_env(path: Path = BASE_DIR / ".env") -> None:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 k, v = line.split("=", 1)
-                os.environ.setdefault(k.strip(), v.strip().strip("\"'"))
+                v = v.strip()
+                if v and v[0] in "\"'" and v.count(v[0]) >= 2:
+                    v = v[1:v.index(v[0], 1)]          # قيمة بين علامتي اقتباس
+                else:
+                    v = v.split(" #", 1)[0].split("\t#", 1)[0].strip()   # حذف التعليق بعد القيمة
+                k = k.strip().removeprefix("export ").strip()
+                if v and not os.environ.get(k):
+                    os.environ[k] = v
     except OSError:
         pass
 
