@@ -29,7 +29,10 @@ log = logging.getLogger("revive")
 store.install_fast_sqlite()
 try:  # أسرع حلقة أحداث وأقل استهلاكاً للمعالج (اختياري)
     import uvloop  # type: ignore
-    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
     FAST_LOOP = "uvloop"
 except Exception:
     FAST_LOOP = "asyncio"
@@ -186,6 +189,23 @@ def _tty() -> bool:
     return sys.stdout.isatty()
 
 
+def _token_hints(t: str) -> list[str]:
+    """تشخيص آمن للتوكن (لا يطبع التوكن نفسه)."""
+    import base64
+    hints = [f"token length {len(t)} · dots {t.count('.')} (a bot token is ~70 chars with 2 dots)"]
+    if len(t) == 32 or len(t) == 64:
+        hints.append("this looks like a Client Secret / Public Key — use Bot → Reset Token instead")
+    try:
+        p = t.split(".")[0]
+        hints.append("token belongs to application id " + base64.b64decode(p + "=" * (-len(p) % 4)).decode()
+                     + " — compare with General Information → Application ID")
+    except Exception:
+        hints.append("first part is not a valid id — the token was copied incorrectly")
+    if os.environ.get("DISCORD_TOKEN") and (config.BASE_DIR / ".env").exists():
+        hints.append("if you changed .env but nothing changes, run: unset DISCORD_TOKEN")
+    return hints
+
+
 def main():
     console.section("Startup")
     if not config.TOKEN:
@@ -197,6 +217,8 @@ def main():
         ReviveBot().run(config.TOKEN, log_handler=None)
     except discord.LoginFailure:
         console.fail("Login failed", "the token is invalid — reset it in the Developer Portal")
+        for line in _token_hints(config.TOKEN):
+            console.warn("Hint", line)
         sys.exit(1)
 
 
