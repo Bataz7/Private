@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-title="meta.dashboard">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لوحة التحكم | ريفايف</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0b1d3f">
+<link rel="icon" type="image/png" href="/assets/img/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;600;700&family=Lalezar&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/dashboard.css">
+</head>
+<body>
+<i class="b" style="width:420px;height:380px;top:-90px;inset-inline-start:-60px"></i>
+<i class="b" style="width:340px;height:420px;top:30%;inset-inline-end:-100px;animation-delay:-6s"></i>
+<i class="b" style="width:460px;height:300px;bottom:6%;inset-inline-start:22%;animation-delay:-11s;opacity:.7"></i>
+<svg class="wv" viewBox="0 0 800 60" preserveAspectRatio="none"><path d="M0 30Q100 0 200 30T400 30T600 30T800 30V60H0Z"/></svg>
+<svg class="wv s" viewBox="0 0 800 60" preserveAspectRatio="none"><path d="M0 34Q100 6 200 34T400 34T600 34T800 34V60H0Z"/></svg>
+
+<div id="app">
+  <button id="mb" type="button" data-i18n-label="ui.menu"><svg class="i"><use href="#i-menu"/></svg></button>
+  <div id="ov"></div>
+  <aside>
+    <a class="brand" href="/">
+      <img src="/logo.png" alt="" onerror="this.onerror=null;this.src='/assets/img/favicon.png'">
+      <div><b data-i18n="brand">ريفايف</b><small data-i18n="ui.brandSub">لوحة التحكم</small></div>
+    </a>
+    <div class="sel-wrap"><svg class="i"><use href="#i-server"/></svg><select id="g" data-i18n-label="ui.server"></select></div>
+    <div class="nav-search"><svg class="i"><use href="#i-search"/></svg><input id="ns" type="search" autocomplete="off" data-i18n-ph="ui.search"></div>
+    <nav id="nav"></nav>
+    <div class="side-foot">
+      <div class="userchip" id="uc" hidden><img id="uav" alt=""><span id="unm"></span></div>
+      <div class="side-row">
+        <button class="lang-btn" data-lang-toggle type="button"><svg class="i"><use href="#i-globe"/></svg><span data-lang-text></span></button>
+      </div>
+      <a class="out" href="/logout"><svg class="i"><use href="#i-logout"/></svg><span data-i18n="ui.logout"></span></a>
+    </div>
+  </aside>
+  <main id="main"></main>
+</div>
+<div id="t"></div>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/common.js"></script>
+<script src="/assets/js/dashboard.js"></script>
+</body>
+</html>

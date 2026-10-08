@@ -1,0 +1,66 @@
+/* ===== أساسيات مشتركة | Shared base styles ===== */
+:root{
+  --n:#0b1d3f;--n2:#16305f;--n3:#1a428f;--sl:#7f8ca8;--line:#d3dbea;--soft:#f4f7fc;
+  --ok:#1f9d55;--er:#a12b3a;--warn:#b7791f;--muted:#5b6b88;
+  --ease:cubic-bezier(.2,.8,.2,1);--dir:1;
+}
+[dir=rtl]{--dir:-1}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;font-family:'Readex Pro','IBM Plex Sans Arabic',Tahoma,sans-serif;color:var(--n);
+  background:radial-gradient(ellipse at 50% 35%,#fff 20%,#e3e8f1 80%);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button{font-family:inherit}
+
+/* الأيقونات */
+svg.i{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:middle}
+[dir=rtl] svg.i.flip{transform:scaleX(-1)}
+svg.i.spin{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* خلفية متحركة */
+.b{position:fixed;z-index:0;background:rgba(112,128,160,.26);filter:blur(26px);border-radius:60% 40% 55% 45%;animation:blob 20s ease-in-out infinite alternate;pointer-events:none}
+@keyframes blob{to{border-radius:42% 58% 40% 60%;transform:translate(70px,-50px) rotate(28deg) scale(1.18)}}
+.wv{position:fixed;bottom:0;left:0;width:200%;height:90px;z-index:0;pointer-events:none;animation:wave 16s linear infinite}
+.wv path{fill:rgba(11,29,63,.07)}
+.wv.s{animation-duration:26s;animation-direction:reverse;height:70px}
+@keyframes wave{to{transform:translateX(-50%)}}
+
+/* أزرار */
+.btn{position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:9px;border:0;cursor:pointer;text-decoration:none;
+  font:600 15px/1.2 inherit;font-family:inherit;color:#fff;padding:13px 26px;border-radius:14px;
+  background:linear-gradient(135deg,var(--n2),var(--n));box-shadow:0 8px 24px rgba(11,29,63,.28);
+  transition:transform .25s var(--ease),box-shadow .25s,opacity .2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(11,29,63,.36)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn:disabled,.btn.loading{opacity:.6;pointer-events:none}
+.btn::after{content:"";position:absolute;top:-120%;inset-inline-start:-45%;width:28%;height:340%;transform:rotate(24deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:shine 3.4s ease-in-out infinite;pointer-events:none}
+[dir=rtl] .btn::after{inset-inline-start:auto;inset-inline-end:-45%}
+@keyframes shine{0%,55%{transform:translateX(0) rotate(24deg)}100%{transform:translateX(calc(520% * var(--dir))) rotate(24deg)}}
+.btn.ghost{background:rgba(255,255,255,.8);color:var(--n);border:1.5px solid var(--n2);box-shadow:none}
+.btn.ghost::after{background:linear-gradient(90deg,transparent,rgba(11,29,63,.18),transparent)}
+.btn.danger{background:#f3dde1;color:var(--er);box-shadow:none}
+.btn.danger::after{display:none}
+.btn.sm{padding:9px 16px;font-size:13.5px;border-radius:12px}
+.btn.icon{padding:9px;border-radius:12px}
+
+/* زر اللغة */
+.lang-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:30px;border:1px solid var(--line);background:rgba(255,255,255,.8);
+  color:var(--n);font:600 13px inherit;font-family:inherit;cursor:pointer;backdrop-filter:blur(8px);transition:transform .25s var(--ease),background .2s,color .2s}
+.lang-btn:hover{background:var(--n);color:#fff;transform:translateY(-2px)}
+.lang-btn:hover svg.i{animation:spin 1.2s linear 1}
+
+/* Toast */
+#t{position:fixed;z-index:200;bottom:92px;inset-inline-start:50%;display:flex;align-items:center;gap:10px;max-width:min(92vw,520px);
+  padding:13px 22px;border-radius:14px;color:#fff;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.25);
+  transform:translate(calc(-50% * var(--dir)),90px);opacity:0;transition:transform .45s var(--ease),opacity .3s;pointer-events:none}
+#t.show{transform:translate(calc(-50% * var(--dir)),0);opacity:1}
+#t.ok{background:var(--n)}#t.er{background:var(--er)}
+#t svg.i{width:1.4em;height:1.4em}
+#t.show.er{animation:shake .45s}
+@keyframes shake{20%,60%{margin-inline-start:-6px}40%,80%{margin-inline-start:6px}}
+
+:focus-visible{outline:3px solid rgba(26,66,143,.45);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}

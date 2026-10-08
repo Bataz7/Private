@@ -1,0 +1,5 @@
+discord.py>=2.3
+fastapi>=0.110
+uvicorn[standard]>=0.29
+aiohttp>=3.9
+itsdangerous>=2.1

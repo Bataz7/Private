@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-title="meta.landing">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Revive | ريفايف</title>
+<meta name="description" content="ريفايف، بوت ديسكورد سعودي متكامل: حماية، تذاكر، لوق، ردود تلقائية ولوحة تحكم سهلة تدير فيها سيرفرك بكل راحة. | Revive is an all-in-one Discord bot: moderation, tickets, logs, auto replies and an easy dashboard to manage your server.">
+<meta name="theme-color" content="#0b1d3f">
+<link rel="icon" type="image/png" href="/assets/img/favicon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Revive">
+<meta property="og:title" content="Revive | ريفايف">
+<meta property="og:description" content="ريفايف، بوت ديسكورد سعودي متكامل | Revive is an all-in-one Discord bot with an easy dashboard.">
+<meta property="og:image" content="https://cdn.discordapp.com/attachments/1485266933979938996/1557344391398555708/file_0000000049ac824698e55d68d94ffb9a.png?backend=b2&ex=6ac7757c&is=6ac623fc&hm=55825f0b1d1ed06f4ca6e4cce42360c737fdd2f5b134b6ce436ec5e14dd1a3c8&">
+<meta property="og:locale" content="ar_AR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;600;700&family=Lalezar&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/landing.css">
+</head>
+<body>
+<i class="b" style="width:420px;height:380px;top:-90px;inset-inline-start:-60px"></i>
+<i class="b" style="width:340px;height:420px;top:30%;inset-inline-end:-100px;animation-delay:-6s"></i>
+<i class="b" style="width:460px;height:300px;bottom:6%;inset-inline-start:22%;animation-delay:-11s;opacity:.7"></i>
+
+<!-- شريط علوي | top bar -->
+<header class="topbar" id="topbar">
+  <a class="tb-brand" href="/"><img src="/logo.png" alt="" onerror="this.onerror=null;this.src='/assets/img/favicon.png'"><span data-i18n="brand">ريفايف</span></a>
+  <nav class="tb-links">
+    <a class="tb-link" href="/invite" target="_blank" rel="noopener"><svg class="i"><use href="#i-bot"/></svg><span data-i18n="land.invite"></span></a>
+    <a class="tb-link" id="tb-support" href="https://discord.gg/ZHpPtZZsZv" target="_blank" rel="noopener"><svg class="i"><use href="#i-support"/></svg><span data-i18n="land.support"></span></a>
+    <a class="tb-link" href="/team.html"><svg class="i"><use href="#i-users"/></svg><span data-i18n="land.team"></span></a>
+  </nav>
+  <div class="tb-end">
+    <button class="lang-btn" data-lang-toggle type="button"><svg class="i"><use href="#i-globe"/></svg><span data-lang-text></span></button>
+    <a class="btn sm" id="tb-cta" href="/dashboard"><svg class="i"><use href="#i-log-in"/></svg><span data-i18n="land.login"></span></a>
+  </div>
+</header>
+
+<div class="rl">
+<div class="l-progress"></div>
+<div class="l-bg"><i class="l-swirl s1" data-s=".16" data-r=".01"></i><i class="l-swirl s2" data-s="-.1" data-r="-.015"></i><i class="l-swirl s3" data-s=".07" data-r=".01"></i><div class="l-particles"></div><div class="l-glow"></div></div>
+
+<section class="l-hero">
+  <div class="l-wrap">
+    <div class="l-stage">
+      <i class="l-ring r1"></i><i class="l-ring r2"></i><i class="l-halo"></i>
+      <div class="l-logo-wrap"><div class="l-logo-text" data-i18n="brand">ريفايف</div></div>
+      <svg class="l-emblem"><use href="#i-emblem"/></svg>
+      <div class="l-line"><i></i><i></i></div>
+    </div>
+    <h2 data-i18n-html="land.heroTitle"></h2>
+    <p data-i18n="land.heroSub"></p>
+    <div class="l-cta">
+      <a class="l-btn fill" href="/dashboard"><span data-i18n="land.open"></span><svg class="i flip"><use href="#i-arrow"/></svg></a>
+      <a class="l-btn ghost" href="#l-features" id="to-features"><svg class="i"><use href="#i-sliders"/></svg><span data-i18n="land.features"></span></a>
+    </div>
+    <div class="l-scroll"><i></i></div>
+  </div>
+</section>
+
+<div class="l-marquee"><div class="l-track" id="marquee"></div></div>
+
+<section class="l-block" id="l-stats">
+  <div class="l-wrap">
+    <span class="l-eyebrow l-reveal" data-i18n="land.statsEyebrow"></span>
+    <h2 class="l-title l-reveal" data-i18n="land.statsTitle"></h2>
+    <p class="l-sub l-reveal" data-i18n="land.statsSub"></p>
+    <div class="l-stats">
+      <div class="l-stat l-reveal" data-d="zoom"><b data-count="99.9" data-suffix="%">99.9%</b><span data-i18n="land.uptime"></span></div>
+      <div class="l-stat l-reveal" data-d="zoom"><b dir="ltr">24/7</b><span data-i18n="land.always"></span></div>
+      <div class="l-stat l-reveal" data-d="zoom"><b dir="ltr">&lt;1s</b><span data-i18n="land.response"></span></div>
+      <div class="l-stat l-reveal" data-d="zoom"><b>∞</b><span data-i18n="land.custom"></span></div>
+    </div>
+  </div>
+</section>
+
+<section class="l-block" id="l-features">
+  <div class="l-wrap">
+    <span class="l-eyebrow l-reveal" data-i18n="land.featEyebrow"></span>
+    <h2 class="l-title l-reveal" data-i18n="land.featTitle"></h2>
+    <p class="l-sub l-reveal" data-i18n="land.featSub"></p>
+    <div class="l-grid" id="cards"></div>
+  </div>
+</section>
+
+<section class="l-block" id="l-join">
+  <div class="l-wrap">
+    <div class="l-band l-reveal" data-d="zoom">
+      <h2 data-i18n="land.joinTitle"></h2>
+      <p data-i18n="land.joinSub"></p>
+      <a class="l-btn" href="/dashboard"><span data-i18n="land.joinBtn"></span><svg class="i flip"><use href="#i-arrow"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<footer class="l-foot">
+  <div class="l-brand"><svg><use href="#i-emblem"/></svg><span data-i18n="brand">ريفايف</span></div>
+  <span data-i18n="land.rights"></span>
+</footer>
+</div>
+
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/icons.js"></script>
+<script src="/assets/js/common.js"></script>
+<script src="/assets/js/landing.js"></script>
+</body>
+</html>
