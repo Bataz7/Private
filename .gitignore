@@ -147,3 +147,8 @@ vite.config.ts.timestamp-*
 *.db
 __pycache__/
 *.pyc
+
+# بيانات التشغيل والأسرار | runtime data & secrets
+data/
+emojis/ids.json
+*.sqlite3

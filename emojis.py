@@ -33,6 +33,8 @@ _FALLBACK = {
     "identity": "🪪", "weapon": "🔫", "traffic": "🚦", "realestate": "🏠", "key": "🔑", "apply": "📝", "activation": "✅", "rpstatus": "🎭", "location": "📍",
     "logo": "🌴", "crown": "👑", "star": "⭐", "bolt": "⚡", "welcome": "👋", "azkar": "🌙", "settings": "⚙️", "heart": "❤️", "chart": "📊",
     "globe": "🌐", "bot": "🤖", "users": "👥", "message": "💬", "shortcut": "⚡", "palette": "🎨",
+    "calendar": "📅", "folder": "📁", "user": "👤", "link": "🔗", "eye": "👁️", "image": "🖼️", "copy": "📋", "search": "🔍", "list": "📋",
+    "ticket_unclaim": "🔓", "ticket_lock": "🔒", "ticket_user": "👤", "ticket_time": "🕒", "ticket_questions": "❓",
 }
 
 

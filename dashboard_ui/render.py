@@ -5,6 +5,10 @@ from markupsafe import Markup
 
 from . import i18n, icons, schema, themes
 from .team import TEAM, ROLE_ICON
+try:
+    from core.ticket_presets import PRESETS
+except Exception:  # لوحة التحكم تعمل بدون حزمة البوت أيضاً
+    PRESETS = {}
 
 TEMPLATES = Path(__file__).resolve().parent.parent / "templates"
 env = Environment(loader=FileSystemLoader(str(TEMPLATES)), autoescape=select_autoescape(["html"]), trim_blocks=True, lstrip_blocks=True)
@@ -31,7 +35,7 @@ def _sel(value, current):
 
 env.globals.update(
     t=_t, has=_has, icon=icons.icon, sprite=icons.sprite, S=schema, THEMES=themes, TEAM=TEAM, ROLE_ICON=ROLE_ICON,
-    opt_label=_opt_label, sel=_sel, WIDE=schema.WIDE_TYPES, OPTIONS=schema.OPTIONS,
+    opt_label=_opt_label, PRESETS=PRESETS, sel=_sel, WIDE=schema.WIDE_TYPES, OPTIONS=schema.OPTIONS,
 )
 env.filters["mins"] = lambda n, lang: i18n.t(lang, "opt.minutesFew" if n <= 10 else "opt.minutes", n=n)
 

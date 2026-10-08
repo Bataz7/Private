@@ -614,5 +614,103 @@
   "category": "misc",
   "ar": "ثيم",
   "en": "Theme"
+ },
+ {
+  "name": "rv_calendar",
+  "file": "rv_calendar.png",
+  "category": "misc",
+  "ar": "تاريخ",
+  "en": "Date"
+ },
+ {
+  "name": "rv_folder",
+  "file": "rv_folder.png",
+  "category": "misc",
+  "ar": "روم",
+  "en": "Channel"
+ },
+ {
+  "name": "rv_user",
+  "file": "rv_user.png",
+  "category": "misc",
+  "ar": "عضو",
+  "en": "Member"
+ },
+ {
+  "name": "rv_link",
+  "file": "rv_link.png",
+  "category": "misc",
+  "ar": "رابط",
+  "en": "Link"
+ },
+ {
+  "name": "rv_eye",
+  "file": "rv_eye.png",
+  "category": "misc",
+  "ar": "معاينة",
+  "en": "Preview"
+ },
+ {
+  "name": "rv_image",
+  "file": "rv_image.png",
+  "category": "misc",
+  "ar": "صورة",
+  "en": "Image"
+ },
+ {
+  "name": "rv_copy",
+  "file": "rv_copy.png",
+  "category": "misc",
+  "ar": "نسخ",
+  "en": "Copy"
+ },
+ {
+  "name": "rv_search",
+  "file": "rv_search.png",
+  "category": "misc",
+  "ar": "بحث",
+  "en": "Search"
+ },
+ {
+  "name": "rv_list",
+  "file": "rv_list.png",
+  "category": "misc",
+  "ar": "قائمة",
+  "en": "List"
+ },
+ {
+  "name": "rv_ticket_unclaim",
+  "file": "rv_ticket_unclaim.png",
+  "category": "tickets",
+  "ar": "إلغاء الاستلام",
+  "en": "Unclaim"
+ },
+ {
+  "name": "rv_ticket_lock",
+  "file": "rv_ticket_lock.png",
+  "category": "tickets",
+  "ar": "قفل",
+  "en": "Lock"
+ },
+ {
+  "name": "rv_ticket_user",
+  "file": "rv_ticket_user.png",
+  "category": "tickets",
+  "ar": "صاحب التذكرة",
+  "en": "Ticket owner"
+ },
+ {
+  "name": "rv_ticket_time",
+  "file": "rv_ticket_time.png",
+  "category": "tickets",
+  "ar": "الوقت",
+  "en": "Time"
+ },
+ {
+  "name": "rv_ticket_questions",
+  "file": "rv_ticket_questions.png",
+  "category": "tickets",
+  "ar": "الأسئلة",
+  "en": "Questions"
  }
 ]

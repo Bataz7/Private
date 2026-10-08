@@ -53,6 +53,11 @@
     <select data-k="{{ k }}">{% for p in S.PUNISHMENTS %}<option value="{{ p }}"{{ sel(p, v or 'timeout') }}>{{ t('pun.' + p) }}</option>{% endfor %}</select>
   {% elif ty == 'interval' %}
     <select data-k="{{ k }}">{% for n in S.INTERVALS %}<option value="{{ n }}"{{ sel(n, v or 15) }}>{{ n|mins(lang) }}</option>{% endfor %}</select>
+  {% elif ty == 'num' %}
+    <input type="number" min="1" max="5" data-k="{{ k }}" value="{{ v if v is not none else 1 }}">
+  {% elif ty == 'preset' %}
+    <select data-k="{{ k }}"><option value="">{{ t('c.none') }}</option>
+      {% for key, p in PRESETS.items() %}<option value="{{ key }}"{{ sel(key, v) }}>{{ p[lang] }}</option>{% endfor %}</select>
   {% elif ty == 'sel' %}
     {% set labels = t('opt.' + x) %}
     <select data-k="{{ k }}">{% for val in OPTIONS[x] %}<option value="{{ val }}"{{ sel(val, v) }}>{{ labels[loop.index0] }}</option>{% endfor %}</select>

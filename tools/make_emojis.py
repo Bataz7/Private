@@ -126,7 +126,23 @@ PACK = [
     ("rv_message", "misc", "message", "royal", "رسالة", "Message"),
     ("rv_shortcut", "misc", "bolt", "purple", "اختصار", "Shortcut"),
     ("rv_palette", "misc", "palette", "pink", "ثيم", "Theme"),
+    # ---- إضافات للأنظمة الجديدة ----
+    ("rv_calendar", "misc", "calendar", "royal", "تاريخ", "Date"),
+    ("rv_folder", "misc", "folder", "teal", "روم", "Channel"),
+    ("rv_user", "misc", "user", "royal", "عضو", "Member"),
+    ("rv_link", "misc", "link", "teal", "رابط", "Link"),
+    ("rv_eye", "misc", "eye", "cyan", "معاينة", "Preview"),
+    ("rv_image", "misc", "image", "purple", "صورة", "Image"),
+    ("rv_copy", "misc", "copy", "slate", "نسخ", "Copy"),
+    ("rv_search", "misc", "search", "royal", "بحث", "Search"),
+    ("rv_list", "misc", "list", "slate", "قائمة", "List"),
+    ("rv_ticket_unclaim", "tickets", "unlock", "amber", "إلغاء الاستلام", "Unclaim"),
+    ("rv_ticket_lock", "tickets", "lock", "orange", "قفل", "Lock"),
+    ("rv_ticket_user", "tickets", "user", "royal", "صاحب التذكرة", "Ticket owner"),
+    ("rv_ticket_time", "tickets", "clock", "slate", "الوقت", "Time"),
+    ("rv_ticket_questions", "tickets", "message", "purple", "الأسئلة", "Questions"),
 ]
+
 
 
 def glyph(icon: str) -> str:

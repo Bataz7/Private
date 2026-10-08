@@ -11,8 +11,15 @@ def _merge(dst: dict, src: dict):
 
 _EXTRA = {
     "ar": {
+        "opt": {"cardstyles": ["ملكي", "نيون", "زجاجي", "بسيط فاتح", "غروب", "شفق"], "langs": ["العربية", "English"]},
+        "sec": {
+            "botlang": {"n": "لغة البوت", "f": {"lang": "لغة البوت في هذا السيرفر"}, "note": "تتحول كل رسائل البوت (الإيمبدات والردود والأزرار) بالكامل للغة المختارة."},
+            "welcome": {"f": {"card": "بطاقة الترحيب (صورة)", "card_style": "تصميم البطاقة", "card_bg": "رابط خلفية البطاقة (اختياري)", "card_title": "عنوان البطاقة (اختياري)", "card_sub": "السطر الثاني في البطاقة (اختياري)"}},
+            "tickets": {"f": {"preset": "قالب أسئلة التذكرة", "questions": "أسئلة مخصصة (تتقدم على القالب، حتى 5)", "max_open": "أقصى عدد تذاكر مفتوحة لكل عضو"}, "qph": "اكتب السؤال"},
+            "logs": {"types": {"nicknames": "تغيير الأسماء المستعارة", "voice": "القنوات الصوتية", "invites": "الدعوات"}},
+        },
         "ui": {"emojis": "الإيموجيات"},
-        "grp": {"msg": "الرسالة", "look": "التصميم", "opts": "الخيارات", "general": "الإعدادات العامة", "roles": "الرتب", "channels": "الرومات",
+        "grp": {"card": "بطاقة الكانفاس", "msg": "الرسالة", "look": "التصميم", "opts": "الخيارات", "general": "الإعدادات العامة", "roles": "الرتب", "channels": "الرومات",
                 "messages": "الرسائل", "questions": "الأسئلة", "panels": "البانلات", "ops": "العمليات", "target": "الوجهة", "content": "المحتوى"},
         "tpv": {"title": "معاينة التذكرة", "hint": "هكذا ستظهر رسالة الترحيب داخل التذكرة", "user": "تذكرة @عضو", "close": "إغلاق", "claim": "استلام", "empty": "اكتب رسالة الترحيب لتظهر هنا"},
         "wpv": {"title": "معاينة الرسالة", "hint": "المتغيرات تُستبدل تلقائياً عند الإرسال"},
@@ -23,8 +30,15 @@ _EXTRA = {
         "team": {"page": "فريق ريفايف"},
     },
     "en": {
+        "opt": {"cardstyles": ["Royal", "Neon", "Glass", "Minimal light", "Sunset", "Aurora"], "langs": ["العربية", "English"]},
+        "sec": {
+            "botlang": {"n": "Bot Language", "f": {"lang": "Bot language in this server"}, "note": "Every bot message (embeds, replies, buttons) switches fully to the chosen language."},
+            "welcome": {"f": {"card": "Welcome card (image)", "card_style": "Card style", "card_bg": "Card background URL (optional)", "card_title": "Card title (optional)", "card_sub": "Card subtitle (optional)"}},
+            "tickets": {"f": {"preset": "Ticket question preset", "questions": "Custom questions (override the preset, up to 5)", "max_open": "Max open tickets per member"}, "qph": "Write the question"},
+            "logs": {"types": {"nicknames": "Nickname changes", "voice": "Voice channels", "invites": "Invites"}},
+        },
         "ui": {"emojis": "Emojis"},
-        "grp": {"msg": "Message", "look": "Design", "opts": "Options", "general": "General", "roles": "Roles", "channels": "Channels",
+        "grp": {"card": "Canvas card", "msg": "Message", "look": "Design", "opts": "Options", "general": "General", "roles": "Roles", "channels": "Channels",
                 "messages": "Messages", "questions": "Questions", "panels": "Panels", "ops": "Operations", "target": "Destination", "content": "Content"},
         "tpv": {"title": "Ticket preview", "hint": "This is how the welcome message looks inside a ticket", "user": "Ticket @member", "close": "Close", "claim": "Claim", "empty": "Write the welcome message to see it here"},
         "wpv": {"title": "Message preview", "hint": "Variables are replaced automatically when sent"},

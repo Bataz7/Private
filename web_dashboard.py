@@ -47,7 +47,7 @@ SSL_CERTFILE = os.environ.get("SSL_CERTFILE") or None   # اختياري: https 
 SSL_KEYFILE = os.environ.get("SSL_KEYFILE") or None
 API = "https://discord.com/api/v10"
 SUPPORT_URL = os.environ.get("SUPPORT_URL", "https://discord.gg/ZHpPtZZsZv")
-SECTIONS = {"welcome", "tickets", "apply", "rolestatus", "realestate", "activation", "identity", "weapons", "traffic", "replies", "bank", "autorole", "embed", "shortcuts", "logs", "security", "badwords", "azkar", "levels"}
+SECTIONS = {"botlang", "welcome", "tickets", "apply", "rolestatus", "realestate", "activation", "identity", "weapons", "traffic", "replies", "bank", "autorole", "embed", "shortcuts", "logs", "security", "badwords", "azkar", "levels"}
 
 def _session_secret():
     """مفتاح الجلسات: من البيئة، وإلا يُولَّد مرة واحدة ويُحفظ في .session_secret."""
@@ -407,8 +407,19 @@ def r_tk(g, s):
     return {k: (sid(v) if k in TK_IDS else v) for k, v in d.items()}
 def w_tk(g, s, d):
     slot_ok(s, 10)
-    o = clean(g, d, ["name", "welcome_msg", "image_url"], TK_IDS,
-              ["name", "category_id", "support_role_id", "ticket_mod_role_id", "welcome_msg", "log_channel_id"])
+    o = clean(g, d, ["name", "welcome_msg", "image_url", "preset"], TK_IDS,
+              ["name", "category_id", "support_role_id", "ticket_mod_role_id", "log_channel_id"])
+    try:
+        from core.ticket_presets import PRESETS
+    except Exception:
+        PRESETS = {}
+    if o.get("preset") and o["preset"] not in PRESETS:
+        o["preset"] = None
+    o["questions"] = [q.strip()[:45] for q in (d.get("questions") or []) if isinstance(q, str) and q.strip()][:5]
+    try:
+        o["max_open"] = max(1, min(5, int(d.get("max_open") or 1)))
+    except (TypeError, ValueError):
+        o["max_open"] = 1
     a = jload(TKF); a.setdefault(str(g.id), {})[s] = o; jsave(TKF, a)
 
 # التقديمات: apply_data.json  {guild: {num: {...}}}
@@ -452,6 +463,7 @@ WT = {"1": "welcome", "2": "goodbye"}
 COLORS = ["أزرق", "أخضر", "أحمر", "أصفر", "بنفسجي", "برتقالي", "أبيض", "أسود"]
 EMBEDS = ["ايمبد عادي", "ايمبد حديث"]
 BOOLS = ["show_avatar", "ignore_bots", "disable_mention", "status"]
+WL_STYLES = ["royal", "neon", "glass", "minimal", "sunset", "aurora"]
 def r_wl(g, s):
     try:
         c = sqlite3.connect("welcome_goodbye.db"); c.row_factory = sqlite3.Row
@@ -463,6 +475,8 @@ def r_wl(g, s):
     d = dict(r); d["channel_id"] = sid(d.get("channel_id"))
     for k in BOOLS:
         d[k] = bool(d.get(k))
+    d["card"] = bool(d.get("card", 1)) if d.get("card") is not None else True
+    d["card_style"] = d.get("card_style") or "royal"
     return d
 def w_wl(g, s, d):
     if s not in WT:
@@ -471,13 +485,23 @@ def w_wl(g, s, d):
     if o["color"] not in COLORS or o["embed_type"] not in EMBEDS:
         raise HTTPException(400, "قيمة غير صالحة")
     b = [1 if d.get(k) else 0 for k in BOOLS]
+    card = {"card": 1 if d.get("card", True) else 0, "card_style": d.get("card_style") if d.get("card_style") in WL_STYLES else "royal",
+            "card_bg": (d.get("card_bg") or "").strip() or None, "card_title": (d.get("card_title") or "").strip()[:40] or None, "card_sub": (d.get("card_sub") or "").strip()[:70] or None}
+    if card["card_bg"] and not card["card_bg"].startswith(("http://", "https://")):
+        raise HTTPException(400, "رابط الصورة لازم يبدأ بـ http أو https")
     try:
         c = sqlite3.connect("welcome_goodbye.db")
-        c.execute("""INSERT INTO welcome_settings(guild_id,type,channel_id,color,show_avatar,ignore_bots,disable_mention,embed_type,image_url,embed_text,outside_text,status)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(guild_id,type) DO UPDATE SET channel_id=excluded.channel_id,color=excluded.color,
+        have = {r[1] for r in c.execute("PRAGMA table_info(welcome_settings)")}
+        for col, ddl in (("card", "INTEGER DEFAULT 1"), ("card_style", "TEXT DEFAULT 'royal'"), ("card_bg", "TEXT"), ("card_title", "TEXT"), ("card_sub", "TEXT")):
+            if col not in have:
+                c.execute(f"ALTER TABLE welcome_settings ADD COLUMN {col} {ddl}")
+        c.execute("""INSERT INTO welcome_settings(guild_id,type,channel_id,color,show_avatar,ignore_bots,disable_mention,embed_type,image_url,embed_text,outside_text,status,card,card_style,card_bg,card_title,card_sub)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(guild_id,type) DO UPDATE SET channel_id=excluded.channel_id,color=excluded.color,
             show_avatar=excluded.show_avatar,ignore_bots=excluded.ignore_bots,disable_mention=excluded.disable_mention,embed_type=excluded.embed_type,
-            image_url=excluded.image_url,embed_text=excluded.embed_text,outside_text=excluded.outside_text,status=excluded.status""",
-            (g.id, WT[s], o["channel_id"], o["color"], b[0], b[1], b[2], o["embed_type"], o["image_url"], o["embed_text"], o["outside_text"], b[3]))
+            image_url=excluded.image_url,embed_text=excluded.embed_text,outside_text=excluded.outside_text,status=excluded.status,
+            card=excluded.card,card_style=excluded.card_style,card_bg=excluded.card_bg,card_title=excluded.card_title,card_sub=excluded.card_sub""",
+            (g.id, WT[s], o["channel_id"], o["color"], b[0], b[1], b[2], o["embed_type"], o["image_url"], o["embed_text"], o["outside_text"], b[3],
+             card["card"], card["card_style"], card["card_bg"], card["card_title"], card["card_sub"]))
         c.commit(); c.close()
     except sqlite3.Error:
         raise HTTPException(500, "قاعدة بيانات الترحيب غير جاهزة")
@@ -1047,8 +1071,8 @@ def w_sc(g, s, d):
 
 # اللوقات: logs_settings.db  جدول server_logs(guild_id, log_type, channel_id)  (حذف الصف = إيقاف هذا اللوق)
 LGDB = "logs_settings.db"
-LG_TYPES = ["members_join_remove", "member_bans", "member_kick", "member_timeout", "member_roles", "messages",
-            "reactions", "channels_crud", "channels_update", "roles_crud", "roles_update", "server_updates"]
+LG_TYPES = ["members_join_remove", "member_bans", "member_kick", "member_timeout", "member_roles", "nicknames", "messages",
+            "reactions", "voice", "channels_crud", "channels_update", "roles_crud", "roles_update", "invites", "server_updates"]
 def r_lg(g, s):
     try:
         c = sqlite3.connect(LGDB, timeout=10)
@@ -1116,7 +1140,22 @@ def w_se(g, s, d):
     except sqlite3.Error:
         raise HTTPException(500, "قاعدة بيانات الحماية غير جاهزة")
 
-ADMIN_ONLY = {"security", "badwords", "azkar", "levels"}  # أقسام التعديل فيها للأدمن فقط (مثل أوامر البوت)
+def r_botlang(g, s):
+    try:
+        from core import i18n
+        return {"lang": i18n.guild_lang(g.id)}
+    except Exception:
+        return {"lang": "ar"}
+def w_botlang(g, s, d):
+    if d.get("lang") not in ("ar", "en"):
+        raise HTTPException(400, "قيمة غير صالحة")
+    try:
+        from core import i18n
+        i18n.set_guild_lang(g.id, d["lang"])
+    except ImportError:
+        raise HTTPException(500, "قاعدة البيانات غير جاهزة")
+
+ADMIN_ONLY = {"security", "badwords", "azkar", "levels", "botlang"}  # أقسام التعديل فيها للأدمن فقط (مثل أوامر البوت)
 async def require_admin(request, g):
     try:
         uid = int(request.session["user"]["id"])
@@ -1167,7 +1206,7 @@ def w_bw(g, s, d):
     except sqlite3.Error:
         raise HTTPException(500, "قاعدة بيانات الكلمات المحظورة غير جاهزة")
 
-AD = {"badwords": (r_bw, w_bw), "security": (r_se, w_se), "logs": (r_lg, w_lg), "shortcuts": (r_sc, w_sc), "autorole": (r_au, w_au), "realestate": (r_re, w_re), "activation": (r_ac, w_ac), "bank": (r_bk, w_bk), "replies": (r_ar, w_ar), "tickets": (r_tk, w_tk), "apply": (r_ap, w_ap), "rolestatus": (r_rp, w_rp), "welcome": (r_wl, w_wl), "identity": (r_id, w_id),
+AD = {"botlang": (r_botlang, w_botlang), "badwords": (r_bw, w_bw), "security": (r_se, w_se), "logs": (r_lg, w_lg), "shortcuts": (r_sc, w_sc), "autorole": (r_au, w_au), "realestate": (r_re, w_re), "activation": (r_ac, w_ac), "bank": (r_bk, w_bk), "replies": (r_ar, w_ar), "tickets": (r_tk, w_tk), "apply": (r_ap, w_ap), "rolestatus": (r_rp, w_rp), "welcome": (r_wl, w_wl), "identity": (r_id, w_id),
       "azkar": (r_azkar, w_azkar), "levels": (r_levels, w_levels),
       "weapons": WPN_RW, "traffic": TRF_RW}
 

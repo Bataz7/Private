@@ -1,42 +1,70 @@
-# ريفايف | Revive — Dashboard
+# ريفايف | Revive — Discord bot + dashboard
 
-لوحة تحكم بوت ريفايف. **Python يبني كل الصفحات** (FastAPI + قوالب Jinja2)، والمتصفح فيه JS بسيط فقط للأنميشن والتفاعل. عربي / English.
+بوت ديسكورد عربي/English مع لوحة تحكم. Python يبني كل شي (البوت، الصفحات، الرسائل).
 
 ## البنية | Structure
 ```
-web_dashboard.py        الباكند: OAuth2، الـ API، الصفحات، إرسال البانلات (يستدعيه البوت: start_web(bot))
-dashboard_ui/           واجهة بايثون
-  schema.py             أقسام اللوحة وحقولها ومجموعاتها (أضف قسماً جديداً من هنا)
-  i18n_data.py + i18n.py  كل النصوص عربي/English (المصدر الوحيد للترجمة)
-  themes.py             ألوان الثيمات السبعة (يولّد themes.css)
-  icons.py              مكتبة الأيقونات (duotone)
-  team.py               أعضاء الفريق
-  render.py             محرك القوالب
-templates/              قوالب Jinja2 (landing, team, dashboard, views/*)
-web/assets/             css + js (مؤثرات، تفاعل) + favicon
-emojis/                 حزمة إيموجيات البوت (88 PNG) + manifest.json
-emojis.py               استخدام الإيموجيات داخل كوجات البوت
-tools/                  make_emojis.py (يصنع الحزمة) · upload_emojis.py (يرفعها)
-deploy/                 Caddyfile · nginx.conf.example
+main.py                 نقطة التشغيل (خفيفة: نوايا مقلّصة، مزامنة أوامر مرة واحدة، sqlite سريع)
+core/                   النواة
+  config.py             الإعدادات من .env (لا أسرار في الكود)
+  i18n.py · hooks.py    لغة كل سيرفر + ترجمة تلقائية لكل رسائل البوت (انظر أدناه)
+  strings.py            نصوص الأنظمة الجديدة بالنسختين
+  card.py               كانفاس الترحيب (Pillow)
+  ticket_presets.py     12 قالب أسئلة للتذاكر
+  store.py              JSON بكاش + إعدادات sqlite سريعة
+  migrate.py            ينقل db/json القديمة إلى data/ تلقائياً
+cogs/                   الأنظمة
+  language.py logs.py welcome.py tickets.py owner.py   ← جديدة بالكامل
+  bank traffic vehicle real_estate point_police id apply setup_apply role auto_role reply shorts shortscuts embed security badwords azkar levels
+locales/en.json         جدول الترجمة (1100+ نص) · manual.json تعديلات يدوية
+emojis/ + emojis.py     102 إيموجي خاص + مساعد الاستخدام
+web_dashboard.py · dashboard_ui/ · templates/ · web/    لوحة التحكم
+tools/                  make_emojis · upload_emojis · extract_strings · build_locale
+data/                   (يُنشأ تلقائياً) كل قواعد البيانات — لا يُرفع إلى GitHub
 ```
-ضع شعارك في `web/logo.png` (وإلا تظهر أيقونة بديلة).
 
-## التشغيل | Setup
-1. `pip install -r requirements.txt`
-2. انسخ `.env.example` إلى `.env` واملأ `DISCORD_CLIENT_SECRET` و `DASHBOARD_URL`.
-3. في Discord Developer Portal → OAuth2 → Redirects أضف: `https://<الدومين>/callback`
-4. شغّل البوت كالعادة (يستدعي `start_web(bot)`).
+## التشغيل | Run
+```
+pip install -r requirements.txt
+cp .env.example .env      # ضع DISCORD_TOKEN وباقي القيم
+python main.py
+```
+أول تشغيل ينقل ملفات `*.db` و`*.json` القديمة من مجلد البوت إلى `data/`.
 
-## HTTPS والدومين
-أي زيارة عبر http أو دومين/منفذ آخر تتحوّل (308) إلى `DASHBOARD_URL`. استخدم بروكسي (أمثلة في `deploy/`، لازم يرسل `X-Forwarded-Proto`) أو `SSL_CERTFILE` + `SSL_KEYFILE`. للتجربة المحلية `FORCE_HTTPS=0`.
+## الأنظمة الجديدة
+| النظام | الأوامر | وش يميّزه |
+|---|---|---|
+| **اللغة** | `/language` | عربي/English لكل سيرفر؛ كل الإيمبدات والأزرار والقوائم والردود تتبدّل بالكامل |
+| **اللوقات** | `/logs set · all · off · status · test` | 15 نوع، أسماء المشرفين من حدث audit واحد، فرق الرتب/الصلاحيات/القنوات، حذف وتعديل الرسائل مع زر قفز |
+| **الترحيب** | `/welcome setup · test · off · info` | بطاقة كانفاس (6 تصاميم، لون، خلفية مخصصة، RTL) + استوديو معاينة حية |
+| **التذاكر** | `/ticket setup · panel · close · claim · add · remove · rename · priority · transcript · info` | Components V2، أسئلة قبل الفتح، استلام، أولوية، نسخة HTML، تقييم، لوق |
+| **المالك** | `/bot-control …` | إحصائيات حية كل 5 دقائق، حظر سيرفرات (يحتاج OWNER_GUILD_ID) |
 
-## الإيموجيات | Emojis
+## الإيموجيات
 ```python
 from emojis import E
-await ch.send(f"{E.log_ban} تم الحظر")           # قبل الرفع يظهر بديل عادي
-await emojis.sync(bot)                            # داخل setup_hook: يرفع الناقص كإيموجيات للتطبيق
+await ch.send(f"{E.log_ban} تم الحظر")             # قبل الرفع يظهر بديل عادي
+discord.ui.Button(emoji=E.pe("ticket_close"))
 ```
-أو مرة واحدة: `DISCORD_TOKEN=... python tools/upload_emojis.py`. لتغيير التصميم أو الإضافة: عدّل `PACK` في `tools/make_emojis.py` ثم شغّله.
+ارفعها مرة واحدة: `DISCORD_TOKEN=... python tools/upload_emojis.py` (أو `await emojis.sync(bot)`).
 
-## الترجمة والثيمات
-نصوص جديدة: `dashboard_ui/i18n_data.py` (ar و en). ثيم جديد: كتلة في `dashboard_ui/themes.py` + اسمه في i18n.
+## كيف تتحول الكوجات القديمة للإنجليزية؟
+`core/hooks.py` يترجم نصوص الإيمبد والأزرار والقوائم والمودالات **لحظة الإرسال** لسيرفرات اللغة English، اعتماداً على `locales/en.json`. الكود الأصلي ما يتغيّر ولا تتأثر القيم (`custom_id`، قيم الخيارات). لإضافة نص جديد شغّل:
+```
+python tools/extract_strings.py cogs/*.py > locales/entries.json   # ثم ترجمها وادمجها بـ tools/build_locale.py
+```
+أو أضف سطراً في `locales/manual.json`.
+
+## التحسينات في الأداء
+- إيقاف `presences` (أكبر مستهلك للذاكرة) وكاش رسائل 1500 فقط.
+- sqlite: WAL + كاش صغير لكل الاتصالات (بما فيها الكوجات القديمة).
+- اللوقات بحدث audit واحد بدل طلبات REST لكل حدث؛ كاش إعدادات 30 ثانية.
+- التذاكر بلا بيانات داخل الأزرار (لا تسريب ذاكرة) وتُحفظ في sqlite؛ ملف JSON يُقرأ من الذاكرة ما لم يتغيّر.
+- الكانفاس في خيط منفصل، حد 2 بالتوازي، ويتوقف أثناء الغارات.
+- إحصائيات المالك كل 5 دقائق بدل 10 ثوانٍ، ومزامنة الأوامر مرة واحدة، و`gc.freeze()` بعد الإقلاع، و`uvloop` إن توفر.
+
+## أمان
+لا تضع التوكن أو الـ Client Secret في الكود أو في GitHub — كلها في `.env`. لو انكشف توكن أو سر في أي مكان **أعد توليده** من Developer Portal.
+
+## لوحة التحكم
+انظر `deploy/` للدومين وHTTPS. Redirect: `https://<دومينك>/callback`.

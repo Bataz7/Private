@@ -1,0 +1,1787 @@
+{
+"exact": {
+"قبول": "Accept",
+"رفض": "Reject",
+"إرسال بانل التفعيل الخاص بالسيرفر": "Send the server activation panel",
+"روم استقبال طلبات الإدارة": "Channel for receiving staff applications",
+"رتبة العضو بعد القبول (اختياري)": "Member role after acceptance (optional)",
+"رتبة يتم إزالتها عند القبول (اختياري)": "Role to remove upon acceptance (optional)",
+"رتبة الإدارة التي يتم عمل منشن لها (اختياري)": "Staff role to mention (optional)",
+"✍️ أرسل الآن في الشات **سبب القبول**:": "✍️ Now send the **acceptance reason** in chat:",
+"تم القبول بدون ذكر سبب.": "Accepted without a reason.",
+"✍️ أرسل الآن في الشات **سبب الرفض**:": "✍️ Now send the **rejection reason** in chat:",
+"استيفاء الشروط المطلوبة.": "Requirements met.",
+"١- ما هو اسمك الحقيقي؟": "1- What is your real name?",
+"٢- ما هو عمرك الحقيقي؟": "2- What is your real age?",
+"٣- هل تم قراءة قوانين السيرفر؟ (نعم / لا)": "3- Have you read the server rules? (Yes / No)",
+"٤- اذكر ٢ من قوانين السيرفر:": "4- Mention 2 of the server rules:",
+"٥- اذكر ٢ من قوانين الرول بلاي:": "5- Mention 2 of the roleplay rules:",
+"٦- كم مدة تفاعلك اليومي؟": "6- How long do you play daily?",
+"٧- هل تتعهد بالالتزام بالقوانين والأنظمة؟": "7- Do you pledge to follow the rules and regulations?",
+"✅ تم إرسال البانل بنجاح وتفعيل القائمة!": "✅ Panel sent successfully and the menu is now active!",
+"طلب تفعيل جديد (مقبول ✅)": "New activation request (Accepted ✅)",
+"التفعيل": "Activation",
+"إعادة التشغيل": "Restart",
+"🔄 تم إعادة تعيين القائمة بنجاح.": "🔄 Menu reset successfully.",
+"📩 تم إرسال أسئلة التفعيل في الخاص (DM), توجه هناك لو سمحت!": "📩 The activation questions were sent to your DMs, please head there!",
+"✅ تم استلام جميع إجاباتك بنجاح! تم إرسال طلبك للإدارة للمراجعة.": "✅ All your answers were received successfully! Your request was sent to the staff for review.",
+"طلب تفعيل جديد (خاص)": "New activation request (DM)",
+"١- الاسم الحقيقي": "1- Real name",
+"٢- العمر": "2- Age",
+"٣- قراءة القوانين؟": "3- Read the rules?",
+"٤- قوانين السيرفر": "4- Server rules",
+"٥- قوانين الرول بلاي": "5- Roleplay rules",
+"٦- مدة التفاعل": "6- Activity duration",
+"٧- التعهد بالالتزام": "7- Pledge to comply",
+"التفعيل ✅": "Activation ✅",
+"❌ عذراً، أنت مفعل مسبقاً أو لديك طلب تفعيل قيد المراجعة!": "❌ Sorry, you are already activated or have an activation request under review!",
+"⏰ انتهى الوقت المحدد للتقديم. حاول مرة أخرى من السيرفر.": "⏰ The time allowed for applying has run out. Try again from the server.",
+"تحديد الرتبة التلقائية التي تُعطى للأعضاء عند انضمامهم": "Set the automatic role given to members when they join",
+"اختر الرتبة التلقائية": "Choose the auto role",
+"إيقاف وإزالة الرتبة التلقائية للانضمام": "Disable and remove the auto role for joining",
+"🗑️️ تم تعطيل وإزالة نظام الرتبة التلقائية بنجاح.": "🗑️️ The auto role system was disabled and removed successfully.",
+"❌ لا يمكنني اختيار هذه الرتبة لأنها أعلى من رتبتي أو تساويها!": "❌ I can't pick this role because it is higher than or equal to my role!",
+"التسجيل التلقائي للرتبة عند الانضمام": "Automatic role assignment on join",
+"سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ.": "Glory be to God and praise be to Him; glory be to God the Almighty.",
+"لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ.": "There is no power and no strength except with God.",
+"أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ وَأَتُوبُ إِلَيْهِ.": "I seek forgiveness from God the Almighty and repent to Him.",
+"سُبْحَانَ اللَّهِ، وَالْحَمْدُ لِلَّهِ، وَلَا إِلَهَ إِلَّا اللَّهُ، وَاللَّهُ أَكْبَرُ.": "Glory be to God, praise be to God, there is no god but God, and God is the Greatest.",
+"لَا إِلهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.": "There is no god but God alone, with no partner; His is the dominion and His is the praise, and He has power over all things.",
+"اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ.": "O God, send blessings and peace upon our Prophet Muhammad.",
+"رَبِّ اغْفِرْ لِي وَتُبْ عَلَيَّ إِنَّكَ أَنْتَ التَّوَّابُ الرَّحِيمُ.": "My Lord, forgive me and accept my repentance; You are the Ever-Accepting of repentance, the Most Merciful.",
+"سُبْحَانَ اللَّهِ وَبِحَمْدِهِ عَدَدَ خَلْقِهِ، وَرِضَا نَفْسِهِ، وَزِنَةَ عَرْشِهِ، وَمِدَادَ كَلِمَاتِهِ.": "Glory be to God and praise be to Him, as many as His creation, as pleases Him, as heavy as His Throne, and as the ink of His words.",
+"رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ.": "Our Lord, give us good in this world and good in the Hereafter, and protect us from the punishment of the Fire.",
+"يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ، أَصْلِحْ لِي شَأْنِي كُلَّهُ وَلَا تَكِلْنِي إِلَى نَفْسِي طَرْفَةَ عَيْنٍ.": "O Ever-Living, O Sustainer, in Your mercy I seek relief; set right all my affairs and do not leave me to myself even for the blink of an eye.",
+"حَسْبِيَ اللَّهُ لَا إِلَهَ إِلَّا هُوَ عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ.": "God is sufficient for me; there is no god but Him. In Him I have put my trust, and He is the Lord of the Mighty Throne.",
+"اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ.": "O God, I ask You for pardon and well-being in this world and the Hereafter.",
+"رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي.": "My Lord, expand my chest for me and ease my task for me.",
+"لَا إِلَهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ.": "There is no god but You; glory be to You. Indeed, I have been among the wrongdoers.",
+"اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ.": "O God, You are my Lord; there is no god but You. You created me and I am Your servant, and I keep Your covenant and promise as best I can.",
+"تحديد روم الأذكار، المدة الزمنية، وتفعيل النظام": "Set the Azkar channel, the interval, and enable the system",
+"حالة الأذكار تفعيل أو تعطيل": "Azkar status: enable or disable",
+"روم إرسال الأذكار": "Channel to send Azkar in",
+"المدة الزمنية بين كل ذكر والآخر": "Interval between each Azkar message",
+"⛔ هذا الأمر للأدمن فقط.": "⛔ This command is for admins only.",
+"⚠️ صار خطأ غير متوقع.": "⚠️ An unexpected error occurred.",
+"📿 إعدادات نظام الأذكار": "📿 Azkar System Settings",
+"⚠️ يجب تحديد روم الأذكار عند تفعيل النظام!": "⚠️ You must set the Azkar channel when enabling the system!",
+"⚠️ ما قدرت ألقى الروم، حدد روم ثاني.": "⚠️ I couldn't find the channel, please choose another one.",
+"🟢 تفعيل (TRUE)": "🟢 Enable (TRUE)",
+"🔴 تعطيل (FALSE)": "🔴 Disable (FALSE)",
+"5 دقائق": "5 minutes",
+"10 دقائق": "10 minutes",
+"15 دقيقة": "15 minutes",
+"30 دقيقة": "30 minutes",
+"45 دقيقة": "45 minutes",
+"✨ ذكر من القلب": "✨ A Remembrance from the Heart",
+"صَلِّ على الحبيب ليشفع لك • البوت الإسلامي": "Send blessings upon the Beloved so he may intercede for you • Islamic Bot",
+"غير محدد": "Not set",
+"إضافة كلمة جديدة إلى قائمة الكلمات المحظورة": "Add a new word to the banned words list",
+"الكلمة المراد حظرها": "The word to ban",
+"إزالة كلمة من قائمة الكلمات المحظورة": "Remove a word from the banned words list",
+"الكلمة المراد إزالتها": "The word to remove",
+"عرض جميع الكلمات المحظورة في السيرفر": "Show all banned words in the server",
+"تحديد العقوبة عند كتابة كلمة محظورة": "Set the punishment for writing a banned word",
+"اختر العقوبة التي ستطبق على المخالف": "Choose the punishment to apply to the offender",
+"🚫 قائمة الكلمات المحظورة": "🚫 Banned Words List",
+"📂 لا توجد أي كلمات محظورة مضافة حالياً في هذا السيرفر.": "📂 There are no banned words added in this server currently.",
+"🔨 باند (Ban)": "🔨 Ban",
+"👢 طرد (Kick)": "👢 Kick",
+"⏳ تايم أوت (Timeout)": "⏳ Timeout",
+"🏷️ سحب كافة الرتب": "🏷️ Remove all roles",
+"💸 تحويل أموال": "💸 Transfer Money",
+"💳 سداد قرض": "💳 Repay Loan",
+"📋 طلب قرض": "📋 Loan Request",
+"💵 تحديد قيمة الراتب": "💵 Set Salary Amount",
+"إنشاء حساب بنكي": "Create a bank account",
+"آيبان العضو المستلم": "Recipient member's IBAN",
+"مثال: 4521": "Example: 4521",
+"المبلغ": "Amount",
+"مثال: 5000": "Example: 5000",
+"تحويل": "Transfer",
+"استلام": "Receive",
+"رقم القرض": "Loan number",
+"مثال: 1": "Example: 1",
+"مبلغ السداد": "Repayment amount",
+"سداد قرض": "Loan repayment",
+"1- اسمك الحقيقي:": "1- Your real name:",
+"مثال: محمد": "Example: Mohammed",
+"2- الوظيفة الحالية:": "2- Current job:",
+"مثال: عسكري / مدني": "Example: Military / Civilian",
+"3- مبلغ القرض المطلوب:": "3- Requested loan amount:",
+"مثال: 50000": "Example: 50000",
+"4- سبب طلبك للقرض:": "4- Reason for the loan:",
+"شراء سيارة / منزل...": "Buying a car / house...",
+"5- التعهد (اكتب: موافق)": "5- Pledge (type: Agree)",
+"في حال تاخير السداد سيتم إيقاف حسابك": "If repayment is late, your account will be suspended",
+"موافق": "Agree",
+"قرض": "Loan",
+"➕ إضافة أموال": "➕ Add Money",
+"قيمة الراتب لكل فرد": "Salary amount per person",
+"🏦 فتح حساب بنكي": "🏦 Open a Bank Account",
+"اضغط على الزر أدناه لإنشاء حسابك البنكي والحصول على رقم الآيبان الخاص بك.": "Click the button below to create your bank account and get your IBAN.",
+"🏦 خدمات المواطنين البنكية": "🏦 Citizen Banking Services",
+"استخدم القائمة أدناه للوصول إلى الخدمات (الرصيد، التحويل، معلومات الحساب، طلب وقروض وسداد القروض).": "Use the menu below to access services (balance, transfer, account info, loan requests, and loan repayment).",
+"🏦 لوحة تحكم مسؤولي البنك": "🏦 Bank Staff Control Panel",
+"هذه اللوحة مخصصة للمسؤولين لإدارة الرواتب، الأرصدة، عرض القروض، كشف الحسابات، وإيقاف الحسابات للمتعثرين.": "This panel is for staff to manage salaries, balances, view loans, view account statements, and suspend accounts of defaulters.",
+"إعداد بانلات نظام البنك، روم القروض، روم اللوق، ورتبة مسؤولي البنك": "Set up the bank system panels, loans channel, log channel, and bank staff role",
+"اختر البانل المراد إرساله": "Choose the panel to send",
+"روم استقبال طلبات القروض (اختياري)": "Channel for receiving loan requests (optional)",
+"روم العمليات واللوق البنكي (اختياري)": "Bank operations and log channel (optional)",
+"رتبة مسؤولي البنك (اختياري، مقتصرة على الأدمن إن لم تحدد)": "Bank staff role (optional, admins only if not set)",
+"🏦 تم إنشاء حسابك البنكي": "🏦 Your bank account has been created",
+"إنشاء حساب": "Create account",
+"تحويل أموال": "Money transfer",
+"📜 طلب قرض جديد": "📜 New Loan Request",
+"المواطن": "Citizen",
+"رقم الآيبان": "IBAN",
+"1- الاسم": "1- Name",
+"2- الوظيفة": "2- Job",
+"3- مبلغ القرض المطلوب": "3- Requested loan amount",
+"4- السبب": "4- Reason",
+"✅ تم إرسال طلب قرضك بنجاح إلى الإدارة.": "✅ Your loan request was sent to the staff successfully.",
+"قبول وصرف قرض": "Loan accepted and disbursed",
+"اختر الخدمة البنكية المطلوبة...": "Choose the banking service you need...",
+"➖ إزالة أموال": "➖ Remove Money",
+"🛑 إيقاف / تفعيل حساب": "🛑 Suspend / Activate Account",
+"رقم الآيبان (4 أرقام)": "IBAN (4 digits)",
+"تفعيل الحساب ✅": "Activate account ✅",
+"إيقاف الحساب 🛑": "Suspend account 🛑",
+"إضافة أموال": "Add money",
+"اختر رتبة الموظفين المستحقة...": "Choose the eligible employee role...",
+"راتب": "Salary",
+"صرف رواتب": "Salary payout",
+"اختر عضواً لعرض كشف حسابه...": "Choose a member to view their account statement...",
+"📄 كشف حساب البنك (إداري)": "📄 Bank Account Statement (Admin)",
+"اختر إجراء المسؤول...": "Choose the admin action...",
+"✅ تم حفظ إعدادات البنك وإرسال البانل بنجاح.": "✅ Bank settings saved and panel sent successfully.",
+"❌ لديك حساب بنكي بالفعل.": "❌ You already have a bank account.",
+"❌ حسابك غير متاح أو موقوف.": "❌ Your account is unavailable or suspended.",
+"❌ يجب أن يكون المبلغ أكبر من صفر.": "❌ The amount must be greater than zero.",
+"❌ لا يمكنك التحويل لنفسك.": "❌ You can't transfer to yourself.",
+"❌ لم يتم العثور على الحساب أو أنه موقوف.": "❌ The account was not found or is suspended.",
+"❌ رصيدك غير كافي.": "❌ Your balance is insufficient.",
+"❌ لم يتم العثور على قرض نشط بهذا الرقم يخصك.": "❌ No active loan with this number belonging to you was found.",
+"❌ رصيدك البنكي غير كافي للسداد.": "❌ Your bank balance is insufficient for the repayment.",
+"❌ حسابك موقوف أو لا يملك حساباً بنكياً.": "❌ Your account is suspended or you don't have a bank account.",
+"❌ يجب الموافقة على شرط إيقاف الحساب عند التأخير.": "❌ You must agree to the condition of account suspension upon late payment.",
+"❌ لم يتم تحديد روم استقبال القروض من قِبل الإدارة.": "❌ The staff has not set a loan requests channel.",
+"❌ روم القروض غير موجود حالياً.": "❌ The loans channel no longer exists.",
+"❌ تعذر قراءة بيانات الطلب.": "❌ Couldn't read the request data.",
+"❌ للإدارة أو مسؤولي البنك فقط.": "❌ For staff or bank admins only.",
+"الرصيد": "Balance",
+"الاستعلام عن رصيدك البنكي الحالي": "Check your current bank balance",
+"تحويل أموال لحساب آخر عبر الآيبان": "Transfer money to another account via IBAN",
+"معلومات الحساب": "Account info",
+"عرض تفاصيل حسابك البنكي والآيبان وقروضك غير المسددة": "View your bank account details, IBAN, and unpaid loans",
+"طلب قرض": "Request a loan",
+"تقديم نموذج طلب قرض جديد": "Submit a new loan request form",
+"سداد جزء أو كامل قرضك النشط برقم القرض": "Repay part or all of your active loan by loan number",
+"إعادة تشغيل القائمة": "Restart menu",
+"تحديث وإعادة تحميل القائمة": "Refresh and reload the menu",
+"🔄 تم تحديث وإعادة تحميل القائمة بنجاح.": "🔄 The menu was refreshed and reloaded successfully.",
+"❌ لا يوجد لديك حساب بنكي.": "❌ You don't have a bank account.",
+"💰 رصيدك البنكي": "💰 Your Bank Balance",
+"❌ لم يتم العثور على حساب بهذا الآيبان.": "❌ No account was found with this IBAN.",
+"تغيير حالة حساب": "Account status change",
+"إضافة رصيد": "Add balance",
+"إزالة أموال": "Remove money",
+"❌ ليس لديك صلاحية.": "❌ You don't have permission.",
+"❌ لا توجد أي حسابات بنكية مسجلة في السيرفر حالياً.": "❌ There are no bank accounts registered in the server currently.",
+"❌ لم يتم العثور على هذا الحساب.": "❌ This account was not found.",
+"كشف حساب": "Account statement",
+"عرض أسامي أصحاب الحسابات ومعلوماتها الكاملة": "View account holders' names and their full information",
+"توزيع الرواتب": "Distribute salaries",
+"صرف رواتب لرتبة معينة مع إشعار الأعضاء": "Pay salaries to a specific role and notify the members",
+"عرض القروض": "View loans",
+"استعراض كافة القروض النشطة وأرقامها": "Browse all active loans and their numbers",
+"إضافة رصيد لحساب مواطن عبر الآيبان": "Add balance to a citizen's account via IBAN",
+"سحب رصيد من حساب مواطن عبر الآيبان": "Withdraw balance from a citizen's account via IBAN",
+"إيقاف / تفعيل حساب": "Suspend / Activate account",
+"تجميد أو تفعيل حساب بنكي عبر الآيبان": "Freeze or activate a bank account via IBAN",
+"🔄 تم تحديث وإعادة تحميل لوحة التحكم بنجاح.": "🔄 The control panel was refreshed and reloaded successfully.",
+"❌ هذا الأمر للأعضاء الإداريين فقط.": "❌ This command is for admin members only.",
+"❌ مبلغ غير صحيح.": "❌ Invalid amount.",
+"💸 استلام حوالة مالية": "💸 Money Transfer Received",
+"❌ قيم غير صحيحة.": "❌ Invalid values.",
+"❌ مبلغ القرض غير صحيح (يجب أن يكون رقماً).": "❌ Invalid loan amount (it must be a number).",
+"✅ تم قبول طلب القرض وصرفه": "✅ Loan request accepted and disbursed",
+"❌ تم رفض طلب القرض": "❌ Loan request rejected",
+"لا توجد قروض غير مسددة ✅": "No unpaid loans ✅",
+"❌ المبلغ غير صحيح.": "❌ The amount is invalid.",
+"سحب رصيد": "Balance withdrawal",
+"💵 تم استلام راتبك": "💵 Your salary has been received",
+"لا توجد حسابات مسجلة": "No registered accounts",
+"📄 الرجاء اختيار العضو المطلوب لعرض كشف حسابه:": "📄 Please choose the member whose account statement you want to view:",
+"بانل إنشاء الحساب": "Account creation panel",
+"بانل خدمات المواطنين": "Citizen services panel",
+"بانل مسؤولي البنك": "Bank staff panel",
+"إرسال جميع البانلات": "Send all panels",
+"❌ حسابك موقوف، لا يمكنك التحويل.": "❌ Your account is suspended, you can't transfer.",
+"🏦 معلومات الحساب والقروض": "🏦 Account and Loan Information",
+"❌ رصيد صاحب الحساب غير كافي لإتمام الإزالة.": "❌ The account holder's balance is insufficient to complete the removal.",
+"موقوف": "Suspended",
+"نشط": "Active",
+"📜 قائمة القروض النشطة": "📜 Active Loans List",
+"❌ لا توجد أي قروض نشطة حالياً.": "❌ There are no active loans currently.",
+"موقوف 🛑": "Suspended 🛑",
+"نشط ✅": "Active ✅",
+"❌ ليس لديك أي قروض نشطة للسداد.": "❌ You don't have any active loans to repay.",
+"أزرق": "Blue",
+"أخضر": "Green",
+"أحمر": "Red",
+"أصفر": "Yellow",
+"بنفسجي": "Purple",
+"برتقالي": "Orange",
+"أبيض": "White",
+"أسود": "Black",
+"إرسال ايمبد نصي مخصص لأي روم تحدده": "Send a custom text embed to any channel you choose",
+"روم إرسال الإيمبد": "Channel to send the embed to",
+"اختر لون الايمبد": "Choose the embed color",
+"إنشاء وإرسال ايمبد مخصص": "Create and send a custom embed",
+"عنوان الايمبد": "Embed title",
+"اكتب عنوان الإيمبد هنا...": "Write the embed title here...",
+"وصف الايمبد": "Embed description",
+"اكتب تفاصيل ووصف الإيمبد هنا...": "Write the embed details and description here...",
+"رابط صورة الايمبد (اختياري)": "Embed image URL (optional)",
+"النص الخارجي خارج الايمبد (اختياري)": "Text outside the embed (optional)",
+"رسالة تظهر فوق الإيمبد...": "Message shown above the embed...",
+"سبب الرفض": "Rejection reason",
+"أتعهد وأوافق": "I pledge and agree",
+"اكتب سبب رفض الهوية هنا:": "Write the ID rejection reason here:",
+"اعادة التشغيل": "Reset",
+"إرسال لوحة الهوية الوطنية وتحديد الإعدادات": "Send the national ID panel and configure settings",
+"روم الإدارة لاستقبال التقديمات": "Staff channel to receive applications",
+"هل يتم تغيير اسم العضو بعد القبول تلقائياً؟": "Automatically change the member's nickname after acceptance?",
+"رتبة يتم إعطاؤها عند القبول (اختياري)": "Role given on acceptance (optional)",
+"رتبة يتم إزالتها عند القبول مثل رتبة مواطن جديد (اختياري)": "Role removed on acceptance, e.g. new citizen role (optional)",
+"📋 طلب هوية وطنية جديد": "📋 New National ID Request",
+"١- الاسم بالرول": "1- Roleplay name",
+"٣- الدولة": "3- Country",
+"٥- يوزر روبلوكس": "5- Roblox username",
+"٦- رقم الهوية": "6- ID number",
+"٧- التعهد": "7- Pledge",
+"✅ تم إرسال تقديمك بنجاح إلى الإدارة، انتظر رد الإدارة بالخاص!": "✅ Your application was sent to the staff successfully, wait for their reply in DMs!",
+"📋 طلب هوية وطنية (تم القبول ✅)": "📋 National ID Request (Accepted ✅)",
+"✅ تم قبول العضو بنجاح.": "✅ Member accepted successfully.",
+"📋 طلب هوية وطنية (تم الرفض ❌)": "📋 National ID Request (Rejected ❌)",
+"❌ تم رفض الطلب وإرسال السبب للعضو.": "❌ The request was rejected and the reason was sent to the member.",
+"اضغط هنا لاختيار الخدمة...": "Click here to choose a service...",
+"📬 تم إرسال الأسئلة لك في **الخاص (DM)**، يرجى التوجه هناك لإكمال التقديم!": "📬 The questions were sent to you in **DMs**, please go there to complete your application!",
+"الـهـويـة الـوطـنـيـة 🪪": "National ID 🪪",
+"أهلاً بك في نظام استخراج الهويات الوطنية الرسمية للسيرفر.\nمن هنا يمكنك توثيق حسابك للحصول على كامل الصلاحيات والمزايا الخاصة بالمجتمع.\nنحرص دائماً على تنظيم الرول بلاي وتقديم أفضل تجربة ترفيهية تناسب الجميع.\nيرجى التأكد من إدخال معلوماتك بدقة واجتياز المتطلبات المطلوبة لتجنب رفض الطلب.\nنسعد بانضمامك الدائم وتواجدك المميز معنا في أوقاتك الممتعة.\nاختر من القائمة أدناه للبدء في عملية التقديم بكل سهولة ويسر.": "Welcome to the server's official national ID issuance system.\nHere you can verify your account to get full permissions and community perks.\nWe always strive to keep the roleplay organized and offer the best entertaining experience for everyone.\nPlease make sure to enter your information accurately and meet the requirements to avoid having your request rejected.\nWe are happy to have you with us and enjoy your time here.\nChoose from the menu below to start the application easily.",
+"❌ لم يتم تحديد روم الإدارة بعد!": "❌ The staff channel has not been set yet!",
+"❌ روم الإدارة غير موجود!": "❌ The staff channel does not exist!",
+"تـقـديـم الـهـويـة الـوطـنـيـة 🪪": "National ID Application 🪪",
+"اضغط هنا لبدء تقديم طلب الهوية بالخاص": "Click here to start your ID application in DMs",
+"إعادة تعيين خيارات القائمة": "Reset menu options",
+"🔄 تم إعادة تشغيل القائمة بنجاح.": "🔄 Menu reset successfully.",
+"⚠️ لقد قمت بتقديم الهوية وتم قبولك مسبقاً، لا يمكنك التقديم مرة أخرى!": "⚠️ You have already applied for an ID and were accepted, you cannot apply again!",
+"📌 **السؤال (1/6):** ما هو اسمك بالرول؟": "📌 **Question (1/6):** What is your roleplay name?",
+"📌 **السؤال (2/6):** كم عمرك بالرول؟": "📌 **Question (2/6):** How old is your roleplay character?",
+"📌 **السؤال (3/6):** من أي دولة أنت؟": "📌 **Question (3/6):** Which country are you from?",
+"📌 **السؤال (4/6):** أرسل **صورة** لحسابك في روبلوكس (في حال أرسلت شيئاً غير الصورة سيتم الرفض فوراً):": "📌 **Question (4/6):** Send a **picture** of your Roblox account (sending anything other than an image will result in immediate rejection):",
+"📌 **السؤال (5/6):** ما هو يوزرك في روبلوكس؟": "📌 **Question (5/6):** What is your Roblox username?",
+"📌 **السؤال (7/7):** هل تتعهد بقوانين الرول بلاي وعدم التخريب؟\nاضغط على الزر أدناه لإرسال طلبك نهائياً للإدارة:": "📌 **Question (7/7):** Do you pledge to follow the roleplay rules and not cause disruption?\nClick the button below to submit your application to the staff for good:",
+"مفعل": "Enabled",
+"معطل": "Disabled",
+"❌ لم تقم بإرسال صورة، تم إلغاء تقديمك.": "❌ You did not send an image, your application was cancelled.",
+"📌 **السؤال (6/6):** اختر رقم هوية مكوناً من **4 أرقام إنجليزية** فقط (مثال: 0506):": "📌 **Question (6/6):** Choose an ID number made of exactly **4 English digits** (example: 0506):",
+"❌ خطأ! يرجى إرسال **أرقام إنجليزية** فقط وبطول 4 أرقام تماماً. حاول مرة أخرى:": "❌ Error! Please send **English digits** only, exactly 4 digits long. Try again:",
+"❌ انتهى الوقت المخصص للإجابة أو حدث خطأ، يرجى إعادة محاولة التقديم من السيرفر.": "❌ The time to answer ran out or an error occurred, please try applying again from the server.",
+"تحديد روم إرسال إشعارات صعود المستويات": "Set the channel for level-up notifications",
+"روم المستويات": "Levels channel",
+"عرض مستواك الحالي وعدد نقاط الخبرة (XP)": "View your current level and XP points",
+"العضو المراد عرض مستواه (اختياري)": "Member to view the level of (optional)",
+"✨ إعدادات نظام المستويات": "✨ Level System Settings",
+"افتراضية": "Default",
+"إرسال لوحة تحكم النقاط العسكرية": "Send the military points control panel",
+"رتبة مسؤول النقاط (التي تملك صلاحية التحكم)": "Points manager role (has control permission)",
+"رتبة وزارة الداخلية (العسكرية)": "Ministry of Interior (military) role",
+"الوصف الخاص بلوحة التحكم العسكرية": "Description for the military control panel",
+"إرسال لوحة خدمات النقاط العامة": "Send the public points services panel",
+"الوصف الخاص باللوحة العامة": "Description for the public panel",
+"❌ هذا الأمر للمشرفين (Administrator) فقط.": "❌ This command is for administrators (Administrator) only.",
+"❌ حدث خطأ غير متوقع أثناء تنفيذ الأمر.": "❌ An unexpected error occurred while running the command.",
+"آيدي العضو (User ID)": "Member ID (User ID)",
+"مثال: 123456789012345678": "Example: 123456789012345678",
+"عدد النقاط": "Number of points",
+"اكتب الرقم هنا...": "Enter the number here...",
+"السبب": "Reason",
+"اكتب سبب الإضافة أو الخصم...": "Enter the reason for adding or deducting...",
+"إضافة نقاط إليه": "Add points to them",
+"خصم نقاط منه": "Deduct points from them",
+"🔍 اختر العسكري المطلوب لعرض نقاطه...": "🔍 Select the soldier to view their points...",
+"🎖️ سجل نقاط العسكري": "🎖️ Soldier Points Record",
+"⚙️ اختر عملية التحكم الإداري من هنا...": "⚙️ Choose the admin control action here...",
+"📂 اختر الخدمة المطلوبة من هنا...": "📂 Choose the service you need here...",
+"السيرفر غير موجود": "Server not found",
+"رتبة المسؤول غير موجودة": "Manager role not found",
+"رتبة وزارة الداخلية غير موجودة": "Ministry of Interior role not found",
+"روم إرسال البانل غير صالح": "Invalid panel channel",
+"حدد رتبة المسؤول ورتبة وزارة الداخلية أولاً": "Set the manager role and the Ministry of Interior role first",
+"إحدى الرتب المحددة غير موجودة": "One of the selected roles does not exist",
+"🛡️ لوحة تحكم النقاط العسكرية": "🛡️ Military Points Control Panel",
+"✅ تم إرسال لوحة التحكم العسكرية بنجاح وتعيين الرتب!": "✅ Military control panel sent and roles set successfully!",
+"🎖️ لوحة خدمات النقاط العسكرية": "🎖️ Military Points Services Panel",
+"✅ تم إرسال اللوحة العامة بنجاح!": "✅ Public panel sent successfully!",
+"➕ إضافة نقاط": "➕ Add points",
+"➖ إزالة نقاط": "➖ Remove points",
+"❌ عدد النقاط يجب أن يكون رقماً أكبر من صفر!": "❌ The number of points must be a number greater than zero!",
+"❌ لم يتم العثور على العضو في هذا السيرفر!": "❌ The member was not found in this server!",
+"🔔 تنبيه - نظام النقاط العسكرية": "🔔 Alert - Military Points System",
+"النقاط المُعاملة": "Points processed",
+"الرصيد الجديد": "New balance",
+"❌ لا توجد رتبة عسكرية محددة أو لا يوجد أعضاء.": "❌ No military role is set or there are no members.",
+"إضافة نقاط": "Add points",
+"إضافة نقاط لعسكري عبر الآيدي والسبب": "Add points to a soldier by ID and reason",
+"إزالة نقاط": "Remove points",
+"خصم نقاط من عسكري عبر الآيدي والسبب": "Deduct points from a soldier by ID and reason",
+"تصفير النقاط": "Reset points",
+"تصفير جميع نقاط السيرفر بالكامل": "Reset all server points completely",
+"❌ ليس لديك صلاحية مسؤول النقاط للتحكم!": "❌ You don't have points manager permission to control this!",
+"كشف نقاطي": "My points",
+"استعلم عن رصيدك الحالي من النقاط": "Check your current points balance",
+"كشف نقاط عسكري": "Soldier points",
+"اختر عسكرياً من القائمة للاستعلام عن نقاطه": "Pick a soldier from the list to check their points",
+"توب 10 نقاط": "Top 10 points",
+"عرض قائمة أكثر 10 عساكر حصولاً على النقاط": "Show the top 10 soldiers with the most points",
+"حدد رتبة المسؤول ورتبة وزارة الداخلية وروم إرسال البانل": "Set the manager role, the Ministry of Interior role, and the panel channel",
+"❌ الآيدي أو عدد النقاط يجب أن يكون أرقاماً صحيحة!": "❌ The ID or number of points must be valid whole numbers!",
+"لا يوجد أعضاء بهذه الرتبة حالياً": "There are currently no members with this role",
+"🔽 اختر العسكري من القائمة أدناه لعرض نقاطه:": "🔽 Pick the soldier from the list below to view their points:",
+"لا توجد أي نقاط مسجلة حتى الآن.": "No points have been recorded yet.",
+"قيمة إعدادات النقاط العسكرية غير صالحة": "Invalid military points settings value",
+"إضافة": "Added",
+"خصم": "Deducted",
+"غير معروف": "Unknown",
+"🔄 تم تصفير جميع نقاط السيرفر بنجاح!": "🔄 All server points were reset successfully!",
+"🏆 قائمة أفضل 10 عساكر": "🏆 Top 10 Soldiers List",
+"❌ تصفير النقاط مخصص للمشرفين العامين فقط.": "❌ Resetting points is for general admins only.",
+"إضافة عقار أو محل جديد": "Add a new property or shop",
+"تسطيب النظام وتحديد رومات المواطنين، الإدارة، الطلبات، سوق البيع، والسجلات": "Set up the system and set the citizens, admin, requests, sales market, and logs channels",
+"روم عرض العقارات للمواطنين": "Channel to display properties to citizens",
+"روم لوحة تحكم المسؤولين": "Admin control panel channel",
+"روم استقبال طلبات شراء العقارات من النظام": "Channel to receive system property purchase requests",
+"روم سوق عقارات المواطنين (لبيع العقارات)": "Citizens' property market channel (for selling properties)",
+"روم سجلات العمليات (Logs)": "Operation logs channel (Logs)",
+"معرف العقار/المحل (مثال: shop_01)": "Property/shop ID (example: shop_01)",
+"القسم (فلل، شقق، محلات، مكاتب، استراحات)": "Category (فلل, شقق, محلات, مكاتب, استراحات)",
+"الموقع / المنطقة": "Location / area",
+"حي النخيل": "Al-Nakheel District",
+"سعر الشراء (أرقام فقط)": "Purchase price (numbers only)",
+"الأرباح الدورية (كل 48 ساعة للمحلات)": "Periodic profits (every 48 hours for shops)",
+"اكتب 0 إذا لم يكن محلاً": "Enter 0 if it is not a shop",
+"الاسم الجديد": "New name",
+"اكتب الاسم الجديد...": "Enter the new name...",
+"القسم الجديد (فلل، شقق، مكاتب، استراحات، محلات)": "New category (فلل, شقق, مكاتب, استراحات, محلات)",
+"الموقع الجديد": "New location",
+"اكتب الموقع الجديد...": "Enter the new location...",
+"السعر الجديد والأرباح (السعر,الأرباح)": "New price and profits (price,profits)",
+"الحالة والوصف (متاح/مباع - الوصف)": "Status and description (متاح/مباع - description)",
+"متاح - تفاصيل جديدة...": "متاح - new details...",
+"سبب الشراء / ملاحظاتك": "Purchase reason / your notes",
+"أكتب سبب رغبتك في الشراء...": "Write why you want to buy...",
+"قبول الطلب": "Accept request",
+"رفض الطلب": "Reject request",
+"سعر البيع المطلوب (أرقام فقط)": "Requested sale price (numbers only)",
+"مثال: 300000": "Example: 300000",
+"شراء العقار": "Buy property",
+"🏢 إدارة العقارات والمحلات": "🏢 Property and Shop Management",
+"لوحة تحكم المسؤولين\n\nمن هنا تقدر تدير جميع العقارات والمحلات وأرباحها والطلبات.": "Admin control panel\n\nFrom here you can manage all properties, shops, their profits, and requests.",
+"🏡 سوق العقارات والمحلات والممتلكات": "🏡 Properties, Shops and Assets Market",
+"اختر القسم المطلوب للاستعراض أو الشراء، أو استعرض ممتلكاتك، أو استلم أرباح محلاتك من القائمة أدناه:": "Choose the category to browse or buy, view your assets, or claim your shop profits from the menu below:",
+"📋 اختر إجراءً من القائمة...": "📋 Choose an action from the menu...",
+"إضافة عقار / محل": "Add property / shop",
+"🏡 اختر القسم أو الخدمة المطلوبة...": "🏡 Choose the category or service you need...",
+"🛒 اختر العقار لتقديم طلب شرائه...": "🛒 Choose the property to submit a purchase request...",
+"🏷️ اختر العقار لبيعه...": "🏷️ Choose the property to sell...",
+"تعديل بيانات العقار أو المحل": "Edit property or shop data",
+"اختر العقار أو المحل لتعديله...": "Choose the property or shop to edit...",
+"اختر العقار أو المحل لحذفه...": "Choose the property or shop to delete...",
+"اختر العقار لنقل ملكيته...": "Choose the property to transfer ownership...",
+"👤 اختر المواطن الجديد لنقل الملكية...": "👤 Choose the new citizen to transfer ownership to...",
+"طلب شراء عقار أو محل من النظام": "Request to buy a property or shop from the system",
+"📥 طلب شراء جديد من النظام": "📥 New purchase request from the system",
+"🏠 العقار/المحل": "🏠 Property/Shop",
+"💰 السعر": "💰 Price",
+"📍 الموقع": "📍 Location",
+"👤 المشتري": "👤 Buyer",
+"📝 ملاحظات المشتري": "📝 Buyer's notes",
+"✅ تم إرسال طلب الشراء بنجاح إلى الإدارة، سيتم مراجعته والرد عليك قريباً!": "✅ Your purchase request was sent to the staff successfully, it will be reviewed and you will get a reply soon!",
+"عرض عقارك/محلك للبيع": "List your property/shop for sale",
+"🛒 عقار / محل معروض للبيع من مواطن": "🛒 Property / shop listed for sale by a citizen",
+"تم عرض هذا العقار للبيع بواسطة المالك الحالي.": "This property was listed for sale by the current owner.",
+"🏠 الاسم": "🏠 Name",
+"📂 القسم": "📂 Category",
+"💵 سعر البيع": "💵 Sale price",
+"👤 البائع": "👤 Seller",
+"لا يوجد وصف": "No description",
+"جميع العقارات والمحلات": "All properties and shops",
+"عرض قائمة بكل العقارات والمحلات المسجلة": "Show a list of all registered properties and shops",
+"الإحصائيات": "Statistics",
+"عرض إحصائيات العقارات": "Show property statistics",
+"نقل الملكية": "Transfer ownership",
+"نقل ملكية عقار لمواطن آخر": "Transfer a property's ownership to another citizen",
+"تعديل عقار/محل": "Edit property/shop",
+"تعديل كافة بيانات العقار": "Edit all property data",
+"إزالة عقار/محل": "Remove property/shop",
+"حذف عقار من النظام": "Delete a property from the system",
+"🏠 جميع العقارات والمحلات المسجلة": "🏠 All registered properties and shops",
+"استعراض الفلل المتاحة للشراء": "Browse villas available for purchase",
+"استعراض الشقق المتاحة للشراء": "Browse apartments available for purchase",
+"استعراض المكاتب المتاحة للشراء": "Browse offices available for purchase",
+"استعراض الاستراحات المتاحة للشراء": "Browse lodges available for purchase",
+"استعراض المحلات المتاحة للشراء": "Browse shops available for purchase",
+"ممتلكاتي": "My assets",
+"استعراض العقارات والمحلات التي تملكها": "Browse the properties and shops you own",
+"استلام الأرباح": "Claim profits",
+"استلام الأرباح الدورية لمحلاتك (كل 48 ساعة)": "Claim the periodic profits of your shops (every 48 hours)",
+"عرض عقار للبيع": "List a property for sale",
+"عرض عقارك الخاص للبيع في سوق المواطنين": "List your own property for sale in the citizens' market",
+"✏️ تعديل بيانات عقار/محل": "✏️ Edit property/shop data",
+"❌ لم يتم العثور على بيانات هذا العقار.": "❌ Could not find this property's data.",
+"🗑️ حذف عقار/محل": "🗑️ Delete property/shop",
+"🔄 نقل ملكية (إداري)": "🔄 Ownership transfer (admin)",
+"❌ هذا العقار لم يعد موجوداً في النظام!": "❌ This property no longer exists in the system!",
+"❌ لم يتم تحديد روم الطلبات من قبل الإدارة عبر أمر التسطيب!": "❌ The requests channel has not been set by the staff via the setup command!",
+"❌ روم الطلبات غير موجود أو تم حذفه!": "❌ The requests channel does not exist or was deleted!",
+"💵 الأرباح الدورية (كل 48 ساعة)": "💵 Periodic profits (every 48 hours)",
+"📥 طلب شراء من النظام": "📥 Purchase request from the system",
+"❌ هذا العقار غير موجود في النظام!": "❌ This property does not exist in the system!",
+"✅ قبول طلب شراء النظام": "✅ System purchase request accepted",
+"❌ رفض طلب شراء": "❌ Purchase request rejected",
+"❌ نأسف لك، تم رفض طلب الشراء الخاص بك من قبل الإدارة.": "❌ Sorry, your purchase request was rejected by the staff.",
+"❌ هذا العقار غير موجود!": "❌ This property does not exist!",
+"❌ لم يتم تحديد روم سوق المواطنين من قبل الإدارة عبر أمر التسطيب!": "❌ The citizens' market channel has not been set by the staff via the setup command!",
+"❌ روم سوق المواطنين غير موجود أو تم حذفه!": "❌ The citizens' market channel does not exist or was deleted!",
+"📈 الأرباح الدورية": "📈 Periodic profits",
+"🏷️ عرض عقار للبيع بسوق المواطنين": "🏷️ List a property for sale in the citizens' market",
+"❌ لا يمكنك شراء عقارك الخاص!": "❌ You can't buy your own property!",
+"❌ عذراً، هذا العقار لم يعد ملكاً للبائع أو تم بيعه مسبقاً!": "❌ Sorry, this property is no longer owned by the seller or was already sold!",
+"🤝 إتمام بيع عقار بين المواطنين": "🤝 Property sale between citizens completed",
+"❌ السعر والأرباح يجب أن تكون أرقاماً صحيحة!": "❌ The price and profits must be valid whole numbers!",
+"➕ إضافة عقار/محل جديد": "➕ Add new property/shop",
+"❌ معرف العقار (ID) مستخدم مسبقاً.": "❌ The property ID is already in use.",
+"❌ لا توجد أي عقارات أو محلات مسجلة بالنظام حالياً.": "❌ There are currently no properties or shops registered in the system.",
+"📊 إحصائيات العقارات والمحلات": "📊 Property and Shop Statistics",
+"📦 إجمالي العقارات/المحلات": "📦 Total properties/shops",
+"🟢 المتاحة": "🟢 Available",
+"🔴 المباعة": "🔴 Sold",
+"🏡 ممتلكاتك الخاصة": "🏡 Your assets",
+"❌ صيغة السعر والأرباح خاطئة! تأكد من كتابتها هكذا: `250000, 10000`": "❌ Invalid price and profits format! Make sure to write it like this: `250000, 10000`",
+"❌ فشلت عملية القبول: رصيد المشتري في البنك لا يكفي أو حسابه غير مسجل!": "❌ Acceptance failed: the buyer's bank balance is insufficient or their account is not registered!",
+"بيع عقار نظامي": "Sell a system property",
+"❌ يرجى إدخال أرقام صحيحة لسعر البيع!": "❌ Please enter valid numbers for the sale price!",
+"❌ رصيدك في البنك لا يكفي لإتمام عملية الشراء!": "❌ Your bank balance is not enough to complete the purchase!",
+"بيع عقار في السوق": "Sell a property on the market",
+"نظام العقارات والمحلات - السجلات": "Properties & Shops System - Records",
+"🔄 اختر العقار/المحل الذي تريد نقل ملكيته:": "🔄 Select the property/shop whose ownership you want to transfer:",
+"❌ أنت لا تملك أي عقارات أو محلات مسجلة باسمك حالياً.": "❌ You currently don't own any properties or shops registered under your name.",
+"\n\n⏳ **ملاحظة:** بعض محلاتك لم يحين وقت سحب أرباحها:\n": "\n\n⏳ **Note:** Some of your shops are not yet ready for profit collection:\n",
+"❌ لا توجد عقارات لنقل ملكيتها.": "❌ There are no properties to transfer ownership of.",
+"✏️ اختر العقار أو المحل الذي تريد تعديل بياناته:": "✏️ Select the property or shop whose details you want to edit:",
+"❌ لا تملك أي محلات تحقق أرباحاً دورية حالياً.": "❌ You don't currently own any shops that generate periodic profits.",
+"💰 استلام أرباح محل": "💰 Collect Shop Profits",
+"🏷️ اختر العقار أو المحل الذي تريد عرضه للبيع في السوق:": "🏷️ Select the property or shop you want to list for sale on the market:",
+"❌ لا توجد عقارات لتعديلها.": "❌ There are no properties to edit.",
+"🗑️ اختر العقار أو المحل الذي تريد إزالته من النظام:": "🗑️ Select the property or shop you want to remove from the system:",
+"⏳ لم يحين موعد استلام أرباح محلاتك بعد:\n": "⏳ It's not yet time to collect your shops' profits:\n",
+"❌ لا تملك أي عقارات أو محلات لعرضها للبيع.": "❌ You don't own any properties or shops to list for sale.",
+"❌ لا توجد عقارات لحذفها.": "❌ There are no properties to delete.",
+"استلام أرباح المحلات": "Collect Shop Profits",
+"إضافة رد تلقائي جديد": "Add a new auto reply",
+"الكلمة المفتاحية": "Keyword",
+"الرد": "Reply",
+"نوع المطابقة": "Match type",
+"منشن العضو": "Mention member",
+"تعديل رد تلقائي موجود": "Edit an existing auto reply",
+"الكلمة المفتاحية الموجودة": "Existing keyword",
+"الرد الجديد": "New reply",
+"حذف رد تلقائي": "Delete an auto reply",
+"الكلمة المراد حذفها": "Keyword to delete",
+"تتضمن (Contains)": "Contains",
+"مطابقة تماماً (Exact)": "Exact match",
+"نعم (True)": "Yes (True)",
+"لا (False)": "No (False)",
+"بدء الرول": "Start Roleplay",
+"إعداد نظام الرول بلاي والرسائل الخاصة به": "Set up the roleplay system and its messages",
+"روم بدء الرول (اختر القناة أو اكتب منشن لها)": "Roleplay start channel (pick a channel or mention it)",
+"رسالة بدء الرول (اختياري)": "Roleplay start message (optional)",
+"رسالة انتهاء الرول (اختياري)": "Roleplay end message (optional)",
+"رسالة تصويت الرول (اختياري)": "Roleplay vote message (optional)",
+"رتبة المنشن عند تحديث الحالة (اختياري)": "Role to mention on status update (optional)",
+"رتبة مسؤول الرولات للتحكم بالقائمة (اختياري)": "Roleplay manager role that can control the menu (optional)",
+"إرسال لوحة التحكم (البانل) الخاصة بالرول بلاي مع القائمة المنسدلة": "Send the roleplay control panel with the dropdown menu",
+"اختر حالة الرول...": "Select roleplay status...",
+"🟢 **تم افتتاح الرول الآن، تفضلوا بالدخول!**": "🟢 **The roleplay is now open, come on in!**",
+"انتهاء الرول": "End Roleplay",
+"🎮 لوحة تحكم إدارة الرول بلاي": "🎮 Roleplay Management Control Panel",
+"اختر الحالة المناسبة من القائمة المنسدلة بالأسفل لتحديث حالة الرول مباشرة في الروم المخصص.": "Choose the appropriate status from the dropdown menu below to update the roleplay status directly in the designated channel.",
+"✅ تم إرسال بانل الرول بنجاح.": "✅ The roleplay panel was sent successfully.",
+"تغيير حالة الرول إلى (بدء)": "Change roleplay status to (Start)",
+"تغيير حالة الرول إلى (انتهاء)": "Change roleplay status to (End)",
+"تصويت الرول": "Roleplay Vote",
+"تغيير حالة الرول إلى (تصويت)": "Change roleplay status to (Vote)",
+"❌ لم يتم إعداد نظام الرول في هذا السيرفر بعد عبر `/setup-role-play`!": "❌ The roleplay system has not been set up in this server yet via `/setup-role-play`!",
+"❌ لم يتم تحديد روم بدء الرول في الإعدادات!": "❌ The roleplay start channel has not been set in the settings!",
+"❌ روم بدء الرول المحدد غير موجود!": "❌ The configured roleplay start channel does not exist!",
+"🟢 حالة الرول: بدأ": "🟢 Roleplay status: Started",
+"🔴 **انتهى الرول لهذا اليوم، شكراً لحسن تواجدكم.**": "🔴 **The roleplay has ended for today, thank you for being here.**",
+"❌ يرجى استخدام أمر التسطيب `/setup-role-play` أولاً!": "❌ Please use the setup command `/setup-role-play` first!",
+"❌ البوت لا يمتلك صلاحية قراءة أو إرسال الرسائل في هذه الروم!": "❌ The bot doesn't have permission to read or send messages in this channel!",
+"❌ ليس لديك الصلاحية أو رتبة مسؤول الرولات لاستخدام هذه القائمة!": "❌ You don't have permission or the roleplay manager role to use this menu!",
+"🔴 حالة الرول: انتهى": "🔴 Roleplay status: Ended",
+"🗳️ **هناك تصويت جارٍ الآن، يرجى المشاركة.**": "🗳️ **A vote is in progress right now, please participate.**",
+"🗳️ حالة الرول: تصويت": "🗳️ Roleplay status: Voting",
+"❌ البوت لا يمتلك صلاحية الكتابة أو إرسال الرسائل في روم الرول المختار!": "❌ The bot doesn't have permission to write or send messages in the selected roleplay channel!",
+"🟢 مفعل (TRUE)": "🟢 Enabled (TRUE)",
+"🔴 معطل (FALSE)": "🔴 Disabled (FALSE)",
+"لوحة تحكم إعدادات الحماية في السيرفر": "Server protection settings control panel",
+"تحديد العقوبة لأي نظام حماية": "Set the punishment for any protection system",
+"اختر نظام الحماية": "Select protection system",
+"اختر العقوبة": "Select punishment",
+"اختر نظام الحماية لتغيير حالته (تفعيل / تعطيل)...": "Select a protection system to change its status (enable / disable)...",
+"⚙️ تحديد العقوبات": "⚙️ Set Punishments",
+"اختر النظام لتحديد عقوبته عبر الأمر: `/set-punishment`": "Select the system to set its punishment via the command: `/set-punishment`",
+"🛡 لوحة إعدادات ونظام الحماية": "🛡 Protection Settings & System Panel",
+"من خلال القائمة أدناه يمكنك تفعيل أو تعطيل أنظمة الحماية وتحديد العقوبات.": "Using the menu below you can enable or disable protection systems and set punishments.",
+"🤖 حماية دخول البوتات": "🤖 Bot Join Protection",
+"يطرد أي بوت يضاف ويعاقب اللي أضافه": "Kicks any added bot and punishes whoever added it",
+"👑 حماية إعطاء رتبة أدمـن": "👑 Admin Role Grant Protection",
+"منع إعطاء رتب خطيرة/أدمن": "Prevents granting dangerous/admin roles",
+"🔨 حماية التبنيد السريع": "🔨 Rapid Ban Protection",
+"منع التخريب بالباند المتسارع": "Prevents sabotage through rapid mass banning",
+"👢 حماية الطرد السريع": "👢 Rapid Kick Protection",
+"منع الطرد العشوائي السريع": "Prevents rapid random kicking",
+"📁 حماية حذف الرومات": "📁 Channel Deletion Protection",
+"يعاقب من يحذف روم": "Punishes anyone who deletes a channel",
+"🗑️ حماية حذف الرتب": "🗑️ Role Deletion Protection",
+"يعاقب من يحذف رتبة": "Punishes anyone who deletes a role",
+"🆕 حماية إنشاء الرتب": "🆕 Role Creation Protection",
+"منع سبام إنشاء الرتب": "Prevents role creation spam",
+"📂 حماية إنشاء الرومات": "📂 Channel Creation Protection",
+"منع سبام إنشاء الرومات": "Prevents channel creation spam",
+"🔗 حماية الروابط": "🔗 Link Protection",
+"يحذف أي رسالة فيها رابط أو دعوة ويقمع صاحبها": "Deletes any message containing a link or invite and punishes its author",
+"قام بتبنيد أعضاء": "Banned members",
+"🤖 دخول البوتات": "🤖 Bot Joins",
+"👑 إعطاء رتبة أدمـن": "👑 Admin Role Grant",
+"🔨 التبنيد السريع": "🔨 Rapid Banning",
+"👢 الطرد السريع": "👢 Rapid Kicking",
+"📁 حذف الرومات": "📁 Channel Deletion",
+"🗑️ حذف الرتب": "🗑️ Role Deletion",
+"🆕 إنشاء الرتب": "🆕 Role Creation",
+"📂 إنشاء الرومات": "📂 Channel Creation",
+"🔗 الروابط": "🔗 Links",
+"قام بطرد أعضاء": "Kicked members",
+"قام بإنشاء روم": "Created a channel",
+"نشر روابط أو دعوات": "Posted links or invites",
+"قام بإنشاء رتبة": "Created a role",
+"أضاف بوت غير مصرح به": "Added an unauthorized bot",
+"حذف روم": "Deleted a channel",
+"حذف رتبة": "Deleted a role",
+"أعطى صلاحيات أدمن لشخص آخر": "Gave admin permissions to someone else",
+"تحديد الـ 5 أسئلة الإجبارية للتقديم": "Set the 5 mandatory application questions",
+"إعداد إيمبد بانل التقديم": "Set up the application panel embed",
+"❌ حدث خطأ غير متوقع، حاول مرة أخرى.": "❌ An unexpected error occurred, please try again.",
+"🎉 نتيجة التقديم: مقبول": "🎉 Application Result: Accepted",
+"❌ نتيجة التقديم: مرفوض": "❌ Application Result: Rejected",
+"❌ تم رفض التقديم.": "❌ The application has been rejected.",
+"السؤال الأول": "First question",
+"مثال: كم عمرك؟": "Example: How old are you?",
+"السؤال الثاني": "Second question",
+"مثال: لماذا تريد الانضمام؟": "Example: Why do you want to join?",
+"السؤال الثالث": "Third question",
+"مثال: هل لديك خبرة سابقة؟": "Example: Do you have previous experience?",
+"السؤال الرابع": "Fourth question",
+"مثال: كم تفعل من ساعات تفاعل؟": "Example: How many hours of activity do you put in?",
+"السؤال الخامس": "Fifth question",
+"مثال: لماذا نختارك أنت بالذات؟": "Example: Why should we choose you in particular?",
+"عنوان الإيمبد": "Embed title",
+"اكتب عنوان البانل هنا...": "Write the panel title here...",
+"وصف الإيمبد": "Embed description",
+"اكتب وصف الإيمبد هنا...": "Write the embed description here...",
+"رابط صورة الإيمبد (اختياري)": "Embed image URL (optional)",
+"أزرار (Buttons)": "Buttons",
+"قائمة منسدلة (Dropdown)": "Dropdown menu",
+"إعداد تقديم جديد وتحديد الخيارات والأسئلة": "Set up a new application and define its options and questions",
+"رقم التقديم (من 1 إلى 10)": "Application number (1 to 10)",
+"اسم التقديم": "Application name",
+"رتبة المسؤول عن القبول أو الإدارة": "Role responsible for acceptance or management",
+"روم القبول والرفض ومراجعة التقديمات": "Channel for acceptance, rejection, and application review",
+"رسالة القبول في الخاص": "Acceptance DM message",
+"رسالة الرفض في الخاص": "Rejection DM message",
+"رتبة معطاة أولى (اختياري)": "First role to give (optional)",
+"رتبة معطاة ثانية (اختياري)": "Second role to give (optional)",
+"رتبة تزال عند القبول (اختياري)": "Role to remove upon acceptance (optional)",
+"إرسال بانل التقديمات الرئيسي للسيرفر": "Send the main applications panel to the server",
+"❌ هذا الأمر للمسؤولين فقط!": "❌ This command is for admins only!",
+"تم قبول تقديمك بنجاح!": "Your application has been accepted successfully!",
+"نعتذر منك، تم رفض تقديمك.": "We're sorry, your application has been rejected.",
+"⚠️ العضو غير موجود في السيرفر.": "⚠️ The member is not in the server.",
+"المتقدم": "Applicant",
+"✅ تم إرسال تقديمك بنجاح وفي انتظار المراجعة.": "✅ Your application was submitted successfully and is awaiting review.",
+"✅ تم إعداد التقديم بنجاح": "✅ Application set up successfully",
+"اختر نوع التقديم الذي ترغب به...": "Select the type of application you'd like...",
+"🔘 حدد طريقة عرض التقديمات في البانل:": "🔘 Choose how applications are displayed in the panel:",
+"اختر التقديمات المراد إظهارها في البانل...": "Select the applications to show in the panel...",
+"ابحث واختر روم إرسال بانل التقديم...": "Search and select the channel to send the application panel to...",
+"الروم غير موجود": "Channel not found",
+"التقديمات المحددة غير مسطّبة": "The selected applications have not been set up",
+"🔍 اختر الروم المراد إرسال بانل التقديمات إليه:": "🔍 Select the channel to send the applications panel to:",
+"❌ هذا الزر مخصص للإدارة أو المسؤولين فقط!": "❌ This button is for staff or admins only!",
+"حالة التقديم": "Application status",
+"اكتب إجابتك هنا...": "Write your answer here...",
+"❌ روم مراجعة التقديمات غير موجود حالياً!": "❌ The applications review channel doesn't currently exist!",
+"❌ بيانات هذا التقديم غير متوفرة.": "❌ This application's data is unavailable.",
+"❌ لم يتم العثور على الروم المحددة!": "❌ The specified channel could not be found!",
+"📋 حدد التقديمات التي تريد إظهارها في البانل:": "📋 Select the applications you want to show in the panel:",
+"❌ يجب أن يكون رقم التقديم بين 1 و 10 تماماً!": "❌ The application number must be between 1 and 10 exactly!",
+"⚠️ تعذر إرسال رسالة الخاص (الخاص مغلق).": "⚠️ Couldn't send the DM (DMs are closed).",
+"❌ تعذر إرسال التقديم لروم المراجعة (تأكد من صلاحيات البوت).": "❌ Couldn't send the application to the review channel (check the bot's permissions).",
+"تقديم": "Application",
+"❌ رابط الصورة غير صالح، يجب أن يبدأ بـ http:// أو https://": "❌ The image URL is invalid, it must start with http:// or https://",
+"❌ لا توجد أي تقديمات مسجلة! استخدم أمر `/setup-apply` أولاً.": "❌ There are no registered applications! Use the `/setup-apply` command first.",
+"⚠️ تعذر منح الرتب (تأكد أن رتبة البوت أعلى من الرتب المراد منحها).": "⚠️ Couldn't grant the roles (make sure the bot's role is higher than the roles to be granted).",
+"❌ تعذر الإرسال في هذه الروم (تأكد من صلاحيات البوت).": "❌ Couldn't send in this channel (check the bot's permissions).",
+"قبول التقديم": "Application acceptance",
+"⚠️ تعذر إزالة الرتبة المحددة.": "⚠️ Couldn't remove the specified role.",
+"إزالة رتبة ما بعد القبول": "Remove post-acceptance role",
+"لم يُذكر سبب": "No reason provided",
+"رتب": "Role",
+"قفل": "Lock",
+"فتح": "Unlock",
+"حذف": "Delete",
+"باند": "Ban",
+"تايم": "Timeout",
+"🔒 تم قفل الروم بنجاح، لا يمكن للأعضاء الكتابة الآن.": "🔒 The channel was locked successfully, members can no longer write.",
+"🔓 تم فتح الروم بنجاح، يمكن للأعضاء الكتابة الآن.": "🔓 The channel was unlocked successfully, members can now write.",
+"❌ عذراً، لا يمكنني إعطاء هذه الرتبة لأنها أعلى من رتبتي أو مساوية لها!": "❌ Sorry, I can't give this role because it's higher than or equal to my role!",
+"❌ عذراً، أنت لا تملك صلاحية `Manage Roles` لاستخدام هذا الأمر!": "❌ Sorry, you don't have the `Manage Roles` permission to use this command!",
+"❌ عذراً، لا تملك صلاحية `Manage Channels` لقفل الروم!": "❌ Sorry, you don't have the `Manage Channels` permission to lock the channel!",
+"❌ عذراً، لا تملك صلاحية `Manage Channels` لفتح الروم!": "❌ Sorry, you don't have the `Manage Channels` permission to unlock the channel!",
+"❌ يرجى تحديد عدد أكبر من الصفر للحذف!": "❌ Please specify a number greater than zero to delete!",
+"❌ عذراً، لا تملك صلاحية `Manage Messages` لحذف الرسائل!": "❌ Sorry, you don't have the `Manage Messages` permission to delete messages!",
+"❌ لا يمكنك تبنيد هذا العضو لأن رتبته مساوية أو أعلى من رتبتك!": "❌ You can't ban this member because their role is equal to or higher than yours!",
+"❌ عذراً، لا تملك صلاحية `Ban Members` لتبنيد الأعضاء!": "❌ Sorry, you don't have the `Ban Members` permission to ban members!",
+"❌ لا يمكنك إعطاء تايم أوت لهذا العضو لأن رتبته مساوية أو أعلى من رتبتك!": "❌ You can't timeout this member because their role is equal to or higher than yours!",
+"❌ صيغة الوقت غير صحيحة! أمثلة صحيحة: `30m` (دقائق)، `2h` (ساعات)، `1d` (أيام)، `1w` (أسابيع)": "❌ Invalid time format! Valid examples: `30m` (minutes), `2h` (hours), `1d` (days), `1w` (weeks)",
+"❌ عذراً، لا تملك صلاحية `Moderate Members` لإعطاء التايم أوت!": "❌ Sorry, you don't have the `Moderate Members` permission to timeout members!",
+"❌ الاستخدام الخاطئ للأمر! الصيغة الصحيحة: `!رتب @عضو @الرتبة`": "❌ Incorrect command usage! The correct format: `!رتب @member @role`",
+"❌ حدث خطأ أثناء تنفيذ الأمر. تأكد من منشن العضو والرتبة بشكل صحيح.": "❌ An error occurred while executing the command. Make sure you mentioned the member and the role correctly.",
+"❌ يرجى تحديد عدد الرسائل المراد حذفها! (مثال: `!حذف 50`)": "❌ Please specify the number of messages to delete! (Example: `!حذف 50`)",
+"❌ يرجى منشن العضو المراد تبنيده! (مثال: `!باند @عضو السبب`)": "❌ Please mention the member to ban! (Example: `!باند @member reason`)",
+"❌ الاستخدام الخاطئ! (مثال: `!تايم @عضو 1h`)": "❌ Incorrect usage! (Example: `!تايم @member 1h`)",
+"مفعّل": "Enabled",
+"🔨 باند": "🔨 Ban",
+"👢 طرد": "👢 Kick",
+"⏳ تايم أوت": "⏳ Timeout",
+"⏱️ إزالة تايم أوت": "⏱️ Remove Timeout",
+"🗑️ مسح رسائل": "🗑️ Clear Messages",
+"⚠️ تحذير": "⚠️ Warn",
+"🔓 فك باند": "🔓 Unban",
+"🏷️ إعطاء/سحب رتبة": "🏷️ Give/Remove Role",
+"✏️ تغيير اسم عضو": "✏️ Change Member Nickname",
+"❌ نوع الاختصار غير معروف.": "❌ Unknown shortcut type.",
+"❌ ما عندك الصلاحية المطلوبة لهذا الاختصار.": "❌ You don't have the required permission for this shortcut.",
+"اختصار إداري": "Admin shortcut",
+"❌ لازم تحدد السبب بعد العضو.": "❌ You need to specify the reason after the member.",
+"❌ لم يتم العثور على العضو.": "❌ The member could not be found.",
+"❌ ما تقدر تطرد أو تبند أو تعطي تايم أوت لنفسك.": "❌ You can't kick, ban, or timeout yourself.",
+"اختصار إعطاء/سحب رتبة": "Give/remove role shortcut",
+"إضافة اختصار إداري جديد": "Add a new admin shortcut",
+"اسم الاختصار": "Shortcut name",
+"نوع الأمر": "Command type",
+"حذف اختصار موجود": "Delete an existing shortcut",
+"اسم الاختصار المراد حذفه": "Name of the shortcut to delete",
+"عرض اختصارات السيرفر": "View server shortcuts",
+"❌ اكتب عدد الرسائل بعد الاختصار، مثال: `مسح 70`": "❌ Write the number of messages after the shortcut, e.g. `مسح 70`",
+"❌ لفك الباند اكتب ID العضو بعد الاختصار.": "❌ To unban, write the member's ID after the shortcut.",
+"❌ رتبة البوت أقل من رتبة العضو المستهدف.": "❌ The bot's role is lower than the target member's role.",
+"❌ اكتب الاسم الجديد بعد الاختصار.": "❌ Write the new nickname after the shortcut.",
+"❌ اسم العضو لازم يكون 32 حرف أو أقل.": "❌ The member's name must be 32 characters or fewer.",
+"❌ اكتب منشن الرتبة أو ائتنا بـ ID الرتبة بشكل صحيح، مثال: `رتب @الرتبة` أو `رتب 123456789`": "❌ Mention the role or provide the role ID correctly, e.g. `رتب @role` or `رتب 123456789`",
+"❌ رتبة البوت أقل من الرتبة المحددة.": "❌ The bot's role is lower than the specified role.",
+"❌ حدد العضو أولاً.": "❌ Specify the member first.",
+"❌ العضو غير موجود في قائمة الباند.": "❌ The member is not on the ban list.",
+"❌ ما تقدر تنفذ هذا الإجراء على عضو رتبته مساوية أو أعلى من رتبتك.": "❌ You can't perform this action on a member whose role is equal to or higher than yours.",
+"❌ نوع الأمر غير مدعوم.": "❌ Unsupported command type.",
+"❌ لا توجد اختصارات.": "❌ There are no shortcuts.",
+"اختصار تغيير اسم عضو": "Change member nickname shortcut",
+"⚡ اختصارات السيرفر": "⚡ Server Shortcuts",
+"قطع إشارة المرور الحمراء": "Running a red traffic light",
+"عكس اتجاه السير": "Driving against traffic",
+"التفحيط أو الاستعراض بالمركبة": "Drifting or stunt driving",
+"تجاوز السرعة المحددة بأكثر من 25 كم/س": "Exceeding the speed limit by more than 25 km/h",
+"تجاوز السرعة المحددة بأكثر من 40 كم/س": "Exceeding the speed limit by more than 40 km/h",
+"القيادة بدون رخصة قيادة": "Driving without a driver's license",
+"القيادة برخصة قيادة منتهية": "Driving with an expired driver's license",
+"القيادة بدون لوحات معدنية": "Driving without license plates",
+"طمس أو تظليل لوحات المركبة": "Obscuring or tinting vehicle plates",
+"الهروب من دورية الأمن أو المرور": "Fleeing from a security or traffic patrol",
+"عدم إعطاء الأفضلية للسيارات القادمة من اليمين": "Failing to yield to vehicles coming from the right",
+"التجاوز من الأماكن الممنوعة (كتف الطريق)": "Overtaking in prohibited areas (road shoulder)",
+"استخدام الهاتف المحمول أثناء القيادة": "Using a mobile phone while driving",
+"عدم ربط حزام الأمان": "Not wearing a seat belt",
+"وضع كتابات أو ملصقات غير مرخصة على الهيكل": "Placing unlicensed writing or stickers on the vehicle body",
+"إحداث ضوضاء مزعجة باستخدام العادم (صوت عالي)": "Causing a disturbing noise with the exhaust (loud sound)",
+"الوقوف الخاطئ والمزعج في الأماكن الممنوعة": "Improper and disruptive parking in prohibited areas",
+"الوقوف في مواقف ذوي الاحتياجات الخاصة بدون حق": "Parking in disabled parking spots without permission",
+"إعاقة حركة المرور عمداً": "Deliberately obstructing traffic",
+"عدم ترك مسافة أمان كافية بين المركبات": "Not leaving a sufficient safety distance between vehicles",
+"الانحراف المفاجئ بين المسارات بدون إشارة": "Sudden swerving between lanes without signaling",
+"دخول الشاحنات في أوقات وأماكن غير مخصصة": "Trucks entering at unauthorized times and places",
+"القيادة بإنارة تالفة أو غير مطابقة للمواصفات": "Driving with faulty or non-compliant lighting",
+"عدم تغطية الحمولة ونقلها بطريقة غير آمنة": "Failing to cover cargo and transporting it unsafely",
+"ترك المركبة مشغولة وغير متروكة بحذر": "Leaving the vehicle running and unattended carelessly",
+"التجمهر لعرقلة حركة السير أو معاينة الحوادث": "Gathering to obstruct traffic or to watch accidents",
+"القيادة تحت تأثير مواد مسكرة أو منومة": "Driving under the influence of intoxicants or sedatives",
+"استخدام الإضاءة العالية بشكل مزعج للمقابلين": "Using high beams in a way that disturbs oncoming drivers",
+"إلقاء النفايات أو المخلفات من نافذة المركبة": "Throwing trash or waste out of the vehicle window",
+"الرجوع للخارج بطريقة خطرة في الشارع العام": "Reversing dangerously onto a public street",
+"عدم إعطاء الأفضلية لسيارات الطوارئ والإسعاف": "Failing to give priority to emergency and ambulance vehicles",
+"قيادة مركبة تنبعث منها عوادم ضارة بالبيئة": "Driving a vehicle that emits environmentally harmful exhaust",
+"عدم استخدام إشارات الانحراف عند تغيير المسار": "Not using turn signals when changing lanes",
+"ترك الأطفال دون سن العاشرة في السيارة بمفرددهم": "Leaving children under ten years old alone in the car",
+"استخدام الأجهزة الذكية أو التلفاز أثناء السواقة": "Using smart devices or TV while driving",
+"قيادة دراجة نارية بدون خوذة حماية": "Riding a motorcycle without a protective helmet",
+"نقل عدد ركاب يزيد عن الاستيعاب المحدد للمركبة": "Carrying more passengers than the vehicle's designated capacity",
+"القيادة على مسارات الطوارئ في غير الحالات المسموحة": "Driving in emergency lanes when not permitted",
+"عدم الالتزام بالمسار المخصص لاتجاه حركة المرور": "Failing to stay in the lane designated for the direction of traffic",
+"التباطؤ في السير بشكل يعرقل الحركة المرورية": "Driving slowly in a way that obstructs traffic flow",
+"إجراء تعديلات على مظهر أو هيكل المركبة بدون تصريح": "Modifying the vehicle's appearance or body without a permit",
+"عدم وجود إطار احتياطي أو أدوات السلامة الأساسية": "Not having a spare tire or basic safety equipment",
+"الوقوف في التقاطعات أو الأماكن التي تعيق الرؤية": "Parking at intersections or places that block visibility",
+"تجاوز الرتل العسكري أو مواكب الأمهات الرسمية": "Overtaking a military convoy or official motorcades",
+"القيادة بلوحة مرورية غير واضحة المعالم أو التالفة": "Driving with an unclear or damaged license plate",
+"استخدام ميكروفونات أو مكبرات صوت غير مرخصة": "Using unlicensed microphones or loudspeakers",
+"عدم تقديم المساعدة للمصابين في حادث مروري متورط به": "Failing to help the injured in a traffic accident one is involved in",
+"تحميل بضائع ترتفع بشكل يترتب عليه خطر السقوط": "Loading goods stacked so high that they risk falling",
+"القيادة ببطء شديد يسبب إعاقة في الطرق السريعة": "Driving extremely slowly, obstructing traffic on highways",
+"الاستعراض بالسيارات القديمة المعطلة في الشوارع العامة": "Showing off with old broken-down cars on public streets",
+"عدم استعمال الأنوار في الأوقات المخصصة (ليلاً/ضباب)": "Not using lights at required times (night/fog)",
+"مخالفة الهروب من رجال الأمن (سير على الأقدام أو مراوغة)": "Violation of fleeing from security personnel (on foot or evasive maneuvers)",
+"صدم وإتلاف الممتلكات العامة (أرصفة، إشارات، أعمدة)": "Crashing into and damaging public property (curbs, signs, poles)",
+"إزعاج المواطنين باستخدام البوري أو الهرن باستمرار": "Disturbing citizens by constantly using the horn",
+"عدم امتلاك تصريح سلاح رسمي (حيازة غير مرخصة)": "Not having an official weapon permit (unlicensed possession)",
+"إشهار السلاح في الأماكن العامة بدون سبب قانوني": "Brandishing a weapon in public places without legal reason",
+"ارتداء قناع أو إخفاء الهوية في الأماكن العامة الممنوعة": "Wearing a mask or concealing identity in prohibited public places",
+"التواجد في المناطق العسكرية المحظورة بدون تصريح": "Being present in restricted military zones without a permit",
+"إلقاء شتائم أو إهانة عنصر أمني أثناء تأدية عمله": "Cursing or insulting a security officer while on duty",
+"محاولة رشوة رجل الأمن أو محاولة التلاعب بالمخالفة": "Attempting to bribe a security officer or tamper with a violation",
+"القيادة داخل الأرصفة وممشى المشاة": "Driving on sidewalks and pedestrian walkways",
+"الاصطدام المتعمد بمركبة أخرى (تخريب متعمد)": "Deliberately colliding with another vehicle (intentional vandalism)",
+"عدم الامتثال لأوامر نقطة التفتيش الأمنية": "Failing to comply with security checkpoint orders",
+"التجول بمركبة مسروقة أو بلا إثبات ملكية": "Driving around in a stolen vehicle or without proof of ownership",
+"التسول أو إعاقة المارة في الشوارع التجارية": "Begging or obstructing pedestrians in commercial streets",
+"إشعال النيران في الأماكن العامة غير المخصصة لذلك": "Lighting fires in public places not designated for that",
+"تسلق المباني الحكومية أو المرافق العامة بطريقة خطرة": "Dangerously climbing government buildings or public facilities",
+"إيقاف المركبة بشكل يعيق خروج السيارات الأخرى (سد الطريق)": "Stopping a vehicle in a way that blocks other cars from leaving (blocking the road)",
+"استخدام أجهزة اتصال لاسلكية مقلدة أو بدون ترخيص أمني": "Using counterfeit or unlicensed wireless communication devices",
+"الدخول للمناطق السكنية بسرعة جنونية وتشكيل خطر": "Entering residential areas at reckless speed and posing a danger",
+"الاعتداء اللفظي على المواطنين في الشارع": "Verbally assaulting citizens on the street",
+"رفض إبراز الهوية أو رخصة القيادة لرجل الأمن": "Refusing to show ID or driver's license to a security officer",
+"نقل مواد ممنوعة أو غير قانونية في صندوق المركبة": "Transporting prohibited or illegal items in the vehicle trunk",
+"الوقوف أمام مخارج الطوارئ أو مراكز الشرطة والمستشفيات": "Parking in front of emergency exits, police stations, or hospitals",
+"تلويث الشارع العام أو الرسم العشوائي (جرافيتي) على الممتلكات": "Polluting public streets or random graffiti on property",
+"عدم الوقوف عند لوحة STOP بالشارع": "Not stopping at a STOP sign on the street",
+"تجاوز الإشارة الضوئية برعونة أثناء التفافه يميناً": "Recklessly running a traffic light while turning right",
+"استخدام الأضواء الكاشفة غير القانونية بوجه السائقين": "Using illegal spotlights toward drivers",
+"الوقوف المزدوج في الشوارع الرئيسية الضيقة": "Double parking on narrow main streets",
+"عدم إعطاء الأفضلية للمشاة في مناطق العبور المخصصة": "Failing to yield to pedestrians at designated crossings",
+"ترك محرك السيارة يعمل أثناء النزول منها في الأماكن العامة": "Leaving the car engine running while exiting it in public places",
+"قيادة المركبة بإطارات مهترئة تشكل خطراً على السلامة": "Driving with worn-out tires that endanger safety",
+"القيادة بلوحة خلفية غير مقروءة أو متسخة تماماً": "Driving with an unreadable or completely dirty rear plate",
+"التوقف المفاجئ وغير المبرر في المسار السريع": "Sudden and unjustified stopping in the fast lane",
+"استخدام مسار حافلات النقل أو الطوارئ للمراوغة": "Using the bus or emergency lane to evade traffic",
+"وضع زجاج مظلل بالكامل بدون استثناءات نظامية": "Fully tinted windows without legal exemptions",
+"تجاوز الحواجز الأمنية المؤقتة بدون إذن": "Bypassing temporary security barriers without permission",
+"القيادة بمركبة تصدر أصوات فرامل حادة ومزعجة": "Driving a vehicle that makes harsh, annoying brake noises",
+"عدم وجود ولاعة أو طفاية حريق أساسية بالمركبة": "Not having a lighter or basic fire extinguisher in the vehicle",
+"استخدام أجهزة كشف الرادار أو منع رصد السرعة": "Using radar detectors or devices that block speed detection",
+"الوقوف في مناطق التحميل والتنزيل المخصصة للشاحنات": "Parking in loading and unloading zones designated for trucks",
+"تغيير لون المركبة بالكامل دون تعديل الأوراق الرسمية": "Changing the vehicle's color entirely without updating official documents",
+"القيادة بوضعيات جلوس غير آمنة أو خطرة للسائق": "Driving in unsafe or dangerous seating positions",
+"إلقاء أعقاب السجائر أو مواد قابلة للاشتعال بالطريق": "Throwing cigarette butts or flammable materials on the road",
+"عدم تشغيل مصابيح الضباب في الأجواء المناخية السيئة": "Not turning on fog lights in bad weather conditions",
+"استخدام مسجل الصوت بأعلى صوت قرب المستشفيات والمدارس": "Playing audio at maximum volume near hospitals and schools",
+"الوقوف العشوائي في مداخل ومخارج المباني السكنية": "Random parking at entrances and exits of residential buildings",
+"عدم تثبيت اللوحة الأمامية للمركبة في مكانها المخصص": "Not fixing the vehicle's front plate in its designated place",
+"قيادة المركبة بسرعة منخفضة جداً بالمسار الأيسر السريع": "Driving at very low speed in the fast left lane",
+"التلاعب بمؤشرات عداد السرعة أو الكيلومترات بالمركبة": "Tampering with the vehicle's speedometer or odometer readings",
+"🚗 بيانات المركبة المخالفة": "🚗 Violating Vehicle Details",
+"اختر العضو المخالف من القائمة أو ابحث عنه...": "Select the violating member from the list or search for them...",
+"1- نوع المركبة": "1- Vehicle Type",
+"مثال: فورد، شفروليه، تاهو...": "Example: Ford, Chevrolet, Tahoe...",
+"2- موديل المركبة": "2- Vehicle Model",
+"مثال: 2024، سيدان...": "Example: 2024, Sedan...",
+"3- لون المركبة": "3- Vehicle Color",
+"مثال: أسود، أبيض...": "Example: Black, White...",
+"4- لوحة المركبة": "4- Vehicle Plate",
+"مثال: أ ب ج 1234": "Example: A B C 1234",
+"اختر المخالفة المطلوبة من القائمة أدناه لحذفها فوراً:": "Select the violation to delete from the list below to remove it immediately:",
+"📋 قائمة الأشخاص الذين عليهم مخالفات غير مسددة": "📋 List of people with unpaid violations",
+"اختر العضو من القائمة أدناه لعرض تفاصيل مخالفاته:": "Select a member from the list below to view their violation details:",
+"العودة لقائمة المخالفين 🔙": "Back to violators list 🔙",
+"تسجيل مخالفة": "Record Violation",
+"🗑️ لوحة إزالة المخالفات المرورية": "🗑️ Traffic Violation Removal Panel",
+"اختر العضو المراد إزالة مخالفة عنه من القائمة أدناه:": "Select the member whose violation you want to remove from the list below:",
+"إزالة مخالفة": "Remove Violation",
+"عرض المخالفات الغير مسدده": "View Unpaid Violations",
+"📋 سجل مخالفاتك المرورية غير المسددة": "📋 Your unpaid traffic violations record",
+"مخالفاتي": "My Violations",
+"💳 قائمة سداد المخالفات": "💳 Violation Payment Menu",
+"اختر المخالفة التي تريد سدادها من القائمة أدناه:": "Select the violation you want to pay from the list below:",
+"سداد مخالفة": "Pay Violation",
+"منذ لحظات": "A few moments ago",
+"وقت غير معروف": "Unknown time",
+"إعداد رتب ورومات نظام المرور": "Set up traffic system roles and channels",
+"رتبة العساكر": "Officers role",
+"روم تحكم العساكر": "Officers control channel",
+"روم بانل المواطنين": "Citizens panel channel",
+"روم السجلات (اللُّوق)": "Logs channel",
+"🛡️ لوحة تحكم العساكر ورجال المرور": "🛡️ Officers and Traffic Police Control Panel",
+"مرحباً بك في نظام إدارة المرور العسكري\n\n• **تسجيل مخالفة:** لتعبئة بيانات المركبة واختيار العضو والمخالفة (تسحب تلقائياً خلال 5 أيام إذا لم تُسدد).\n• **إزالة مخالفة:** لاختيار عضو وإزالة مخالفة خاطئة (تعرض المخالفات النشطة فقط) مع إرسال إشعار ولُوق.\n• **عرض المخالفات الغير مسدده:** لعرض قائمة الأشخاص الذين عليهم مخالفات ومعاينة تفاصيل كل شخص بدقة.": "Welcome to the military traffic management system\n\n• **Record Violation:** Fill in the vehicle details and choose the member and violation (automatically deducted after 5 days if unpaid).\n• **Remove Violation:** Choose a member and remove a mistaken violation (only active violations are shown), with a notification and log sent.\n• **View Unpaid Violations:** Display the list of people with violations and view each person's details precisely.",
+"إرسال بانل تحكم العساكر": "Send the officers control panel",
+"🚦 خدمات المرور العامة للمواطنين": "🚦 General Traffic Services for Citizens",
+"مرحباً بك في البانل الرسمي لخدمات المرور\n\n• **مخالفاتي:** للاستعلام عن مخالفاتك غير المسددة فقط.\n• **سداد مخالفة:** لاختيار وسداد الغرامات آلياً عبر قائمة منسدلة.": "Welcome to the official traffic services panel\n\n• **My Violations:** Check only your unpaid violations.\n• **Pay Violation:** Select and pay fines automatically via a dropdown menu.",
+"إرسال بانل خدمات المواطنين": "Send the citizens services panel",
+"🚨 مخالفة مرورية جديدة": "🚨 New Traffic Violation",
+"الصفحة السابقة ◀️": "Previous page ◀️",
+"الصفحة التالية ▶️": "Next page ▶️",
+"📋 تم حفظ معلومات المركبة بنجاح.\nالخطوة التالية: **اختر العضو المراد مخالفته** من القائمة أدناه:": "📋 Vehicle information saved successfully.\nNext step: **select the member to cite** from the list below:",
+"اختر المخالفة المراد إزالتها...": "Select the violation to remove...",
+"اختر العضو لعرض مخالفاته النشطة وإزالة ما تحتاجه...": "Select the member to view their active violations and remove what you need...",
+"اختر عضواً لعرض مخالفاته بالتفصيل...": "Select a member to view their violations in detail...",
+"اختر المخالفة التي تريد سدادها...": "Select the violation you want to pay...",
+"⚙️ تم إعداد نظام المرور بنجاح": "⚙️ Traffic system set up successfully",
+"🚨 تسجيل مخالفة مرورية": "🚨 Traffic Violation Recorded",
+"❌ هذه المخالفة غير موجودة أو تم حذفها مسبقاً.": "❌ This violation does not exist or was already deleted.",
+"🛡️ تم إزالة مخالفة مرورية عنك": "🛡️ A traffic violation has been removed from your record",
+"🗑️ إزالة مخالفة مرورية (خطأ مطبعي/إلغاء)": "🗑️ Traffic Violation Removed (typo/cancellation)",
+"❌ هذا العضو ليس لديه أي مخالفات نشطة (غير مسددة).": "❌ This member has no active (unpaid) violations.",
+"❌ هذه المخالفة غير موجودة.": "❌ This violation does not exist.",
+"❌ هذه المخالفة ليست مسجلة باسمك.": "❌ This violation is not registered under your name.",
+"⚠️ هذه المخالفة مسددة مسبقاً!": "⚠️ This violation has already been paid!",
+"💳 سداد مخالفة": "💳 Violation Payment",
+"❌ هذا الزر مخصص لرجال المرور والعساكر فقط.": "❌ This button is for traffic police and officers only.",
+"🎉 لا توجد أي مخالفات نشطة (غير مسددة) في السيرفر حالياً!": "🎉 There are currently no active (unpaid) violations on the server!",
+"🎉 لا توجد أي مخالفات مرورية غير مسددة في السيرفر حالياً!": "🎉 There are currently no unpaid traffic violations on the server!",
+"🎉 سجلك نظيف! ليس لديك أي مخالفات مرورية غير مسددة.": "🎉 Your record is clean! You have no unpaid traffic violations.",
+"🎉 ليس لديك أي مخالفات غير مسددة لسدادها!": "🎉 You have no unpaid violations to pay!",
+"❌ يرجى تحديد روم تحكم العساكر أولاً عبر أمر traffic-setup": "❌ Please set the officers control channel first using the traffic-setup command",
+"❌ روم التحكم غير موجود": "❌ The control channel does not exist",
+"❌ يرجى تحديد روم بانل المواطنين أولاً عبر أمر traffic-setup": "❌ Please set the citizens panel channel first using the traffic-setup command",
+"❌ روم المواطنين غير موجود": "❌ The citizens channel does not exist",
+"🎉 لا توجد مخالفات غير مسددة حالياً!": "🎉 There are no unpaid violations at the moment!",
+"❌ العضو غير موجود في السيرفر.": "❌ The member is not in the server.",
+"⚠️ تم السحب التلقائي لمخالفة مرورية": "⚠️ Traffic violation automatically deducted",
+"🤖 سحب تلقائي لمخالفة منتهية": "🤖 Automatic deduction for expired violation",
+"غير محددة": "Not set",
+"تسجيل مركبة واستخراج لوحة": "Register a vehicle and issue a plate",
+"❌ غير مؤمنة": "❌ Not insured",
+"1. اسمك الحقيقي": "1. Your real name",
+"اكتب اسمك الحقيقي هنا...": "Enter your real name here...",
+"2. عمرك الحقيقي": "2. Your real age",
+"اكتب عمرك هنا...": "Enter your age here...",
+"3. رقم الهوية": "3. ID number",
+"اكتب رقم الهوية هنا...": "Enter the ID number here...",
+"4. اسم المركبة": "4. Vehicle name",
+"مثال: كامري، تشارجر...": "Example: Camry, Charger...",
+"5. شركة المركبة": "5. Vehicle manufacturer",
+"مثال: تويوتا، دودج...": "Example: Toyota, Dodge...",
+"إعداد نظام المركبات واللوحات وتحديد الرومات": "Set up the vehicles and plates system and assign channels",
+"روم بانل تسجيل المركبات والتأمين": "Vehicle registration and insurance panel channel",
+"روم لوقز العمليات": "Operations logs channel",
+"روم المركبات المؤمنة الجديدة": "New insured vehicles channel",
+"[إدارة] حذف مركبة معينة لمواطن باستخدام رقم اللوحة": "[Admin] Delete a specific vehicle from a citizen by plate number",
+"العضو صاحب المركبة": "Vehicle owner member",
+"رقم اللوحة المراد حذفها": "Plate number to delete",
+"اختر المركبة المراد تأمينها...": "Select the vehicle to insure...",
+"اختر المركبة التي تريد عرض تفاصيلها...": "Select the vehicle whose details you want to view...",
+"الشركة والنوع": "Manufacturer and type",
+"رقم اللوحة": "Plate number",
+"اللون": "Color",
+"حالة التأمين": "Insurance status",
+"الاسم الحقيقي والعمر": "Real name and age",
+"رقم الهوية": "ID number",
+"اختر المركبة المؤمنة لسحب التأمين عنها...": "Select the insured vehicle to revoke its insurance...",
+"اختر الخدمة المطلوبة من القائمة...": "Select the service you need from the menu...",
+"📌 نظام تسجيل المركبات واللوحات المرورية والتأمين": "📌 Vehicle Registration, Traffic Plates, and Insurance System",
+"غير متوفر": "Not available",
+"❌ حدث خطأ، المركبة غير موجودة.": "❌ An error occurred, the vehicle does not exist.",
+"⚠️ انتهى التأمين": "⚠️ Insurance expired",
+"❌ عذراً، هذا الخيار مخصص للأدمستريتر (Administrator) فقط!": "❌ Sorry, this option is for Administrators only!",
+"❌ حدث خطأ، المركبة غير موجودة أو تم حذفها مسبقاً.": "❌ An error occurred, the vehicle does not exist or was already deleted.",
+"❌ هذه المركبة ليست مؤمنة أساساً!": "❌ This vehicle is not insured in the first place!",
+"تسجيل مركبة ولوحة": "Register Vehicle and Plate",
+"تسجيل مركبة جديدة واستخراج لوحة رسمية مرورية": "Register a new vehicle and issue an official traffic plate",
+"شراء تأمين": "Buy Insurance",
+"إصدار تأمين لمدة أسبوع للمركبة المختارة": "Issue one-week insurance for the selected vehicle",
+"عرض مركباتي": "View My Vehicles",
+"استعراض تفاصيل مركباتك وحالة التأمين واللوحة": "View your vehicle details, insurance status, and plate",
+"سحب تأمين (للأدمن)": "Revoke Insurance (Admin)",
+"سحب تأمين مركبة لمواطن وإشعاره بالخاص": "Revoke a citizen's vehicle insurance and notify them via DM",
+"🪧 **أدخل رقم اللوحة المرورية المطلوبة:**\n• يجب أن تكون بالصيغة الصحيحة وتحتوي على شرطة (-) وأرقام.\n• أمثلة صحيحة: `ABM-123` أو `أبج-1234`": "🪧 **Enter the requested traffic plate number:**\n• It must be in the correct format and contain a dash (-) and numbers.\n• Valid examples: `ABM-123` or `أبج-1234`",
+"🎨 أرسل الآن **لون المركبة**:": "🎨 Now send the **vehicle color**:",
+"🖼️ أرسل الآن **صورة للمركبة** (يجب إرفاق ملف صورة حصراً، النصوص غير مقبولة):": "🖼️ Now send a **picture of the vehicle** (an image file must be attached; text is not accepted):",
+"🚫 سحب تأمين مركبة إدارياً": "🚫 Vehicle insurance revoked administratively",
+"❌ عذراً، لقد وصلت للحد الأقصى (3 مركبات).": "❌ Sorry, you have reached the maximum (3 vehicles).",
+"🛡️ **اختر من القائمة أدناه المركبة التي تريد إصدار تأمين لها:**": "🛡️ **Select from the list below the vehicle you want to issue insurance for:**",
+"⏰ انتهى الوقت المخصص للإجابة، يرجى إعادة المحاولة من البانل الأساسي.": "⏰ The time allowed for answering has expired, please try again from the main panel.",
+"مركبة": "Vehicle",
+"بدون": "None",
+"مؤمنة 🟢": "Insured 🟢",
+"غير مؤمنة 🔴": "Not insured 🔴",
+"❌ ليس لديك أي مركبات مسجلة لتأمينها! يرجى تسجيل مركبة أولاً.": "❌ You have no registered vehicles to insure! Please register a vehicle first.",
+"📋 **اختر من القائمة أدناه المركبة التي تريد عرض تفاصيلها:**": "📋 **Select from the list below the vehicle whose details you want to view:**",
+"❌ **الصيغة غير صحيحة!** يرجى كتابة اللوحة بالصيغة المطلوبة (مثال: `ABM-123` أو `XYZ-987`):": "❌ **Invalid format!** Please write the plate in the required format (example: `ABM-123` or `XYZ-987`):",
+"❌ ممنوع إرسال نصوص هنا! يرجى **إرفاق صورة** للمركبة:": "❌ Text is not allowed here! Please **attach a picture** of the vehicle:",
+"❌ ممنوع إرسال نصوص! يرجى **إرفاق صورة** للمركبة:": "❌ Text is not allowed! Please **attach a picture** of the vehicle:",
+"❌ ليس لديك أي مركبات مسجلة في النظام حالياً.": "❌ You currently have no vehicles registered in the system.",
+"🚫 **لوحة سحب التأمين الإدارية:**\nاختر المركبة المراد سحب التأمين عنها من القائمة أدناه:": "🚫 **Administrative Insurance Revocation Panel:**\nSelect the vehicle whose insurance you want to revoke from the list below:",
+"❌ الملف المرسل ليس صورة! يرجى إرفاق صورة صحيحة (PNG, JPG):": "❌ The file you sent is not an image! Please attach a valid image (PNG, JPG):",
+"🚗 تسجيل مركبة واستخراج لوحة جديد (مدفوع)": "🚗 New Vehicle Registration and Plate Issuance (Paid)",
+"صاحب المركبة": "Vehicle owner",
+"المركبة والشركة": "Vehicle and manufacturer",
+"رقم اللوحة المستخرجة": "Issued plate number",
+"الرسوم المدفوعة": "Fees paid",
+"❌ الملف المرسل ليس صورة! يرجى إرفاق صورة صحيحة:": "❌ The file you sent is not an image! Please attach a valid image:",
+"❌ عذراً، خيار سحب التأمين مخصص للأدمستريتر (Administrator) فقط!": "❌ Sorry, the insurance revocation option is for Administrators only!",
+"❌ لا توجد أي مركبات مؤمنة حالياً لسحب التأمين عنها!": "❌ There are currently no insured vehicles to revoke insurance from!",
+"🛡️ إصدار تأمين مركبة جديد": "🛡️ New Vehicle Insurance Issued",
+"صاحب التأمين": "Policyholder",
+"الاسم والعمر": "Name and age",
+"تاريخ الانتهاء": "Expiry date",
+"🚙 مركبة مؤمنة جديدة": "🚙 New Insured Vehicle",
+"نوع المركبة والشركة": "Vehicle type and manufacturer",
+"صلاحية التأمين": "Insurance validity"
+},
+"templates": [
+{
+"ar": "**تم قبول العضو:** {0}\n**من قبل المسؤول:** {1}\n**السبب:** {2}",
+"en": "**Member accepted:** {0}\n**By admin:** {1}\n**Reason:** {2}"
+},
+{
+"ar": "✅ تم قبول العضو بنجاح بواسطة {0}",
+"en": "✅ Member successfully accepted by {0}"
+},
+{
+"ar": "❌ تم رفض العضو بواسطة {0}",
+"en": "❌ Member rejected by {0}"
+},
+{
+"ar": "**[سؤال {0}/7]**\n{1}",
+"en": "**[Question {0}/7]**\n{1}"
+},
+{
+"ar": "{0} طلب تفعيل جديد مقدّم من: {1}",
+"en": "{0} New activation request submitted by: {1}"
+},
+{
+"ar": "✅ تم تحديد رتبة التلقائية بنجاح: **{0}**",
+"en": "✅ Auto role set successfully: **{0}**"
+},
+{
+"ar": "**الحالة:** `{0}`\n**الروم:** {1}\n**المدة:** كل `{2}` دقائق",
+"en": "**Status:** `{0}`\n**Channel:** {1}\n**Interval:** every `{2}` minutes"
+},
+{
+"ar": "⚠️ البوت ما عنده صلاحية (رؤية الروم + إرسال رسائل + تضمين الروابط) في {0}.",
+"en": "⚠️ The bot doesn't have the required permissions (view channel + send messages + embed links) in {0}."
+},
+{
+"ar": "🗑️ تمت إزالة الكلمة (`{0}`) من القائمة.",
+"en": "🗑️ The word (`{0}`) was removed from the list."
+},
+{
+"ar": "✅ تم تحديث عقوبة الكلمات المحظورة لتصبح: **{0}**",
+"en": "✅ The banned words punishment was updated to: **{0}**"
+},
+{
+"ar": "✅ تمت إضافة الكلمة (`{0}`) إلى قائمة الحظر بنجاح.",
+"en": "✅ The word (`{0}`) was added to the ban list successfully."
+},
+{
+"ar": "⚠️️ الكلمة (`{0}`) موجودة مسبقاً في القائمة.",
+"en": "⚠️️ The word (`{0}`) is already in the list."
+},
+{
+"ar": "حماية الكلمات المحظورة: {0}",
+"en": "Banned words protection: {0}"
+},
+{
+"ar": "كتب كلمة محظورة: {0}",
+"en": "Wrote a banned word: {0}"
+},
+{
+"ar": "تحويل للآيبان `{0}`",
+"en": "Transfer to IBAN `{0}`"
+},
+{
+"ar": "استلام من الآيبان `{0}`",
+"en": "Received from IBAN `{0}`"
+},
+{
+"ar": "سداد للقرض رقم #{0}",
+"en": "Repayment for loan #{0}"
+},
+{
+"ar": "صرف قرض معتمد بواسطة {0}",
+"en": "Approved loan disbursed by {0}"
+},
+{
+"ar": "**رقم الحساب (الآيبان):** `{0}`\n**الرصيد:** `{1} ريال`",
+"en": "**Account number (IBAN):** `{0}`\n**Balance:** `{1} SAR`"
+},
+{
+"ar": "المستخدم: {0}\nرقم الحساب: `{1}`",
+"en": "User: {0}\nAccount number: `{1}`"
+},
+{
+"ar": "من: {0} (`{1}`)\nإلى الآيبان: `{2}`\nالمبلغ: **{3} ريال**",
+"en": "From: {0} (`{1}`)\nTo IBAN: `{2}`\nAmount: **{3} SAR**"
+},
+{
+"ar": "✅ تم تحويل **{0} ريال** إلى الآيبان (`{1}`) بنجاح.",
+"en": "✅ Successfully transferred **{0} SAR** to IBAN (`{1}`)."
+},
+{
+"ar": "المواطن: {0}\nرقم القرض: `#{1}`\nالمبلغ المسدد: **{2} ريال**",
+"en": "Citizen: {0}\nLoan number: `#{1}`\nAmount repaid: **{2} SAR**"
+},
+{
+"ar": "✅ تم سداد مبلغ **{0} ريال** للقرض رقم `#{1}` بنجاح.",
+"en": "✅ Successfully repaid **{0} SAR** toward loan `#{1}`."
+},
+{
+"ar": "المسؤول: {0}\nالمواطن: <@{1}>\nالمبلغ: **{2} ريال**",
+"en": "Admin: {0}\nCitizen: <@{1}>\nAmount: **{2} SAR**"
+},
+{
+"ar": "✅ تم قبول القرض وصرف مبلغ **{0} ريال** للمواطن <@{1}> بواسطة {2}",
+"en": "✅ Loan accepted and **{0} SAR** disbursed to citizen <@{1}> by {2}"
+},
+{
+"ar": "❌ تم رفض القرض للمواطن <@{0}> بواسطة {1}",
+"en": "❌ Loan rejected for citizen <@{0}> by {1}"
+},
+{
+"ar": "بواسطة المسؤول {0}",
+"en": "By admin {0}"
+},
+{
+"ar": "💵 تم تحديد الراتب: **{0} ريال**.\nالرجاء اختيار رتبة الموظفين المستحقة:",
+"en": "💵 Salary set: **{0} SAR**.\nPlease choose the eligible employee role:"
+},
+{
+"ar": "صرف راتب رتبة {0}",
+"en": "Salary payout for role {0}"
+},
+{
+"ar": "المسؤول: {0}\nالرتبة: {1}\nالمبلغ لكل فرد: **{2} ريال**\nعدد المستفيدين: **{3}**",
+"en": "Admin: {0}\nRole: {1}\nAmount per person: **{2} SAR**\nNumber of recipients: **{3}**"
+},
+{
+"ar": "👤 **المواطن:** {0}\n🏦 **رقم الآيبان:** `{1}`\n💰 **الرصيد الحالي:** `{2} ريال`\n🛑 **حالة الحساب:** `{3}`\n📅 **تاريخ الإنشاء:** `{4}`",
+"en": "👤 **Citizen:** {0}\n🏦 **IBAN:** `{1}`\n💰 **Current balance:** `{2} SAR`\n🛑 **Account status:** `{3}`\n📅 **Created on:** `{4}`"
+},
+{
+"ar": "📜 لوق البنك: {0}",
+"en": "📜 Bank Log: {0}"
+},
+{
+"ar": "**{0} ريال**",
+"en": "**{0} SAR**"
+},
+{
+"ar": "المسؤول: {0}\nالآيبان: `{1}`\nالحالة الجديدة: **{2}**",
+"en": "Admin: {0}\nIBAN: `{1}`\nNew status: **{2}**"
+},
+{
+"ar": "✅ تم تغيير حالة الحساب للآيبان (`{0}`) إلى: **{1}**",
+"en": "✅ The account status for IBAN (`{0}`) was changed to: **{1}**"
+},
+{
+"ar": "المسؤول: {0}\nالآيبان: `{1}`\nالمبلغ: **{2} ريال**",
+"en": "Admin: {0}\nIBAN: `{1}`\nAmount: **{2} SAR**"
+},
+{
+"ar": "✅ تم إضافة **{0} ريال** إلى الآيبان (`{1}`).",
+"en": "✅ Added **{0} SAR** to IBAN (`{1}`)."
+},
+{
+"ar": "✅ تم توزيع الرواتب بنجاح على رتبة **{0}** بقيمة **{1} ريال** لكل فرد.\n(عدد المستفيدين: **{2}**)",
+"en": "✅ Salaries were distributed successfully to role **{0}** at **{1} SAR** per person.\n(Number of recipients: **{2}**)"
+},
+{
+"ar": "مستخدم #{0}",
+"en": "User #{0}"
+},
+{
+"ar": "لقد استلمت حوالة بقيمة **{0} ريال** من الآيبان (`{1}`).",
+"en": "You received a transfer of **{0} SAR** from IBAN (`{1}`)."
+},
+{
+"ar": "مبروك! تم قبول طلب القرض الخاص بك بقيمة **{0} ريال** وإيداعها في حسابك البنكي بواسطة {1}.",
+"en": "Congratulations! Your loan request of **{0} SAR** was accepted and deposited into your bank account by {1}."
+},
+{
+"ar": "نأسف لك، تم رفض طلب القرض الخاص بك بقيمة **{0} ريال** بواسطة {1}.",
+"en": "We're sorry, your loan request of **{0} SAR** was rejected by {1}."
+},
+{
+"ar": "المسؤول: {0}\nالآيبان: `{1}`\nالمبلغ المسحوب: **{2} ريال**",
+"en": "Admin: {0}\nIBAN: `{1}`\nAmount withdrawn: **{2} SAR**"
+},
+{
+"ar": "✅ تم إزالة **{0} ريال** من الآيبان (`{1}`).",
+"en": "✅ Removed **{0} SAR** from IBAN (`{1}`)."
+},
+{
+"ar": "تم إيداع راتب رتبتك (**{0}**) بقيمة **{1} ريال** في حسابك البنكي.",
+"en": "The salary for your role (**{0}**) of **{1} SAR** has been deposited into your bank account."
+},
+{
+"ar": "• رقم القرض: `#{0}` — المتبقي: **{1} ريال**\n",
+"en": "• Loan number: `#{0}` — Remaining: **{1} SAR**\n"
+},
+{
+"ar": "**رقم الحساب (الآيبان):** `{0}`\n**الرصيد:** `{1} ريال`\n**حالة الحساب:** `{2}`\n**تاريخ الإنشاء:** `{3}`\n\n📋 **القروض غير المسددة:**\n{4}",
+"en": "**Account number (IBAN):** `{0}`\n**Balance:** `{1} SAR`\n**Account status:** `{2}`\n**Created on:** `{3}`\n\n📋 **Unpaid loans:**\n{4}"
+},
+{
+"ar": "الآيبان: {0} | الرصيد: {1}",
+"en": "IBAN: {0} | Balance: {1}"
+},
+{
+"ar": "• **رقم القرض:** `#{0}` | المواطن: <@{1}> | الآيبان: `{2}` | المتبقي: **{3} ريال**\n",
+"en": "• **Loan number:** `#{0}` | Citizen: <@{1}> | IBAN: `{2}` | Remaining: **{3} SAR**\n"
+},
+{
+"ar": "✅ تم إرسال الايمبد بنجاح إلى الروم {0}!",
+"en": "✅ Embed sent successfully to channel {0}!"
+},
+{
+"ar": "❌ حدث خطأ أثناء إرسال الايمبد: {0}",
+"en": "❌ An error occurred while sending the embed: {0}"
+},
+{
+"ar": "\n• تغيير الاسم: `{0}`",
+"en": "\n• Change nickname: `{0}`"
+},
+{
+"ar": "\n• رتبة الإعطاء: {0}",
+"en": "\n• Role to give: {0}"
+},
+{
+"ar": "\n• رتبة الإزالة: {0}",
+"en": "\n• Role to remove: {0}"
+},
+{
+"ar": "العضو: {0} (ID: {1})",
+"en": "Member: {0} (ID: {1})"
+},
+{
+"ar": "صاحب الطلب: {0}",
+"en": "Applicant: {0}"
+},
+{
+"ar": "👤 **العضو:** {0} (`{1}`)\n🛡️ **المسؤول:** {2} (`{3}`)",
+"en": "👤 **Member:** {0} (`{1}`)\n🛡️ **Admin:** {2} (`{3}`)"
+},
+{
+"ar": "تم القبول بواسطة: {0}",
+"en": "Accepted by: {0}"
+},
+{
+"ar": "👤 **العضو:** {0} (`{1}`)\n🛡️ **المسؤول:** {2} (`{3}`)\n📌 **السبب:** {4}",
+"en": "👤 **Member:** {0} (`{1}`)\n🛡️ **Admin:** {2} (`{3}`)\n📌 **Reason:** {4}"
+},
+{
+"ar": "تم الرفض بواسطة: {0}",
+"en": "Rejected by: {0}"
+},
+{
+"ar": "✅ تم إرسال لوحة الهوية بنجاح وتحديث الإعدادات إلى روم: {0}{1}",
+"en": "✅ ID panel sent successfully and settings updated in channel: {0}{1}"
+},
+{
+"ar": "🎉 مبروك! تم **قبول** طلب الهوية الوطنية الخاصة بك بواسطة الإداري: {0}",
+"en": "🎉 Congratulations! Your national ID request was **accepted** by admin: {0}"
+},
+{
+"ar": "❌ عذراً، تم **رفض** طلب الهوية الوطنية الخاصة بك بواسطة الإداري: {0}.\nالسبب: {1}",
+"en": "❌ Sorry, your national ID request was **rejected** by admin: {0}.\nReason: {1}"
+},
+{
+"ar": "رسالة التلفل المخصصة (استخدم المتغيرات: {user}, {level}, {next-level}, {xp})",
+"en": "Custom level-up message (variables: {user}, {level}, {next-level}, {xp})"
+},
+{
+"ar": "**روم المستويات:** {0}\n**الرسالة:**\n```{1}```",
+"en": "**Levels channel:** {0}\n**Message:**\n```{1}```"
+},
+{
+"ar": "📊 بطاقة المستوى لـ {0}",
+"en": "📊 Level card for {0}"
+},
+{
+"ar": "**المستوى:** `{0}`\n**النقاط الحالية:** `{1} / {2} XP`",
+"en": "**Level:** `{0}`\n**Current points:** `{1} / {2} XP`"
+},
+{
+"ar": "مبروك {user}، لقد صعدت إلى المستوى {level}! (المستوى القادم: {next-level})",
+"en": "Congrats {user}, you reached level {level}! (Next level: {next-level})"
+},
+{
+"ar": "مبروك {user}، لقد صعدت إلى المستوى {level}!",
+"en": "Congrats {user}, you reached level {level}!"
+},
+{
+"ar": "✅ تم {0} **{1}** نقطة لـ {2} بنجاح!\n📊 رصيده الحالي: `{3}` نقطة.",
+"en": "✅ Points update ({0}): **{1}** points for {2} done successfully!\n📊 Their current balance: `{3}` points."
+},
+{
+"ar": "العضو: {0}\n📊 النقاط الحالية: **{1}** نقطة",
+"en": "Member: {0}\n📊 Current points: **{1}** points"
+},
+{
+"ar": "من هنا يتم التحكم في نقاط العساكر وإدارتها.\n\n**رتبة المسؤول:** {0}\n**رتبة وزارة الداخلية:** {1}",
+"en": "Control and manage soldiers' points from here.\n\n**Manager role:** {0}\n**Ministry of Interior role:** {1}"
+},
+{
+"ar": "تم **{0}** في سيرفر **{1}**.",
+"en": "**{0}** in server **{1}**."
+},
+{
+"ar": "بواسطة المسؤول: {0}",
+"en": "By admin: {0}"
+},
+{
+"ar": "👤 {0} نقاطك الحالية هي: **{1}** نقطة.",
+"en": "👤 {0} your current points are: **{1}** points."
+},
+{
+"ar": "**{0}.** {1} ⟵ **{2}** نقطة\n",
+"en": "**{0}.** {1} ⟵ **{2}** points\n"
+},
+{
+"ar": "مستخدم مغادر ({0})",
+"en": "Former user ({0})"
+},
+{
+"ar": "✅ تم تسطيب النظام بنجاح!\n- روم المواطنين: {0}\n- روم الإدارة: {1}\n- روم طلبات النظام: {2}\n- روم سوق المواطنين: {3}\n- روم السجلات (Logs): {4}",
+"en": "✅ System set up successfully!\n- Citizens channel: {0}\n- Admin channel: {1}\n- System requests channel: {2}\n- Citizens market channel: {3}\n- Logs channel: {4}"
+},
+{
+"ar": "✅ تم تعديل بيانات العقار/المحل `{0}` بنجاح!",
+"en": "✅ Property/shop `{0}` data updated successfully!"
+},
+{
+"ar": "معرف العقار: {0}",
+"en": "Property ID: {0}"
+},
+{
+"ar": "✅ تم قبول الطلب بواسطة {0}، وتم خصم مبلغ `{1}` ريال من المشتري وتحويله لحسابك بنجاح!",
+"en": "✅ The request was accepted by {0}, and `{1}` SAR was deducted from the buyer and transferred to your account successfully!"
+},
+{
+"ar": "❌ تم رفض الطلب بواسطة {0}.",
+"en": "❌ The request was rejected by {0}."
+},
+{
+"ar": "✅ تم عرض عقارك/محلك للبيع بنجاح في روم {0}!",
+"en": "✅ Your property/shop was listed for sale successfully in channel {0}!"
+},
+{
+"ar": "✅ تمت عملية شراء العقار/المحل `{0}` بنجاح وتم تحويل المبلغ للبائع!",
+"en": "✅ Purchase of property/shop `{0}` completed successfully and the amount was transferred to the seller!"
+},
+{
+"ar": "✅ تم إضافة `{0}` بنجاح!",
+"en": "✅ `{0}` added successfully!"
+},
+{
+"ar": "\n💵 الأرباح الدورية: {0} ريال",
+"en": "\n💵 Periodic profits: {0} SAR"
+},
+{
+"ar": "🏡 عقارات قسم: {0}",
+"en": "🏡 Properties in category: {0}"
+},
+{
+"ar": "💰 **تم استلام الأرباح بنجاح!**\nإجمالي الأرباح المضافة لرصيدك: `{0}` ريال.",
+"en": "💰 **Profits claimed successfully!**\nTotal profits added to your balance: `{0}` SAR."
+},
+{
+"ar": "{0} ({1} ريال)",
+"en": "{0} ({1} SAR)"
+},
+{
+"ar": "**المسؤول:** {0}\n**معرف العقار:** `{1}`\n**الاسم الجديد:** {2}\n**السعر الجديد:** {3} ريال",
+"en": "**Admin:** {0}\n**Property ID:** `{1}`\n**New name:** {2}\n**New price:** {3} SAR"
+},
+{
+"ar": "**المسؤول:** {0}\n**المعرف المحذوف:** `{1}`",
+"en": "**Admin:** {0}\n**Deleted ID:** `{1}`"
+},
+{
+"ar": "🗑️ تم حذف وإزالة العقار/المحل بمعرف `{0}` من النظام بنجاح!",
+"en": "🗑️ Property/shop with ID `{0}` was deleted and removed from the system successfully!"
+},
+{
+"ar": "🔄 تم اختيار `{0}`. الآن حدد المواطن الجديد من القائمة أدناه لنقل الملكية إليه:",
+"en": "🔄 `{0}` selected. Now choose the new citizen from the menu below to transfer ownership to them:"
+},
+{
+"ar": "**المسؤول:** {0}\n**العقار:** `{1}`\n**المالك الجديد:** {2}",
+"en": "**Admin:** {0}\n**Property:** `{1}`\n**New owner:** {2}"
+},
+{
+"ar": "✅ تم نقل ملكية العقار/المحل بنجاح إلى المواطن {0}!",
+"en": "✅ Property/shop ownership transferred successfully to citizen {0}!"
+},
+{
+"ar": "**المشتري:** {0}\n**العقار:** `{1}` ({2})\n**السعر:** {3} ريال",
+"en": "**Buyer:** {0}\n**Property:** `{1}` ({2})\n**Price:** {3} SAR"
+},
+{
+"ar": "**المسؤول (المستلم للمبلغ):** {0}\n**المشتري:** <@{1}>\n**العقار:** `{2}` ({3})\n**المبلغ المحول:** {4} ريال",
+"en": "**Admin (receiving the amount):** {0}\n**Buyer:** <@{1}>\n**Property:** `{2}` ({3})\n**Amount transferred:** {4} SAR"
+},
+{
+"ar": "🎉 **مبروك! تم قبول طلبك وسحب مبلغ `{0}` ريال من حسابك وإتمام نقل الملكية لعقار ({1}).**",
+"en": "🎉 **Congratulations! Your request was accepted, `{0}` SAR was withdrawn from your account and ownership of the property ({1}) was transferred.**"
+},
+{
+"ar": "**المسؤول:** {0}\n**المشتري:** <@{1}>\n**العقار:** `{2}`",
+"en": "**Admin:** {0}\n**Buyer:** <@{1}>\n**Property:** `{2}`"
+},
+{
+"ar": "**البائع:** {0}\n**العقار:** `{1}` ({2})\n**سعر البيع:** {3} ريال",
+"en": "**Seller:** {0}\n**Property:** `{1}` ({2})\n**Sale price:** {3} SAR"
+},
+{
+"ar": "**البائع:** <@{0}>\n**المشتري:** {1}\n**العقار:** `{2}` ({3})\n**المبلغ:** {4} ريال",
+"en": "**Seller:** <@{0}>\n**Buyer:** {1}\n**Property:** `{2}` ({3})\n**Amount:** {4} SAR"
+},
+{
+"ar": "**المسؤول:** {0}\n**المعرف:** `{1}`\n**القسم:** {2}\n**السعر:** {3} ريال\n**الأرباح:** {4} ريال",
+"en": "**Admin:** {0}\n**ID:** `{1}`\n**Category:** {2}\n**Price:** {3} SAR\n**Profits:** {4} SAR"
+},
+{
+"ar": "❌ لا توجد أي عقارات متاحة في قسم **{0}** حالياً.",
+"en": "❌ There are currently no properties available in the **{0}** category."
+},
+{
+"ar": "❌ حدث خطأ أثناء المعالجة المالية: {0}",
+"en": "❌ An error occurred during financial processing: {0}"
+},
+{
+"ar": "❌ حدث خطأ مالى أثناء إتمام عملية الشراء: {0}",
+"en": "❌ A financial error occurred while completing the purchase: {0}"
+},
+{
+"ar": "**المواطن:** {0}\n**المبلغ المستلم:** {1} ريال",
+"en": "**Citizen:** {0}\n**Amount collected:** {1} SAR"
+},
+{
+"ar": "• **{0}** (`{1}`): باقي `{2} ساعة و {3} دقيقة`",
+"en": "• **{0}** (`{1}`): `{2} hours and {3} minutes` remaining"
+},
+{
+"ar": "❌ حدث خطأ أثناء إيداع الأرباح في رصيدك البنكي: {0}",
+"en": "❌ An error occurred while depositing the profits into your bank balance: {0}"
+},
+{
+"ar": "✅ تم إضافة الرد للكلمة: `{0}` في هذا السيرفر بنجاح!",
+"en": "✅ The reply for the keyword `{0}` has been added to this server successfully!"
+},
+{
+"ar": "✅ تم تعديل الرد للكلمة: `{0}` بنجاح!",
+"en": "✅ The reply for the keyword `{0}` has been updated successfully!"
+},
+{
+"ar": "❌ الكلمة `{0}` غير مسجلة في هذا السيرفر!",
+"en": "❌ The keyword `{0}` is not registered in this server!"
+},
+{
+"ar": "🗑️ تم حذف الرد للكلمة: `{0}` بنجاح!",
+"en": "🗑️ The reply for the keyword `{0}` has been deleted successfully!"
+},
+{
+"ar": "❌ الكلمة `{0}` غير موجودة في هذا السيرفر!",
+"en": "❌ The keyword `{0}` does not exist in this server!"
+},
+{
+"ar": "بواسطة: {0}",
+"en": "By: {0}"
+},
+{
+"ar": "✅ تم تحديث حالة الرول بنجاح في روم {0}!",
+"en": "✅ The roleplay status was updated successfully in channel {0}!"
+},
+{
+"ar": "✅ تم حفظ إعدادات الرول بنجاح!\n📌 روم الرول: {0}",
+"en": "✅ Roleplay settings saved successfully!\n📌 Roleplay channel: {0}"
+},
+{
+"ar": "✅ تم تحديث حماية (`{0}`) وأصبحت الآن: **{1}**",
+"en": "✅ Protection (`{0}`) has been updated and is now: **{1}**"
+},
+{
+"ar": "✅ تم تحديث عقوبة النظام (`{0}`) لتصبح: **{1}**",
+"en": "✅ The punishment for system (`{0}`) has been updated to: **{1}**"
+},
+{
+"ar": "نظام الحماية: {0}",
+"en": "Protection system: {0}"
+},
+{
+"ar": "✅ مقبول بواسطة {0}",
+"en": "✅ Accepted by {0}"
+},
+{
+"ar": "❌ مرفوض بواسطة {0}",
+"en": "❌ Rejected by {0}"
+},
+{
+"ar": "السؤال {0}",
+"en": "Question {0}"
+},
+{
+"ar": "تم حفظ التقديم رقم **{0}** باسم: **{1}** مع الأسئلة الـ 5 بنجاح!",
+"en": "Application number **{0}** was saved with the name: **{1}** along with its 5 questions successfully!"
+},
+{
+"ar": "تقديم: {0}",
+"en": "Application: {0}"
+},
+{
+"ar": "📥 تقديم جديد: {0}",
+"en": "📥 New application: {0}"
+},
+{
+"ar": "✅ تم إرسال بانل التقديم بنجاح إلى الروم {0}!",
+"en": "✅ The application panel was sent successfully to channel {0}!"
+},
+{
+"ar": "تقديم {0}: {1}",
+"en": "Application {0}: {1}"
+},
+{
+"ar": "🗑️ تم حذف `{0}` رسالة بنجاح.",
+"en": "🗑️ Successfully deleted `{0}` messages."
+},
+{
+"ar": "✅ تم إزالة رتبة {0} من العضو {1}",
+"en": "✅ Removed the role {0} from member {1}"
+},
+{
+"ar": "✅ تم إعطاء رتبة {0} للعضو {1}",
+"en": "✅ Gave the role {0} to member {1}"
+},
+{
+"ar": "🔨 تم حظر العضو {0} من السيرفر بنجاح. السبب: `{1}`",
+"en": "🔨 Member {0} was banned from the server successfully. Reason: `{1}`"
+},
+{
+"ar": "⏳ تم اعطاء تايم أوت للعضو {0} لمدة `{1}` بنجاح.",
+"en": "⏳ Member {0} was timed out for `{1}` successfully."
+},
+{
+"ar": "بواسطة الأمر من قبل {0}",
+"en": "Command issued by {0}"
+},
+{
+"ar": "بواسطة: {0} | السبب: {1}",
+"en": "By: {0} | Reason: {1}"
+},
+{
+"ar": "❌ حدث خطأ أثناء محاولة تبنيد العضو: {0}",
+"en": "❌ An error occurred while trying to ban the member: {0}"
+},
+{
+"ar": "❌ حدث خطأ أثناء إعطاء التايم أوت: {0}",
+"en": "❌ An error occurred while applying the timeout: {0}"
+},
+{
+"ar": "🗑️ تم مسح {0} رسالة.",
+"en": "🗑️ Cleared {0} messages."
+},
+{
+"ar": "🔨 تم تبنيد {0}.",
+"en": "🔨 {0} has been banned."
+},
+{
+"ar": "👢 تم طرد {0}.",
+"en": "👢 {0} has been kicked."
+},
+{
+"ar": "⏳ تم إعطاء {0} تايم أوت لمدة **{1} دقيقة**.",
+"en": "⏳ {0} has been timed out for **{1} minutes**."
+},
+{
+"ar": "⏱️ تم إزالة التايم أوت عن {0}.",
+"en": "⏱️ The timeout has been removed from {0}."
+},
+{
+"ar": "⚠️ تم تحذير {0}. عدد التحذيرات: **{1}**",
+"en": "⚠️ {0} has been warned. Warning count: **{1}**"
+},
+{
+"ar": "✏️ تم تغيير اسم {0} إلى **{1}**.",
+"en": "✏️ {0}'s nickname has been changed to **{1}**."
+},
+{
+"ar": "🏷️ تم إعطاء {0} إلى {1}.",
+"en": "🏷️ {0} has been given to {1}."
+},
+{
+"ar": "🔓 تم فك الباند عن **{0}**.",
+"en": "🔓 **{0}** has been unbanned."
+},
+{
+"ar": "🏷️ تم سحب {0} من {1}.",
+"en": "🏷️ {0} has been removed from {1}."
+},
+{
+"ar": "✅ تم حفظ `{0}` → {1}",
+"en": "✅ Saved `{0}` → {1}"
+},
+{
+"ar": "🗑️ تم حذف `{0}`.",
+"en": "🗑️ `{0}` has been deleted."
+},
+{
+"ar": "{0} ريال",
+"en": "{0} SAR"
+},
+{
+"ar": "👤 **المخالف:** {0}\n\n",
+"en": "👤 **Violator:** {0}\n\n"
+},
+{
+"ar": "منذ {0} يوم",
+"en": "{0} days ago"
+},
+{
+"ar": "مستخدم ({0})",
+"en": "User ({0})"
+},
+{
+"ar": "🗑️ إزالة مخالفة للمواطن: {0}",
+"en": "🗑️ Remove a violation for citizen: {0}"
+},
+{
+"ar": "🔹 **رقم المخالفة:** `#{0}`\n💰 **الغرامة:** {1}\n🚗 **المركبة:** {2} ({3})\n📝 **السبب:** {4}\n⏳ **الوقت:** {5}\n-----------------------------------\n",
+"en": "🔹 **Violation No.:** `#{0}`\n💰 **Fine:** {1}\n🚗 **Vehicle:** {2} ({3})\n📝 **Reason:** {4}\n⏳ **Time:** {5}\n-----------------------------------\n"
+},
+{
+"ar": "📋 تفاصيل مخالفات: {0}",
+"en": "📋 Violation details for: {0}"
+},
+{
+"ar": "**#{0}** — {1} (❌ غير مسددة)\n🚗 **المركبة:** {2} ({3})\n📝 **السبب:** {4}\n⏳ **المضى:** {5}\n\n",
+"en": "**#{0}** — {1} (❌ Unpaid)\n🚗 **Vehicle:** {2} ({3})\n📝 **Reason:** {4}\n⏳ **Elapsed:** {5}\n\n"
+},
+{
+"ar": "منذ {0} دقيقة",
+"en": "{0} minutes ago"
+},
+{
+"ar": "منذ {0} ساعة",
+"en": "{0} hours ago"
+},
+{
+"ar": "اختر المخالفة المرورية (صفحة {0} من {1})...",
+"en": "Select the traffic violation (page {0} of {1})..."
+},
+{
+"ar": "تم تسجيل مخالفة مرورية بحقك:\n\n🚗 **المركبة:** {0} ({1}) - {2}\n🔢 **رقم اللوحة:** {3}\n📋 **السبب:** {4}\n💰 **الغرامة:** {5}\n👮 **العسكري:** {6}\n🆔 **رقم المخالفة:** `#{7}`\n\n⚠️ **تنبيه:** مهلة السداد 5 أيام، وبعدها سيتم السحب تلقائياً من رصيدك البنكي.",
+"en": "A traffic violation has been recorded against you:\n\n🚗 **Vehicle:** {0} ({1}) - {2}\n🔢 **Plate Number:** {3}\n📋 **Reason:** {4}\n💰 **Fine:** {5}\n👮 **Officer:** {6}\n🆔 **Violation No.:** `#{7}`\n\n⚠️ **Notice:** You have 5 days to pay, after which the amount will be automatically deducted from your bank balance."
+},
+{
+"ar": "👮 رتبة المرور: {0}\n🛡️ روم التحكم (عساكر): {1}\n🏛️ روم المواطنين: {2}\n📜 روم السجلات: {3}",
+"en": "👮 Traffic role: {0}\n🛡️ Control channel (officers): {1}\n🏛️ Citizens channel: {2}\n📜 Logs channel: {3}"
+},
+{
+"ar": "✅ تم إرسال بانل العساكر بنجاح في روم {0}",
+"en": "✅ Officers panel sent successfully in channel {0}"
+},
+{
+"ar": "✅ تم إرسال بانل المواطنين بنجاح في روم {0}",
+"en": "✅ Citizens panel sent successfully in channel {0}"
+},
+{
+"ar": "✅ **تم تسجيل المخالفة بنجاح!**\n👤 المخالف: {0}\n🚗 المركبة: `{1} - {2} - {3}`\n🔢 اللوحة: `{4}`\n📝 السبب: `{5}`\n💰 الغرامة: `{6}`\n🆔 رقم المخالفة: `#{7}`\n⏳ ملاحظة: ستسحب تلقائياً من البنك خلال 5 أيام إذا لم تُسدد.",
+"en": "✅ **Violation recorded successfully!**\n👤 Violator: {0}\n🚗 Vehicle: `{1} - {2} - {3}`\n🔢 Plate: `{4}`\n📝 Reason: `{5}`\n💰 Fine: `{6}`\n🆔 Violation No.: `#{7}`\n⏳ Note: It will be automatically deducted from the bank within 5 days if unpaid."
+},
+{
+"ar": "👤 **المخالف:** {0}\n👮 **العسكري:** {1}\n🚗 **المركبة:** {2} / {3} / {4}\n🔢 **اللوحة:** `{5}`\n📝 **السبب:** {6}\n💰 **الغرامة:** {7}\n🆔 **رقم المخالفة:** `#{8}`",
+"en": "👤 **Violator:** {0}\n👮 **Officer:** {1}\n🚗 **Vehicle:** {2} / {3} / {4}\n🔢 **Plate:** `{5}`\n📝 **Reason:** {6}\n💰 **Fine:** {7}\n🆔 **Violation No.:** `#{8}`"
+},
+{
+"ar": "🎯 تم اختيار العضو: **{0}**\nالآن يرجى اختيار نوع المخالفة المرورية:",
+"en": "🎯 Member selected: **{0}**\nNow please select the type of traffic violation:"
+},
+{
+"ar": "✅ **تم إزالة المخالفة بنجاح!**\n🆔 رقم المخالفة: `#{0}`\n📋 السبب المزال: `{1}`",
+"en": "✅ **Violation removed successfully!**\n🆔 Violation No.: `#{0}`\n📋 Removed reason: `{1}`"
+},
+{
+"ar": "قام العسكري {0} بإزالة إحدى المخالفات النشطة المسجلة بحقك:\n\n🆔 **رقم المخالفة:** `#{1}`\n📋 **السبب:** {2}\n💰 **الغرامة:** {3}",
+"en": "Officer {0} removed one of the active violations recorded against you:\n\n🆔 **Violation No.:** `#{1}`\n📋 **Reason:** {2}\n💰 **Fine:** {3}"
+},
+{
+"ar": "👮 **العسكري:** {0}\n👤 **المواطن:** {1}\n🆔 **رقم المخالفة:** `#{2}`\n📝 **السبب المزال:** {3}\n💰 **قيمة المخالفة:** {4}",
+"en": "👮 **Officer:** {0}\n👤 **Citizen:** {1}\n🆔 **Violation No.:** `#{2}`\n📝 **Removed reason:** {3}\n💰 **Violation amount:** {4}"
+},
+{
+"ar": "❌ رصيدك البنكي لا يكفي أو غير مسجل بالبنك! (قيمة المخالفة: {0})",
+"en": "❌ Your bank balance is insufficient or you are not registered with the bank! (Violation amount: {0})"
+},
+{
+"ar": "✅ **تم سداد المخالفة بنجاح!**\n🆔 رقم المخالفة: `#{0}`\n💰 المبلغ المخصوم: `{1}`",
+"en": "✅ **Violation paid successfully!**\n🆔 Violation No.: `#{0}`\n💰 Amount deducted: `{1}`"
+},
+{
+"ar": "👤 **المواطن:** {0}\n🆔 **رقم المخالفة:** `#{1}`\n💰 **المبلغ المسدد:** {2}",
+"en": "👤 **Citizen:** {0}\n🆔 **Violation No.:** `#{1}`\n💰 **Amount paid:** {2}"
+},
+{
+"ar": "الغرامة: {0}",
+"en": "Fine: {0}"
+},
+{
+"ar": "❌ حدث خطأ أثناء الحفظ: `{0}`",
+"en": "❌ An error occurred while saving: `{0}`"
+},
+{
+"ar": "مخالفة #{0} - {1}",
+"en": "Violation #{0} - {1}"
+},
+{
+"ar": "السبب: {0} | المبلغ: {1}",
+"en": "Reason: {0} | Amount: {1}"
+},
+{
+"ar": "المخالفات النشطة: {0} | الإجمالي: {1}",
+"en": "Active violations: {0} | Total: {1}"
+},
+{
+"ar": "عدد المخالفات: {0} | الإجمالي: {1}",
+"en": "Violations: {0} | Total: {1}"
+},
+{
+"ar": "مخالفة #{0} — {1}",
+"en": "Violation #{0} — {1}"
+},
+{
+"ar": "السبب: {0}",
+"en": "Reason: {0}"
+},
+{
+"ar": "لقد تجاوزت مهلة السداد (5 أيام) للمخالفة رقم `#{0}`.\n\n📋 **السبب:** {1}\n💰 **المبلغ المسحوب:** {2}\nتم خصم المبلغ تلقائياً من حسابك البنكي بنجاح.",
+"en": "You have exceeded the payment deadline (5 days) for violation No. `#{0}`.\n\n📋 **Reason:** {1}\n💰 **Amount deducted:** {2}\nThe amount was automatically deducted from your bank account successfully."
+},
+{
+"ar": "👤 **المواطن:** {0}\n🆔 **رقم المخالفة:** `#{1}`\n💰 **المبلغ المسحوب تلقائياً:** {2}\n⏳ **السبب:** مر 5 أيام بدون سداد.",
+"en": "👤 **Citizen:** {0}\n🆔 **Violation No.:** `#{1}`\n💰 **Amount automatically deducted:** {2}\n⏳ **Reason:** 5 days passed without payment."
+},
+{
+"ar": "✅ تم استلام المعلومات الأساسية!\n📌 سيتم إكمال إجراءات استخراج اللوحة (رسومها `{0}` ريال) وتسجيل المركبة (رسومها `{1}` ريال) عبر الخاص (DM).",
+"en": "✅ Basic information received!\n📌 The plate issuance (fee `{0}` SAR) and vehicle registration (fee `{1}` SAR) procedures will be completed via DM."
+},
+{
+"ar": "{0} {1} (لوحة: {2})",
+"en": "{0} {1} (Plate: {2})"
+},
+{
+"ar": "اللون: {0} | الحالة: {1}",
+"en": "Color: {0} | Status: {1}"
+},
+{
+"ar": "✅ تم اختيار المركبة (`{0}`). تابع الخطوات في الخاص (DM).",
+"en": "✅ Vehicle selected (`{0}`). Continue the steps in DM."
+},
+{
+"ar": "🚙 تفاصيل المركبة: {0} {1}",
+"en": "🚙 Vehicle details: {0} {1}"
+},
+{
+"ar": "مواطن ({0})",
+"en": "Citizen ({0})"
+},
+{
+"ar": "اللوحة: {0} | ID: {1}",
+"en": "Plate: {0} | ID: {1}"
+},
+{
+"ar": "استخدم القائمة أدناه لتسجيل مركبة واستخراج لوحتها الرسمية (رسوم اللوحة: **{0} ريال** + رسوم التسجيل: **{1} ريال**) أو شراء تأمين للمركبة (رسوم: **{2} ريال**) تُحول إلى إيبان `{3}`.",
+"en": "Use the menu below to register a vehicle and issue its official plate (plate fee: **{0} SAR** + registration fee: **{1} SAR**) or buy vehicle insurance (fee: **{2} SAR**) transferred to IBAN `{3}`."
+},
+{
+"ar": "✅ تم إعداد النظام بنجاح!\n- **روم البانل:** {0}\n- **روم اللوق:** {1}\n- **روم المركبات المؤمنة:** {2}",
+"en": "✅ System set up successfully!\n- **Panel channel:** {0}\n- **Log channel:** {1}\n- **Insured vehicles channel:** {2}"
+},
+{
+"ar": "✅ مؤمنة (تنتهي في: {0})",
+"en": "✅ Insured (expires on: {0})"
+},
+{
+"ar": "✅ تم سحب التأمين عن مركبة المواطن <@{0}> (لوحة: `{1}`) بنجاح وتم إشعاره بالخاص!",
+"en": "✅ Insurance was successfully revoked from citizen <@{0}>'s vehicle (plate: `{1}`) and they were notified via DM!"
+},
+{
+"ar": "❌ العضو {0} ليس لديه أي مركبات مسجلة.",
+"en": "❌ Member {0} has no registered vehicles."
+},
+{
+"ar": "✅ تم بنجاح حذف المركبة التي تحمل اللوحة (`{0}`) الخاصة بالمواطن {1}.",
+"en": "✅ Successfully deleted the vehicle with plate (`{0}`) belonging to citizen {1}."
+},
+{
+"ar": "❌ لم يتم العثور على مركبة تحمل اللوحة (`{0}`) لهذا العضو.",
+"en": "❌ No vehicle with plate (`{0}`) was found for this member."
+},
+{
+"ar": "✅ تم خصم إجمالي الرسوم (`{0}` ريال) بنجاح، واستخراج اللوحة (`{1}`) وتسجيل المركبة في النظام بشكل دائم!",
+"en": "✅ The total fees (`{0}` SAR) were deducted successfully, the plate (`{1}`) was issued, and the vehicle was permanently registered in the system!"
+},
+{
+"ar": "🛡️ **استكمال تأمين المركبة المختارة:**\n• الشركة والنوع: `{0} {1}`\n• اللوحة: `{2}`\n• اللون: `{3}`\n\n🖼️ أرسل الآن **صورة للمركبة** (أو أعد إرسال صورتها لتأكيد التأمين):",
+"en": "🛡️ **Completing insurance for the selected vehicle:**\n• Manufacturer and type: `{0} {1}`\n• Plate: `{2}`\n• Color: `{3}`\n\n🖼️ Now send a **picture of the vehicle** (or resend its picture to confirm the insurance):"
+},
+{
+"ar": "✅ تم خصم رسوم التأمين (`{0}` ريال) بنجاح وإصدار التأمين لمدة **أسبوع (7 أيام)** للمركبة ذات اللوحة (`{1}`)!",
+"en": "✅ The insurance fee (`{0}` SAR) was deducted successfully and insurance was issued for **one week (7 days)** for the vehicle with plate (`{1}`)!"
+},
+{
+"ar": "⚠️ **تنبيه سحب التأمين:**\nعزيزي المواطن، تم سحب تأمين مركبتك (لوحة: `{0}`) رسمياً في سيرفر **{1}** من قِبل الإدارة.",
+"en": "⚠️ **Insurance Revocation Notice:**\nDear citizen, your vehicle's insurance (plate: `{0}`) has been officially revoked in the **{1}** server by the administration."
+},
+{
+"ar": "قام الإداري {0} بسحب تأمين المركبة الخاصة بالمواطن <@{1}> ذات اللوحة (`{2}`).",
+"en": "Admin {0} revoked the insurance of citizen <@{1}>'s vehicle with plate (`{2}`)."
+},
+{
+"ar": "معرف المواطن: {0}",
+"en": "Citizen ID: {0}"
+},
+{
+"ar": "❌ **فشلت عملية التسجيل:** رصيدك البنكي لا يكفي لدفع إجمالي الرسوم (`{0}` ريال: {1} لوحة + {2} تسجيلاً) أو أنك غير مسجل في البنك.",
+"en": "❌ **Registration failed:** Your bank balance is insufficient to pay the total fees (`{0}` SAR: {1} plate + {2} registration) or you are not registered with the bank."
+},
+{
+"ar": "❌ **فشلت عملية إصدار التأمين:** رصيدك البنكي لا يكفي لدفع رسوم التأمين (`{0}` ريال).",
+"en": "❌ **Insurance issuance failed:** Your bank balance is insufficient to pay the insurance fee (`{0}` SAR)."
+},
+{
+"ar": "⚠️ **تنبيه انتهاء التأمين:** لقد انتهت صلاحية تأمين مركبتك (لوحة: `{0}`). يجب عليك إصدار تأمين جديد عبر البانل ✅",
+"en": "⚠️ **Insurance Expiry Notice:** Your vehicle's insurance (plate: `{0}`) has expired. You must issue new insurance via the panel ✅"
+}
+]
+}
