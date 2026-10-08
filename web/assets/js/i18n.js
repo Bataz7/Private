@@ -2,7 +2,7 @@
    كل نص في الموقع موجود هنا. للإضافة: ضع المفتاح في اللغتين. */
 window.I18N = {
 ar: {
-  meta: { landing: 'Revive | ريفايف', dashboard: 'لوحة التحكم | ريفايف', desc: 'ريفايف، بوت ديسكورد سعودي متكامل: حماية، تذاكر، لوق، ردود تلقائية ولوحة تحكم سهلة تدير فيها سيرفرك بكل راحة.' },
+  meta: { team: 'فريق ريفايف | Revive Team', landing: 'Revive | ريفايف', dashboard: 'لوحة التحكم | ريفايف', desc: 'ريفايف، بوت ديسكورد سعودي متكامل: حماية، تذاكر، لوق، ردود تلقائية ولوحة تحكم سهلة تدير فيها سيرفرك بكل راحة.' },
   brand: 'ريفايف',
   langToggle: 'English',
   c: {
@@ -36,7 +36,7 @@ ar: {
   },
   ui: {
     brandSub: 'لوحة التحكم', menu: 'القائمة', server: 'السيرفر', search: 'ابحث في الأقسام…', noResults: 'ما فيه نتائج',
-    home: 'الرئيسية', language: 'اللغة', stats: 'الإحصائيات', logout: 'تسجيل الخروج', backToSite: 'الموقع الرئيسي',
+    home: 'الرئيسية', language: 'اللغة', themes: 'الثيمات', stats: 'الإحصائيات', logout: 'تسجيل الخروج', backToSite: 'الموقع الرئيسي',
     groups: { rp: 'أنظمة الرول بلاي', admin: 'الأنظمة الإدارية', sec: 'أدوات الحماية', reviews: 'آراء المستخدمين' },
     noServers: 'ما لقيت سيرفر البوت موجود فيه وأنت أدمن فيه.', addBot: 'أضف البوت إلى سيرفرك',
     hello: 'أهلاً، {name}', helloSub: 'اختر قسماً من القائمة أو من الوصول السريع لتبدأ بإعداد سيرفرك.',
@@ -48,6 +48,10 @@ ar: {
   lang: { title: 'اللغة', sub: 'غيّر لغة لوحة التحكم', heading: 'اختر لغة لوحة التحكم', ar: 'العربية', en: 'English', saved: 'تم تغيير اللغة' },
   rate: { title: 'تقييم الموقع', sub: 'رأيك يساعدنا نطوّر لوحة التحكم', avg: 'متوسط التقييم {avg} من 5 · {count} تقييم', first: 'كن أول من يقيّم الموقع',
     comment: 'ملاحظتك (اختياري)', ph: 'وش أعجبك؟ وش تبي نحسّنه؟', submit: 'إرسال التقييم', update: 'تحديث تقييمي', pick: 'اختر عدد النجوم أول', thanks: 'شكراً لتقييمك' },
+  theme: { title: 'الثيمات', sub: 'اختر مظهر لوحة التحكم — يُحفظ تلقائياً', pick: 'اختر ثيمك', fx: 'المؤثرات المتحركة', fxHint: 'جسيمات الخلفية، الإضاءة، الميلان ثلاثي الأبعاد والكونفيتي. أوقفها لو جهازك بطيء.',
+    names: { royal: 'ملكي', midnight: 'منتصف الليل', aurora: 'شفق', emerald: 'زمردي', violet: 'بنفسجي', crimson: 'قرمزي', sunset: 'غروب' }, saved: 'تم تغيير الثيم' },
+  team: { title: 'فريق ريفايف', eyebrow: 'الفريق', sub: 'الأشخاص اللي يبنون ريفايف ويشتغلون عليه كل يوم.', founder: 'المؤسس', all: 'الكل', members: 'الأعضاء', roles: 'التخصصات', since: 'منذ {y}', join: 'انضم لفريقنا', joinSub: 'تحب تطوّر معنا أو تساعد الأعضاء؟ تواصل معنا في سيرفر الدعم.', joinBtn: 'سيرفر الدعم', back: 'الرئيسية', sample: 'تجريبي',
+    roleNames: { owner: 'المؤسس', dev: 'مطوّرون', support: 'الدعم', design: 'التصميم', mod: 'الإشراف' }, copy: 'تم نسخ اسم ديسكورد' },
   slot: 'رقم {n}',
   mode: { setup: 'التسطيب', panel: 'البانل' },
   panel: { title: 'عنوان الايمبد', desc: 'وصف الايمبد', image: 'رابط صورة الايمبد (اختياري)', channel: 'روم إرسال البانل', display: 'طريقة العرض في البانل',
@@ -111,7 +115,7 @@ ar: {
 },
 
 en: {
-  meta: { landing: 'Revive | ريفايف', dashboard: 'Dashboard | Revive', desc: 'Revive is an all-in-one Discord bot: moderation, tickets, logs, auto replies and an easy dashboard to manage your server.' },
+  meta: { team: 'Revive Team | ريفايف', landing: 'Revive | ريفايف', dashboard: 'Dashboard | Revive', desc: 'Revive is an all-in-one Discord bot: moderation, tickets, logs, auto replies and an easy dashboard to manage your server.' },
   brand: 'Revive',
   langToggle: 'عربي',
   c: {
@@ -145,7 +149,7 @@ en: {
   },
   ui: {
     brandSub: 'Dashboard', menu: 'Menu', server: 'Server', search: 'Search sections…', noResults: 'No results',
-    home: 'Home', language: 'Language', stats: 'Statistics', logout: 'Log out', backToSite: 'Main site',
+    home: 'Home', language: 'Language', themes: 'Themes', stats: 'Statistics', logout: 'Log out', backToSite: 'Main site',
     groups: { rp: 'Roleplay Systems', admin: 'Administrative Systems', sec: 'Protection Tools', reviews: 'User Reviews' },
     noServers: 'No server found where the bot is present and you are an admin.', addBot: 'Add the bot to your server',
     hello: 'Welcome, {name}', helloSub: 'Pick a section from the menu or the quick access below to start setting up your server.',
@@ -157,6 +161,10 @@ en: {
   lang: { title: 'Language', sub: 'Change the dashboard language', heading: 'Choose the dashboard language', ar: 'العربية', en: 'English', saved: 'Language changed' },
   rate: { title: 'Website Rating', sub: 'Your feedback helps us improve the dashboard', avg: 'Average rating {avg} out of 5 · {count} ratings', first: 'Be the first to rate the website',
     comment: 'Your comment (optional)', ph: 'What did you like? What should we improve?', submit: 'Submit rating', update: 'Update my rating', pick: 'Pick the number of stars first', thanks: 'Thanks for your rating' },
+  theme: { title: 'Themes', sub: 'Pick the dashboard look — saved automatically', pick: 'Choose your theme', fx: 'Animated effects', fxHint: 'Background particles, spotlight, 3D tilt and confetti. Turn off on slower devices.',
+    names: { royal: 'Royal', midnight: 'Midnight', aurora: 'Aurora', emerald: 'Emerald', violet: 'Violet', crimson: 'Crimson', sunset: 'Sunset' }, saved: 'Theme changed' },
+  team: { title: 'The Revive Team', eyebrow: 'THE TEAM', sub: 'The people who build Revive and work on it every single day.', founder: 'Founder', all: 'All', members: 'Members', roles: 'Specialties', since: 'Since {y}', join: 'Join our team', joinSub: 'Want to build with us or help the community? Reach out in the support server.', joinBtn: 'Support server', back: 'Home', sample: 'Sample',
+    roleNames: { owner: 'Founder', dev: 'Developers', support: 'Support', design: 'Design', mod: 'Moderation' }, copy: 'Discord name copied' },
   slot: 'No. {n}',
   mode: { setup: 'Setup', panel: 'Panel' },
   panel: { title: 'Embed title', desc: 'Embed description', image: 'Embed image URL (optional)', channel: 'Panel channel', display: 'Panel display',

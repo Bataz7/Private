@@ -1,15 +1,10 @@
 /* ===== أساسيات مشتركة | Shared base styles ===== */
-:root{
-  --n:#0b1d3f;--n2:#16305f;--n3:#1a428f;--sl:#7f8ca8;--line:#d3dbea;--soft:#f4f7fc;
-  --ok:#1f9d55;--er:#a12b3a;--warn:#b7791f;--muted:#5b6b88;
-  --ease:cubic-bezier(.2,.8,.2,1);--dir:1;
-}
 [dir=rtl]{--dir:-1}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{scroll-behavior:smooth}
-body{margin:0;min-height:100vh;font-family:'Readex Pro','IBM Plex Sans Arabic',Tahoma,sans-serif;color:var(--n);
-  background:radial-gradient(ellipse at 50% 35%,#fff 20%,#e3e8f1 80%);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body{margin:0;min-height:100vh;font-family:'Readex Pro','IBM Plex Sans Arabic',Tahoma,sans-serif;color:var(--tx);
+  background:radial-gradient(ellipse at 50% 35%,var(--bg-a) 20%,var(--bg-b) 80%);overflow-x:hidden;-webkit-font-smoothing:antialiased}
 a{color:inherit}
 button{font-family:inherit}
 
@@ -20,10 +15,10 @@ svg.i.spin{animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* خلفية متحركة */
-.b{position:fixed;z-index:0;background:rgba(112,128,160,.26);filter:blur(26px);border-radius:60% 40% 55% 45%;animation:blob 20s ease-in-out infinite alternate;pointer-events:none}
+.b{position:fixed;z-index:0;background:var(--blob);filter:blur(26px);border-radius:60% 40% 55% 45%;animation:blob 20s ease-in-out infinite alternate;pointer-events:none}
 @keyframes blob{to{border-radius:42% 58% 40% 60%;transform:translate(70px,-50px) rotate(28deg) scale(1.18)}}
 .wv{position:fixed;bottom:0;left:0;width:200%;height:90px;z-index:0;pointer-events:none;animation:wave 16s linear infinite}
-.wv path{fill:rgba(11,29,63,.07)}
+.wv path{fill:var(--wave)}
 .wv.s{animation-duration:26s;animation-direction:reverse;height:70px}
 @keyframes wave{to{transform:translateX(-50%)}}
 
@@ -39,16 +34,16 @@ svg.i.spin{animation:spin .8s linear infinite}
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:shine 3.4s ease-in-out infinite;pointer-events:none}
 [dir=rtl] .btn::after{inset-inline-start:auto;inset-inline-end:-45%}
 @keyframes shine{0%,55%{transform:translateX(0) rotate(24deg)}100%{transform:translateX(calc(520% * var(--dir))) rotate(24deg)}}
-.btn.ghost{background:rgba(255,255,255,.8);color:var(--n);border:1.5px solid var(--n2);box-shadow:none}
+.btn.ghost{background:var(--glass);color:var(--tx);border:1.5px solid var(--n2);box-shadow:none}
 .btn.ghost::after{background:linear-gradient(90deg,transparent,rgba(11,29,63,.18),transparent)}
-.btn.danger{background:#f3dde1;color:var(--er);box-shadow:none}
+.btn.danger{background:var(--danger-bg);color:var(--er);box-shadow:none}
 .btn.danger::after{display:none}
 .btn.sm{padding:9px 16px;font-size:13.5px;border-radius:12px}
 .btn.icon{padding:9px;border-radius:12px}
 
 /* زر اللغة */
-.lang-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:30px;border:1px solid var(--line);background:rgba(255,255,255,.8);
-  color:var(--n);font:600 13px inherit;font-family:inherit;cursor:pointer;backdrop-filter:blur(8px);transition:transform .25s var(--ease),background .2s,color .2s}
+.lang-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:30px;border:1px solid var(--bd2);background:var(--glass);
+  color:var(--tx);font:600 13px inherit;font-family:inherit;cursor:pointer;backdrop-filter:blur(8px);transition:transform .25s var(--ease),background .2s,color .2s}
 .lang-btn:hover{background:var(--n);color:#fff;transform:translateY(-2px)}
 .lang-btn:hover svg.i{animation:spin 1.2s linear 1}
 
@@ -64,3 +59,29 @@ svg.i.spin{animation:spin .8s linear infinite}
 
 :focus-visible{outline:3px solid rgba(26,66,143,.45);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+
+/* ---- الشريط العلوي | Top bar ---- */
+.topbar{position:fixed;top:0;inset-inline:0;z-index:100;display:flex;align-items:center;gap:18px;padding:10px clamp(14px,3vw,34px);
+  background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(10,31,77,.08);
+  animation:tbIn .8s var(--ease) both}
+@keyframes tbIn{from{transform:translateY(-100%);opacity:0}to{transform:none;opacity:1}}
+.tb-brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:'Lalezar','Readex Pro',sans-serif;font-size:26px;color:var(--tx)}
+.tb-brand img{width:40px;height:40px;border-radius:50%;object-fit:cover;background:var(--card);padding:2px;border:2px solid #fff;box-shadow:0 4px 14px rgba(11,29,63,.2);transition:transform .5s var(--ease)}
+.tb-brand:hover img{transform:rotate(-12deg) scale(1.08)}
+.tb-links{display:flex;gap:4px;margin-inline-start:12px;flex:1}
+.tb-link{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;text-decoration:none;font-size:14px;font-weight:600;color:var(--tx2);transition:background .2s,transform .25s var(--ease)}
+.tb-link:hover{background:var(--soft2);transform:translateY(-2px)}
+.tb-link:hover svg.i{animation:wiggle .5s}
+@keyframes wiggle{25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
+.tb-end{display:flex;align-items:center;gap:10px}
+.tb-end .btn.avatar{padding:5px 14px 5px 5px}
+.tb-end .btn img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+@media(max-width:860px){
+  .tb-links{display:none}.tb-end{margin-inline-start:auto}
+  .tb-brand span{display:none}
+  .tb-end .btn span{display:none}.tb-end .btn{padding:9px 11px}
+}
+
+.l-band .l-btn{background:#fff;color:#0a1f4d;border-color:#fff}
+.l-btn.fill{color:#fff}
+.l-card:hover h3{color:#fff}

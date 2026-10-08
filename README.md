@@ -14,7 +14,10 @@ web/
 deploy/                   Caddyfile · nginx.conf.example
 .env.example              كل الإعدادات (انسخه إلى .env)
 ```
-ملاحظة: الصفحات تستخدم `web/logo.png` و `web/team.html` (ملفاتك الحالية) — ضعهما داخل مجلد `web/`.
+ملاحظة: الصفحات تستخدم `web/logo.png` (شعارك الحالي) — ضعه داخل مجلد `web/`.
+
+- `web/team.html` صفحة الفريق: عدّل الأعضاء من `web/assets/js/team-data.js` فقط (البطاقات المعلّمة `sample` تجريبية).
+- الثيمات (7) في `assets/css/themes.css` — لإضافة ثيم انسخ كتلة `[data-theme=...]` وأضفه في `THEMES` داخل `common.js`.
 
 ## التشغيل | Setup
 1. `pip install -r requirements.txt`

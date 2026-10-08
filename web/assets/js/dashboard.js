@@ -33,7 +33,7 @@
     levels: { icon: 'trending', vars: ['{user}', '{level}', '{next-level}', '{xp}'], f: [['channel_id', 'ch'], ['message', 'ta']] },
     embed: { icon: 'send', f: [['channel_id', 'ch'], ['color', 'sel', 'colors'], ['title', 'tx'], ['description', 'ta'], ['image_url', 'tx'], ['outside_text', 'ta']] }
   };
-  const CUSTOM = { home: 'home', language: 'globe', stats: 'chart', rate: 'star' };
+  const CUSTOM = { home: 'home', language: 'globe', themes: 'palette', stats: 'chart', rate: 'star' };
   const NAV_GROUPS = [
     ['rp', ['rolestatus', 'identity', 'weapons', 'traffic', 'bank', 'realestate']],
     ['admin', ['tickets', 'apply', 'activation', 'welcome', 'autorole', 'replies', 'shortcuts', 'embed', 'logs', 'azkar', 'levels']],
@@ -53,7 +53,7 @@
 
   const has = p => t(p) !== p;
   const guildName = () => ($('#g').selectedOptions[0] || {}).text || '';
-  const secName = k => (SCHEMA[k] ? t(`sec.${k}.n`) : k === 'home' ? t('ui.home') : k === 'language' ? t('ui.language') : k === 'stats' ? t('ui.stats') : t('rate.title'));
+  const secName = k => (SCHEMA[k] ? t(`sec.${k}.n`) : k === 'home' ? t('ui.home') : k === 'language' ? t('ui.language') : k === 'themes' ? t('ui.themes') : k === 'stats' ? t('ui.stats') : t('rate.title'));
   const iconOf = k => (SCHEMA[k] ? SCHEMA[k].icon : CUSTOM[k]);
   const opt = (l, v, s) => `<option value="${esc(v)}" ${String(v) === String(s ?? '') ? 'selected' : ''}>${esc(l)}</option>`;
   const header = (icon, title, sub) => `<div class="ph"><span class="pi">${ic(icon)}</span><div><h1>${esc(title)}</h1><small>${esc(sub ?? guildName())}</small></div></div>`;
@@ -87,7 +87,7 @@
   /* ---------- القائمة الجانبية ---------- */
   function renderNav() {
     const link = k => `<a href="#${k}" data-s="${k}" class="${k === cur ? 'on' : ''}">${ic(iconOf(k))}<span>${esc(secName(k))}</span></a>`;
-    $('#nav').innerHTML = link('home') + link('language') + link('stats') +
+    $('#nav').innerHTML = link('home') + link('language') + link('themes') + link('stats') +
       NAV_GROUPS.map(([g, ks]) => `<div class="ng">${esc(t('ui.groups.' + g))}</div>` + ks.map(link).join('')).join('') +
       `<div class="ng">${esc(t('ui.groups.reviews'))}</div>` + link('rate') + `<div class="nav-empty" hidden>${esc(t('ui.noResults'))}</div>`;
     filterNav();
@@ -122,6 +122,7 @@
     if (s !== lastS) { tmode = 'setup'; lastS = s; panelDraft = null; }
     cur = s; markNav(s); closeMenu(); setDirty(false);
     if (s === 'language') return drawLanguage();
+    if (s === 'themes') return drawThemes();
     if (s === 'rate') return drawRate();
     if (s === 'stats') return drawStats();
     if (s === 'home') return drawHome();
@@ -159,11 +160,11 @@
       ['code', t('ui.developer'), `<span dir="ltr">${esc(si && si.creator ? si.creator.username : '—')}</span>`],
       ['calendar', t('ui.botCreated'), `<span dir="ltr">${esc((si && si.created_at) || t('c.unknown'))}</span>`]
     ];
-    const keys = [...NAV_GROUPS.flatMap(g => g[1]), 'language', 'stats', 'rate'];
-    main.innerHTML = `<div class="hello"><img src="${esc(me.avatar)}" alt=""><div><h1>${esc(t('ui.hello', { name: me.global_name || me.name }))}</h1><p>${esc(t('ui.helloSub'))}</p></div></div>
-    <div class="tiles">${tiles.map(([i, l, v], n) => `<div class="tile" style="--i:${n}"><span class="ti">${ic(i)}</span><div><b>${v}</b><small>${esc(l)}</small></div></div>`).join('')}</div>
+    const keys = [...NAV_GROUPS.flatMap(g => g[1]), 'themes', 'language', 'stats', 'rate'];
+    main.innerHTML = `<div class="hello" data-tilt="3"><img src="${esc(me.avatar)}" alt=""><div><h1>${esc(t('ui.hello', { name: me.global_name || me.name }))}</h1><p>${esc(t('ui.helloSub'))}</p></div></div>
+    <div class="tiles">${tiles.map(([i, l, v], n) => `<div class="tile" data-tilt="10" style="--i:${n}"><span class="ti">${ic(i)}</span><div><b>${v}</b><small>${esc(l)}</small></div></div>`).join('')}</div>
     <h2 class="sect-title">${ic('bolt')}${esc(t('ui.quick'))}</h2>
-    <div class="quick">${keys.map((k, n) => `<a href="#${k}" style="--i:${n}"><span class="qi">${ic(iconOf(k))}</span>${esc(secName(k))}</a>`).join('')}</div>`;
+    <div class="quick">${keys.map((k, n) => `<a href="#${k}" data-tilt="12" style="--i:${n}"><span class="qi">${ic(iconOf(k))}</span>${esc(secName(k))}</a>`).join('')}</div>`;
     $$('.cnt', main).forEach(el => countUp(el, +el.dataset.to));
     stagger();
   }
@@ -172,6 +173,17 @@
     let d; try { d = await api('/api/stats'); } catch (e) { return toast(e.message, false); }
     main.innerHTML = `${header('chart', t('stats.title'), t('stats.sub'))}<div><div class="stat-box"><div class="stat-num">0</div><div class="stat-label">${esc(t('stats.servers'))}</div></div><p class="stat-sub">${esc(t('stats.text'))}</p></div>`;
     countUp($('.stat-num', main), Number(d.guilds || 0)); stagger();
+  }
+
+  function drawThemes() {
+    const cur0 = Revive.theme, fxOn = !document.documentElement.classList.contains('fx-off');
+    main.innerHTML = `${header('palette', t('theme.title'), t('theme.sub'))}
+    <h2 class="sect-title">${ic('sparkles')}${esc(t('theme.pick'))}</h2>
+    <div class="theme-grid">${Revive.THEMES.map(([id], n) => `<button type="button" class="theme-card ${id === cur0 ? 'on' : ''}" data-theme="${id}" data-id="${id}" data-tilt="8" style="--i:${n}"><div class="tc-prev"><div class="s"></div><div class="m"><div class="h"></div><div class="c"><i></i><i></i><i></i></div></div></div><div class="tc-name"><span>${esc(t('theme.names.' + id))}</span><span class="ok">${ic('check')}</span></div></button>`).join('')}</div>
+    <div class="card block"><div class="fx-row"><div><b>${esc(t('theme.fx'))}</b><p>${esc(t('theme.fxHint'))}</p></div><label class="sw"><input type="checkbox" id="fxsw" ${fxOn ? 'checked' : ''}><i></i></label></div></div>`;
+    $$('.theme-card', main).forEach(b => b.onclick = e => { Revive.setTheme(b.dataset.id, e); $$('.theme-card', main).forEach(x => x.classList.toggle('on', x === b)); });
+    $('#fxsw').onchange = e => Revive.fx.toggle(e.target.checked);
+    stagger();
   }
 
   function drawLanguage() {
@@ -354,6 +366,7 @@
       else if (p === 'unsupported') toast(t('c.panelUnsupported'), false);
       else toast(t('c.panelFail', { e: String(p).slice(6) }), false);
       setDirty(false);
+      if (!p || p === 'none' || p === 'sent') Revive.fx && Revive.fx.burst();
     } catch (e) {
       let m = e.message;
       if (m.startsWith('REQ:')) {

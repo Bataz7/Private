@@ -10,10 +10,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;600;700&family=Lalezar&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="/assets/js/theme-init.js"></script>
+<link rel="stylesheet" href="/assets/css/themes.css">
 <link rel="stylesheet" href="/assets/css/base.css">
 <link rel="stylesheet" href="/assets/css/dashboard.css">
+<link rel="stylesheet" href="/assets/css/fx.css">
 </head>
 <body>
+<div id="splash"><div class="sp-in"><svg viewBox="0 0 120 110" fill="none"><use href="#i-emblem"/></svg><b data-i18n="brand">ريفايف</b><div class="sp-bar"><i></i></div></div></div>
 <i class="b" style="width:420px;height:380px;top:-90px;inset-inline-start:-60px"></i>
 <i class="b" style="width:340px;height:420px;top:30%;inset-inline-end:-100px;animation-delay:-6s"></i>
 <i class="b" style="width:460px;height:300px;bottom:6%;inset-inline-start:22%;animation-delay:-11s;opacity:.7"></i>
@@ -35,6 +39,7 @@
       <div class="userchip" id="uc" hidden><img id="uav" alt=""><span id="unm"></span></div>
       <div class="side-row">
         <button class="lang-btn" data-lang-toggle type="button"><svg class="i"><use href="#i-globe"/></svg><span data-lang-text></span></button>
+        <button class="theme-btn" data-theme-btn type="button" data-i18n-label="theme.title"><svg class="i"><use href="#i-palette"/></svg></button>
       </div>
       <a class="out" href="/logout"><svg class="i"><use href="#i-logout"/></svg><span data-i18n="ui.logout"></span></a>
     </div>
@@ -46,6 +51,7 @@
 <script src="/assets/js/i18n.js"></script>
 <script src="/assets/js/icons.js"></script>
 <script src="/assets/js/common.js"></script>
+<script src="/assets/js/fx.js"></script>
 <script src="/assets/js/dashboard.js"></script>
 </body>
 </html>
