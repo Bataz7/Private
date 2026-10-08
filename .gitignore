@@ -152,3 +152,4 @@ __pycache__/
 data/
 emojis/ids.json
 *.sqlite3
+*.zip

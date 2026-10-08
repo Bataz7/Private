@@ -80,7 +80,7 @@ class _Emojis:
 E = _Emojis()
 
 
-async def sync(bot_or_token, session=None) -> dict:
+async def sync(bot_or_token, session=None, on_progress=None) -> dict:
     """يرفع الإيموجيات الناقصة كإيموجيات للتطبيق (Application Emojis) ويحفظ emojis/ids.json.
     يقبل كائن البوت أو التوكن. آمن للتشغيل كل مرة: ما يرفع إلا الناقص."""
     import aiohttp
@@ -104,15 +104,17 @@ async def sync(bot_or_token, session=None) -> dict:
         app = await call("GET", "/applications/@me")
         existing = {e["name"]: e["id"] for e in (await call("GET", f"/applications/{app['id']}/emojis")).get("items", [])}
         ids.update(existing)
-        for e in manifest:
-            if e["name"] in ids:
-                continue
+        todo = [e for e in manifest if e["name"] not in ids]
+        for n, e in enumerate(todo, 1):
             data = base64.b64encode((DIR / e["file"]).read_bytes()).decode()
             made = await call("POST", f"/applications/{app['id']}/emojis", json={"name": e["name"], "image": f"data:image/png;base64,{data}"})
             ids[e["name"]] = made["id"]
-            print("uploaded", e["name"])
+            if on_progress:
+                on_progress(n, len(todo), e["name"])
+        ids = {k: v for k, v in ids.items() if k.startswith("rv_")}
         IDS_FILE.write_text(json.dumps(ids, indent=1), encoding="utf-8")
         E.reload()
+        sync.last = {"total": len(manifest), "uploaded": len(todo), "ready": sum(1 for e in manifest if e["name"] in ids)}
         return ids
     finally:
         if own:

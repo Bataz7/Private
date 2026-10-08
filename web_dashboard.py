@@ -3,7 +3,7 @@
 الإعدادات تُقرأ من متغيرات البيئة أو من ملف .env (انظر .env.example) — لا تضع الأسرار داخل الكود.
 Settings come from environment variables or a .env file (see .env.example) — never hard-code secrets.
 """
-import os, sys, re, json, secrets, sqlite3, urllib.parse, datetime
+import os, sys, re, json, logging, secrets, sqlite3, urllib.parse, datetime
 from pathlib import Path
 import aiohttp, uvicorn, discord
 from fastapi import FastAPI, Request, HTTPException
@@ -1433,9 +1433,9 @@ async def start_web(bot):
     except Exception:
         app.state.application_info = None
     if not CLIENT_SECRET:
-        print("[dashboard] ⚠️ DISCORD_CLIENT_SECRET غير مضبوط — تسجيل الدخول لن يعمل / is not set, login will fail")
+        logging.getLogger("dashboard").warning("DISCORD_CLIENT_SECRET is not set — dashboard login will fail")
     cfg = uvicorn.Config(app, host="0.0.0.0", port=PORT, log_level="warning",
                          proxy_headers=True, forwarded_allow_ips=os.environ.get("FORWARDED_ALLOW_IPS", "*"),
                          ssl_certfile=SSL_CERTFILE, ssl_keyfile=SSL_KEYFILE)
-    print(f"[dashboard] {'https' if (BASE_URL or SSL_CERTFILE) else 'http'}://… port {PORT} | redirect: {(BASE_URL or '<host>') + '/callback'}")
+    logging.getLogger("dashboard").info("listening on port %s · redirect %s/callback", PORT, BASE_URL or "<host>")
     await uvicorn.Server(cfg).serve()
