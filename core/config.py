@@ -40,7 +40,28 @@ def env_int(name: str, default: int = 0) -> int:
         return default
 
 
-TOKEN = env("DISCORD_TOKEN")
+def clean_token(raw: str) -> str:
+    """ينظّف التوكن من أخطاء النسخ الشائعة: مسافات، أسطر، اقتباس، كلمة Bot."""
+    t = "".join(raw.split()).strip("\"'`")
+    if t.lower().startswith("bot"):
+        t = t[3:]
+    return t
+
+
+def token_problem(t: str) -> str:
+    """يعيد وصف المشكلة إن كان الشكل لا يشبه توكن بوت، وإلا نص فارغ."""
+    if not t:
+        return "missing — set DISCORD_TOKEN in .env or in the host's environment variables"
+    if t.count(".") != 2:
+        if len(t) in (32, 64):
+            return f"this is {len(t)} chars: a Client Secret / Public Key, not the bot token (Bot → Reset Token)"
+        return f"not a bot token (found {t.count('.')} dots, a bot token has 2). Use Bot → Reset Token → Copy"
+    if len(t) < 50 or len(t) > 100:
+        return f"wrong length ({len(t)} chars, expected ~70) — the token was cut or pasted twice; reset it and copy once"
+    return ""
+
+
+TOKEN = clean_token(env("DISCORD_TOKEN"))
 DEFAULT_LANG = env("DEFAULT_LANG", "ar") if env("DEFAULT_LANG", "ar") in ("ar", "en") else "ar"
 OWNER_IDS = {int(x) for x in env("OWNER_IDS").replace(" ", "").split(",") if x.isdigit()}
 # سيرفر المالك: يستقبل إشعارات دخول البوت لسيرفرات جديدة + الإحصائيات (اختياري)

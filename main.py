@@ -208,8 +208,10 @@ def _token_hints(t: str) -> list[str]:
 
 def main():
     console.section("Startup")
-    if not config.TOKEN:
-        console.fail("DISCORD_TOKEN", "missing — put it in .env (see .env.example)")
+    bad = config.token_problem(config.TOKEN)
+    if bad:
+        console.fail("DISCORD_TOKEN", bad)
+        console.info("Fix", "put it in .env as  DISCORD_TOKEN=<token>  (no spaces/quotes) or in the host's Variables tab")
         sys.exit(1)
     console.ok("Configuration", ".env loaded" if (config.BASE_DIR / ".env").exists() else "environment variables")
     console.info("Connecting to Discord", "logging in…")
