@@ -1,0 +1,5 @@
+{% from "views/_macros.html" import header with context %}
+<div id="view" data-kind="stats">
+  {{ header('chart', t('stats.title'), t('stats.sub')) }}
+  <div><div class="stat-box"><div class="stat-num" data-countup="{{ guilds_total }}">0</div><div class="stat-label">{{ t('stats.servers') }}</div></div><p class="stat-sub">{{ t('stats.text') }}</p></div>
+</div>

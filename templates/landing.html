@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ t('meta.landing') }}{% endblock %}
+{% block meta %}
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Revive">
+<meta property="og:title" content="Revive | ريفايف">
+<meta property="og:description" content="{{ t('meta.desc') }}">
+<meta property="og:image" content="https://cdn.discordapp.com/attachments/1485266933979938996/1557344391398555708/file_0000000049ac824698e55d68d94ffb9a.png?backend=b2&ex=6ac7757c&is=6ac623fc&hm=55825f0b1d1ed06f4ca6e4cce42360c737fdd2f5b134b6ce436ec5e14dd1a3c8&">
+<meta name="twitter:card" content="summary_large_image">
+{% endblock %}
+{% block css %}<link rel="stylesheet" href="/assets/css/landing.css">{% endblock %}
+{% block body %}
+<i class="b" style="width:420px;height:380px;top:-90px;inset-inline-start:-60px"></i>
+<i class="b" style="width:340px;height:420px;top:30%;inset-inline-end:-100px;animation-delay:-6s"></i>
+<i class="b" style="width:460px;height:300px;bottom:6%;inset-inline-start:22%;animation-delay:-11s;opacity:.7"></i>
+{% set active = 'home' %}
+{% include "_topbar.html" %}
+<div class="rl l-js">
+<div class="l-progress"></div>
+<div class="l-bg"><i class="l-swirl s1" data-s=".16" data-r=".01"></i><i class="l-swirl s2" data-s="-.1" data-r="-.015"></i><i class="l-swirl s3" data-s=".07" data-r=".01"></i><div class="l-particles"></div><div class="l-glow"></div></div>
+
+<section class="l-hero"><div class="l-wrap">
+  <div class="l-stage">
+    <i class="l-ring r1"></i><i class="l-ring r2"></i><i class="l-halo"></i>
+    <div class="l-logo-wrap"><div class="l-logo-text">{{ t('brand') }}</div></div>
+    {{ icon('emblem', 'l-emblem') }}
+    <div class="l-line"><i></i><i></i></div>
+  </div>
+  <h2>{{ t('land.heroTitle')|safe }}</h2>
+  <p>{{ t('land.heroSub') }}</p>
+  <div class="l-cta">
+    <a class="l-btn fill" href="/dashboard"><span>{{ t('land.open') }}</span>{{ icon('arrow', 'flip') }}</a>
+    <a class="l-btn ghost" href="#l-features" id="to-features">{{ icon('sliders') }}<span>{{ t('land.features') }}</span></a>
+  </div>
+  <div class="l-scroll"><i></i></div>
+</div></section>
+
+<div class="l-marquee"><div class="l-track">
+  {% for _ in range(2) %}{% for w in t('land.marquee') %}<span>{{ w }}</span>{% endfor %}{% endfor %}
+</div></div>
+
+<section class="l-block" id="l-stats"><div class="l-wrap">
+  <span class="l-eyebrow l-reveal">{{ t('land.statsEyebrow') }}</span>
+  <h2 class="l-title l-reveal">{{ t('land.statsTitle') }}</h2>
+  <p class="l-sub l-reveal">{{ t('land.statsSub') }}</p>
+  <div class="l-stats">
+    <div class="l-stat l-reveal" data-d="zoom" style="--i:0"><b data-count="99.9" data-suffix="%">99.9%</b><span>{{ t('land.uptime') }}</span></div>
+    <div class="l-stat l-reveal" data-d="zoom" style="--i:1"><b dir="ltr">24/7</b><span>{{ t('land.always') }}</span></div>
+    <div class="l-stat l-reveal" data-d="zoom" style="--i:2"><b dir="ltr">&lt;1s</b><span>{{ t('land.response') }}</span></div>
+    <div class="l-stat l-reveal" data-d="zoom" style="--i:3"><b>∞</b><span>{{ t('land.custom') }}</span></div>
+  </div>
+</div></section>
+
+<section class="l-block" id="l-features"><div class="l-wrap">
+  <span class="l-eyebrow l-reveal">{{ t('land.featEyebrow') }}</span>
+  <h2 class="l-title l-reveal">{{ t('land.featTitle') }}</h2>
+  <p class="l-sub l-reveal">{{ t('land.featSub') }}</p>
+  <div class="l-grid">
+    {% set ics = ['shield','bolt','sliders','smile','ticket','logs'] %}
+    {% set dirs = ['right','','left','right','','left'] %}
+    {% for c in t('land.cards') %}
+    <article class="l-card l-reveal" {% if dirs[loop.index0] %}data-d="{{ dirs[loop.index0] }}"{% endif %} style="--i:{{ loop.index0 % 3 }}">
+      <div class="l-ico">{{ icon(ics[loop.index0], 'l-i') }}</div><h3>{{ c[0] }}</h3><p>{{ c[1] }}</p></article>
+    {% endfor %}
+  </div>
+</div></section>
+
+<section class="l-block" id="l-join"><div class="l-wrap">
+  <div class="l-band l-reveal" data-d="zoom"><h2>{{ t('land.joinTitle') }}</h2><p>{{ t('land.joinSub') }}</p>
+    <a class="l-btn" href="/dashboard"><span>{{ t('land.joinBtn') }}</span>{{ icon('arrow', 'flip') }}</a></div>
+</div></section>
+
+<footer class="l-foot"><div class="l-brand">{{ icon('emblem') }}<span>{{ t('brand') }}</span></div><span>{{ t('land.rights') }}</span></footer>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/assets/js/landing.js"></script>{% endblock %}

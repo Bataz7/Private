@@ -1,17 +1,6 @@
 /* الصفحة الرئيسية | Landing page: i18n, cards, reveal-on-scroll, parallax */
 (function () {
-  const { $, $$, t, api, esc, onLang, init } = Revive;
-  const ICONS = ['shield', 'bolt', 'sliders', 'smile', 'ticket', 'logs'];
-  const DIRS = ['right', '', 'left', 'right', '', 'left'];
-
-  function render(again) {
-    $('#marquee').innerHTML = [...t('land.marquee'), ...t('land.marquee')].map(x => `<span>${esc(x)}</span>`).join('');
-    $('#cards').innerHTML = t('land.cards').map(([h, p], i) =>
-      `<article class="l-card l-reveal${again ? ' in done' : ''}" ${DIRS[i] ? `data-d="${DIRS[i]}"` : ''} style="--i:${i % 3}"><div class="l-ico">${ic(ICONS[i], 'l-i')}</div><h3>${esc(h)}</h3><p>${esc(p)}</p></article>`).join('');
-    bindCards();
-  }
-
-  /* تأثير ميلان البطاقات */
+  const { $, $$ } = Revive;
   const coarse = matchMedia('(pointer:coarse)').matches, reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
   function bindCards() {
     if (coarse || reduce) return;
@@ -19,10 +8,7 @@
       let raf = 0, ex = 0, ey = 0;
       c.addEventListener('pointermove', e => {
         ex = e.clientX; ey = e.clientY; if (raf) return;
-        raf = requestAnimationFrame(() => {
-          raf = 0; const r = c.getBoundingClientRect(), x = (ex - r.left) / r.width - .5, y = (ey - r.top) / r.height - .5;
-          c.style.transform = `perspective(900px) rotateX(${(-y * 10).toFixed(2)}deg) rotateY(${(x * 10).toFixed(2)}deg) translate3d(0,-6px,0)`;
-        });
+        raf = requestAnimationFrame(() => { raf = 0; const r = c.getBoundingClientRect(), x = (ex - r.left) / r.width - .5, y = (ey - r.top) / r.height - .5; c.style.transform = `perspective(900px) rotateX(${(-y * 10).toFixed(2)}deg) rotateY(${(x * 10).toFixed(2)}deg) translate3d(0,-6px,0)`; });
       });
       c.addEventListener('pointerleave', () => { c.style.transform = ''; });
     });
@@ -73,17 +59,6 @@
     }
   }
 
-  /* هل المستخدم مسجّل؟ نعرض صورته بدل «تسجيل الدخول» */
-  async function whoami() {
-    try {
-      const me = await api('/api/me', { quiet: true });
-      const b = $('#tb-cta');
-      b.classList.add('avatar');
-      b.innerHTML = `<img src="${esc(me.avatar)}" alt=""><span data-i18n="land.dashboard"></span>`;
-      Revive.applyStatic(b);
-    } catch { /* زائر */ }
-  }
-
   $('#to-features').addEventListener('click', e => { e.preventDefault(); $('#l-features').scrollIntoView({ behavior: 'smooth' }); });
-  init(); render(false); onLang(() => render(true)); effects(); whoami();
+  bindCards(); effects();
 })();

@@ -1,0 +1,83 @@
+{# ===== حقول النماذج | Form field macros ===== #}
+{% macro header(icon_name, title, sub) %}
+<div class="ph"><span class="pi">{{ icon(icon_name) }}</span><div><h1>{{ title }}</h1><small>{{ sub }}</small></div></div>
+{% endmacro %}
+
+{% macro options(items, current, none_label=None) %}
+{% if none_label %}<option value="">{{ none_label }}</option>{% endif %}
+{% for o in items %}<option value="{{ o.id }}"{{ sel(o.id, current) }}>{{ o.name }}</option>{% endfor %}
+{% endmacro %}
+
+{% macro field(sec, f, data, meta) %}
+{% set k = f[0] %}{% set ty = f[1] %}{% set x = f[2] if f|length > 2 else none %}{% set v = data.get(k) %}
+<div class="f{{ ' w' if ty in WIDE }}{{ ' bo' if ty == 'bo' }}">
+  <label>{{ t('sec.' + sec + '.f.' + k) }}</label>
+  {% if ty == 'tx' %}
+    <input data-k="{{ k }}" data-mirror="{{ k }}" value="{{ v if v is not none else '' }}"{% if 'url' in k or 'image' in k %} dir="ltr" placeholder="https://"{% endif %}>
+  {% elif ty == 'ta' %}
+    <textarea data-k="{{ k }}" data-mirror="{{ k }}" rows="4">{{ v if v is not none else '' }}</textarea>
+  {% elif ty == 'bo' %}
+    {% set on = v if v is not none else (x or false) %}
+    <label class="sw"><input type="checkbox" data-k="{{ k }}"{{ ' checked' if on }}><i></i></label>
+  {% elif ty == 'qs' %}
+    {% set qs = (v or []) + ['', '', '', '', ''] %}
+    {% for q in qs[:5] %}<input class="q" maxlength="45" placeholder="{{ t('sec.' + sec + '.qph') }}" value="{{ q }}">{% endfor %}
+  {% elif ty == 'ar' %}
+    {% if data.get('legacy') %}<p class="nt">{{ t('sec.replies.legacy') }}</p>
+    {% else %}
+    <div class="ar">{% for r in (v or []) %}{{ reply_row(r) }}{% endfor %}</div>
+    <div class="empty" id="ar-empty"{{ ' hidden' if v }}>{{ t('sec.replies.empty') }}</div>
+    <button type="button" class="btn sm" data-act="addReply">{{ icon('plus') }}<span>{{ t('sec.replies.add') }}</span></button>
+    {% endif %}
+  {% elif ty == 'sc' %}
+    <div class="sc">{% for target, items in sc_groups(v or []) %}{{ sc_group(target, items) }}{% endfor %}</div>
+  {% elif ty == 'lg' %}
+    <div class="lgtop"><select id="lgall"><option value="">{{ t('sec.logs.pick') }}</option>{% for o in meta.channels %}<option value="{{ o.id }}"># {{ o.name }}</option>{% endfor %}</select>
+      <button type="button" class="btn sm" data-act="lgApply">{{ icon('check') }}<span>{{ t('sec.logs.apply') }}</span></button>
+      <button type="button" class="btn danger sm" data-act="lgClear">{{ icon('trash') }}<span>{{ t('sec.logs.clear') }}</span></button></div>
+    {% for c, ic in S.LOG_TYPES.items() %}
+    <div class="lg-row"><div class="rowname"><span class="ri">{{ icon(ic) }}</span>{{ t('sec.logs.types.' + c) }}</div>
+      <select data-k="{{ c }}"><option value="">{{ t('sec.logs.off') }}</option>{% for o in meta.channels %}<option value="{{ o.id }}"{{ sel(o.id, data.get(c)) }}># {{ o.name }}</option>{% endfor %}</select>
+      <button type="button" class="btn danger sm icon" data-act="lgDel" aria-label="{{ t('c.del') }}">{{ icon('trash') }}</button></div>
+    {% endfor %}
+  {% elif ty == 'sec' %}
+    {% for fe, ic in S.SEC_FEATS.items() %}{% set info = t('sec.security.feats.' + fe) %}
+    <div class="sec-row"><div><div class="rowname"><span class="ri">{{ icon(ic) }}</span><span>{{ info[0] }}{% if info|length > 2 %}<span class="dev">{{ info[2] }}</span>{% endif %}</span></div><small>{{ info[1] }}</small></div>
+      <label class="sw"><input type="checkbox" data-k="{{ fe }}__on"{{ ' checked' if data.get(fe + '__on') }}><i></i></label>
+      <select data-k="{{ fe }}__p">{% for p in S.PUNISHMENTS %}<option value="{{ p }}"{{ sel(p, data.get(fe + '__p') or 'timeout') }}>{{ t('pun.' + p) }}</option>{% endfor %}</select></div>
+    {% endfor %}
+  {% elif ty == 'bw' %}
+    <div class="bw-add"><input id="bwin" placeholder="{{ t('sec.badwords.ph') }}" maxlength="100"><button type="button" class="btn sm" data-act="bwAdd">{{ icon('plus') }}<span>{{ t('sec.badwords.add') }}</span></button></div>
+    <div class="bw">{% for w in (v or []) %}{{ bw_chip(w) }}{% endfor %}</div>
+  {% elif ty == 'pn' %}
+    <select data-k="{{ k }}">{% for p in S.PUNISHMENTS %}<option value="{{ p }}"{{ sel(p, v or 'timeout') }}>{{ t('pun.' + p) }}</option>{% endfor %}</select>
+  {% elif ty == 'interval' %}
+    <select data-k="{{ k }}">{% for n in S.INTERVALS %}<option value="{{ n }}"{{ sel(n, v or 15) }}>{{ n|mins(lang) }}</option>{% endfor %}</select>
+  {% elif ty == 'sel' %}
+    {% set labels = t('opt.' + x) %}
+    <select data-k="{{ k }}">{% for val in OPTIONS[x] %}<option value="{{ val }}"{{ sel(val, v) }}>{{ labels[loop.index0] }}</option>{% endfor %}</select>
+  {% else %}
+    {% set src = meta.channels if ty == 'ch' else (meta.roles if ty == 'rl' else meta.categories) %}
+    <select data-k="{{ k }}"><option value="">{{ t('c.none') }}</option>
+      {% for o in src %}<option value="{{ o.id }}"{{ sel(o.id, v) }}>{{ '# ' if ty == 'ch' }}{{ o.name }}</option>{% endfor %}</select>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro reply_row(r) %}
+<div class="ar-row"><input class="k" placeholder="{{ t('sec.replies.kw') }}" value="{{ r.keyword or '' }}">
+  <select class="m"><option value="contains"{{ sel('contains', r.match_type or 'contains') }}>{{ t('sec.replies.contains') }}</option><option value="exact"{{ sel('exact', r.match_type) }}>{{ t('sec.replies.exact') }}</option></select>
+  <textarea class="r" rows="2" placeholder="{{ t('sec.replies.resp') }}">{{ r.response or '' }}</textarea>
+  <div class="mn"><span>{{ t('sec.replies.mention') }}</span><label class="sw"><input type="checkbox" class="c"{{ ' checked' if r.mention }}><i></i></label></div>
+  <button type="button" class="btn danger sm" data-act="delReply">{{ icon('trash') }}<span>{{ t('c.del') }}</span></button></div>
+{% endmacro %}
+
+{% macro bw_chip(w) %}<span class="cw" data-w="{{ w }}">{{ w }}<button type="button" data-act="bwDel" aria-label="{{ t('c.del') }}">{{ icon('x') }}</button></span>{% endmacro %}
+{% macro sc_chip(name, enabled=true) %}<span class="sc-chip" data-name="{{ name }}" data-enabled="{{ '1' if enabled else '0' }}">{{ name }}<button type="button" class="sc-x" aria-label="{{ t('sec.shortcuts.remove') }}">{{ icon('x') }}</button></span>{% endmacro %}
+{% macro sc_group(target, items) %}
+<div class="sc-group" data-target="{{ target }}"><div class="sc-head"><div class="sc-head-main"><div class="sc-head-icon">{{ icon(S.SC_ICONS.get(target, 'bolt')) }}</div>
+  <div><b>{{ target }}/</b><small>{{ t('sec.shortcuts.actions.' + target) if has('sec.shortcuts.actions.' + target) else target }}</small></div></div>
+  <button type="button" class="sc-edit" data-act="scEdit" title="{{ t('sec.shortcuts.edit') }}" aria-label="{{ t('sec.shortcuts.edit') }}">{{ icon('pencil') }}</button></div>
+  {% if items %}<div class="sc-chips">{% for x in items %}{{ sc_chip(x.name, x.enabled is not sameas false) }}{% endfor %}</div>
+  {% else %}<div class="sc-empty">{{ t('sec.shortcuts.empty') }}</div>{% endif %}</div>
+{% endmacro %}

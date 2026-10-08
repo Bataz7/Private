@@ -1,0 +1,10 @@
+{% from "views/_macros.html" import header with context %}
+<div id="view" data-kind="emojis">
+  {{ header('emoji', t('emo.title'), t('emo.sub')) }}
+  <div class="emo-bar"><div class="nav-search emo-search">{{ icon('search') }}<input id="emo-q" type="search" placeholder="{{ t('emo.search') }}" autocomplete="off"></div>
+    <div class="tabs emo-cats"><button type="button" data-cat="all" class="on">{{ t('emo.all') }}</button>{% for c in cats %}<button type="button" data-cat="{{ c }}">{{ t('emo.cats.' + c) }}</button>{% endfor %}</div>
+    <small class="emo-count">{{ t('emo.count', n=emojis|length) }}</small></div>
+  {% if not ids_ready %}<div class="note">{{ icon('info') }}<div>{{ t('emo.noIds') }}</div></div>{% endif %}
+  <div class="emo-grid">{% for e in emojis %}
+    <button type="button" class="emo" data-name="{{ e.name }}" data-cat="{{ e.category }}" data-code="{{ e.code }}" title="{{ e.code }}"><img src="/emojis/{{ e.file }}" alt="{{ e.name }}" loading="lazy" width="48" height="48"><span>{{ e.name }}</span></button>{% endfor %}</div>
+</div>

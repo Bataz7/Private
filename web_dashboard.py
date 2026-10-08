@@ -11,9 +11,13 @@ from fastapi.responses import RedirectResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi.responses import HTMLResponse, Response
+
+from dashboard_ui import i18n as ui_i18n, render as ui_render, schema as ui_schema, themes as ui_themes
 
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR / "web"
+EMOJI_DIR = BASE_DIR / "emojis"
 
 def _load_env(path=BASE_DIR / ".env"):
     """قارئ .env بسيط بدون مكتبات؛ لا يستبدل المتغيرات الموجودة أصلاً."""
@@ -42,6 +46,7 @@ PORT = int(os.environ.get("DASHBOARD_PORT", os.environ.get("SERVER_PORT", "8080"
 SSL_CERTFILE = os.environ.get("SSL_CERTFILE") or None   # اختياري: https مباشر بدون بروكسي
 SSL_KEYFILE = os.environ.get("SSL_KEYFILE") or None
 API = "https://discord.com/api/v10"
+SUPPORT_URL = os.environ.get("SUPPORT_URL", "https://discord.gg/ZHpPtZZsZv")
 SECTIONS = {"welcome", "tickets", "apply", "rolestatus", "realestate", "activation", "identity", "weapons", "traffic", "replies", "bank", "autorole", "embed", "shortcuts", "logs", "security", "badwords", "azkar", "levels"}
 
 def _session_secret():
@@ -273,12 +278,55 @@ async def callback(request: Request, code: str = "", state: str = "", error: str
     ]
     return RedirectResponse("/dashboard")  # بعد تسجيل الدخول يفتح صفحة لوحة التحكم
 
+# ---------- الصفحات (Python يبنيها بقوالب Jinja2) ----------
+def get_lang(request: Request) -> str:
+    return ui_i18n.pick_lang(request.cookies.get("lang"), request.headers.get("accept-language"))
+
+def page_ctx(request: Request, **extra):
+    theme = request.cookies.get("theme")
+    return dict(lang=get_lang(request), user=request.session.get("user"), support_url=SUPPORT_URL,
+                theme=theme if theme in ui_themes.ORDER else "royal", fx_off=request.cookies.get("fx") == "0", **extra)
+
+def html_page(template: str, request: Request, **extra):
+    ctx = page_ctx(request, **extra)
+    lang = ctx.pop("lang")
+    return HTMLResponse(ui_render.page(template, lang, **ctx), headers={"Cache-Control": "no-store"})
+
+@app.get("/")
+async def landing_page(request: Request):
+    return html_page("landing.html", request)
+
+@app.get("/team")
+@app.get("/team.html")
+async def team_page(request: Request):
+    return html_page("team.html", request)
+
+def user_guild_list(request: Request):
+    bot = request.app.state.bot
+    out = []
+    for gid in request.session.get("guilds", []):
+        g = bot.get_guild(int(gid))
+        if g:
+            out.append({"id": gid, "name": g.name})
+    return out
+
 @app.get("/dashboard")
 @app.get("/dashboard/")
 async def dashboard_page(request: Request):
     if not request.session.get("user"):
         return RedirectResponse("/login")
-    return FileResponse(WEB_DIR / "dashboard.html", headers={"Cache-Control": "no-store"})
+    guilds = user_guild_list(request)
+    saved = request.cookies.get("gid")
+    gid = saved if any(x["id"] == saved for x in guilds) else (guilds[0]["id"] if guilds else "")
+    return html_page("dashboard.html", request, guilds=guilds, gid=gid)
+
+@app.get("/assets/i18n.js")
+async def i18n_js():
+    return Response(ui_i18n.js_bundle(), media_type="application/javascript", headers={"Cache-Control": "no-cache"})
+
+@app.get("/assets/css/themes.css")
+async def themes_css():
+    return Response(ui_themes.css(), media_type="text/css", headers={"Cache-Control": "no-cache"})
 
 @app.get("/logout")
 async def logout(request: Request):
@@ -1155,7 +1203,9 @@ async def write(gid: str, section: str, request: Request, slot: str = ""):
 # ---------- بانل التذاكر (إرسال مباشر من الموقع) ----------
 @app.get("/api/guilds/{gid}/tickets/list")
 async def tickets_list(gid: str, request: Request):
-    g = guild_or_403(request, gid)
+    return ticket_items(guild_or_403(request, gid))
+
+def ticket_items(g):
     d = jload(TKF).get(str(g.id), {})
     return [{"num": k, "name": v.get("name", "")} for k, v in sorted(d.items(), key=lambda x: int(x[0])) if isinstance(v, dict) and str(k).isdigit()]
 
@@ -1197,7 +1247,9 @@ async def do_send_apply_panel(bot, g, d):
 
 @app.get("/api/guilds/{gid}/apply/list")
 async def apply_list(gid: str, request: Request):
-    g = guild_or_403(request, gid)
+    return apply_items(guild_or_403(request, gid))
+
+def apply_items(g):
     d = jload(APF).get(str(g.id), {})
     if not isinstance(d, dict):
         return []
@@ -1271,7 +1323,68 @@ async def site_info(request: Request):
             pass
     return {"creator": {"username": ".a.506.", "avatar": "https://cdn.simpleicons.org/discord/5865F2"}, "created_at": created}
 
-# الواجهة: web/index.html (الصفحة الرئيسية) و web/dashboard.html (على /dashboard) — يجب أن يكون آخر شي
+# ---------- أقسام اللوحة كـ HTML جاهز (Python يبنيه، والمتصفح يعرضه فقط) ----------
+def guild_meta(g):
+    return {"channels": [{"id": str(c.id), "name": c.name} for c in g.text_channels],
+            "categories": [{"id": str(c.id), "name": c.name} for c in g.categories],
+            "roles": [{"id": str(r.id), "name": r.name} for r in g.roles if not r.is_default() and not r.managed]}
+
+@app.get("/ui/view/{key}")
+async def ui_view(key: str, request: Request, gid: str = "", slot: str = "", mode: str = ""):
+    u = user_or_401(request)
+    lang = get_lang(request)
+    ctx = dict(user=u, key=key)
+
+    def out(template, **extra):
+        return HTMLResponse(ui_render.page(template, lang, **ctx, **extra), headers={"Cache-Control": "no-store"})
+
+    if key in ui_schema.SECTIONS:
+        if not gid:
+            return out("views/empty.html", icon_name="server", message=ui_i18n.t(lang, "ui.noServers"), invite=True, title=None)
+        g = guild_or_403(request, gid)
+        c = ui_schema.SECTIONS[key]
+        slot = slot if slot in (c.get("slots") or []) else (c["slots"][0] if c.get("slots") else "")
+        meta = guild_meta(g)
+        if c.get("modes") and mode == "panel":
+            items = ticket_items(g) if key == "tickets" else apply_items(g)
+            return out("views/panel.html", guild_name=g.name, meta=meta, items=items)
+        data = AD[key][0](g, slot) if key in AD else get_settings(gid, key, slot)
+        return out("views/section.html", guild_name=g.name, meta=meta, data=data, slot=slot, mode="setup")
+
+    bot = request.app.state.bot
+    if key == "home":
+        info = getattr(request.app.state, "application_info", None)
+        created = None
+        if info and getattr(info, "id", None):
+            try:
+                created = datetime.datetime.fromtimestamp(((int(info.id) >> 22) + 1420070400000) / 1000, datetime.timezone.utc).strftime("%Y/%m/%d")
+            except Exception:
+                pass
+        gname = ""
+        if gid:
+            g = bot.get_guild(int(gid)) if gid.isdigit() else None
+            gname = g.name if g else ""
+        tiles = [("server", ui_i18n.t(lang, "ui.yourServers"), None, len(user_guild_list(request))),
+                 ("globe", ui_i18n.t(lang, "ui.allServers"), None, len(bot.guilds)),
+                 ("server", ui_i18n.t(lang, "ui.currentServer"), gname or "—", None),
+                 ("code", ui_i18n.t(lang, "ui.developer"), ".a.506.", None),
+                 ("calendar", ui_i18n.t(lang, "ui.botCreated"), created or ui_i18n.t(lang, "c.unknown"), None)]
+        return out("views/home.html", tiles=tiles, ltr=True)
+    if key == "stats":
+        return out("views/stats.html", guilds_total=len(bot.guilds))
+    if key in ("themes", "language"):
+        return out(f"views/{key}.html")
+    if key == "rate":
+        return out("views/rate.html", rating=rating_data(u["id"]))
+    if key == "emojis":
+        emojis, cats, ids_ready = ui_render.emoji_list()
+        return out("views/emojis.html", emojis=emojis, cats=cats, ids_ready=ids_ready)
+    raise HTTPException(404)
+
+# ---------- الملفات الثابتة ----------
+if EMOJI_DIR.is_dir():
+    app.mount("/emojis", StaticFiles(directory=str(EMOJI_DIR)), name="emojis")
+# يجب أن يكون آخر شي: /assets و /logo.png وغيرها
 app.mount("/", StaticFiles(directory=str(WEB_DIR), html=True), name="web")
 
 async def start_web(bot):
