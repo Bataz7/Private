@@ -1,7 +1,7 @@
 """يرسم ايموجيات البوت (PNG 128×128) داخل assets/emojis.
 
-التشغيل مرة وحدة فقط (يحتاج Pillow):  python tools/make_emojis.py
-الصور الناتجة موجودة أصلاً في المشروع، فما تحتاج تشغله إلا لو عدلت التصميم.
+أداة تطوير فقط (البوت نفسه ما يحتاجها): الصور الناتجة موجودة أصلاً في المشروع،
+فما تحتاج تشغلها إلا لو عدلت التصميم.   pip install pillow && python tools/make_emojis.py
 """
 from pathlib import Path
 
@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw, ImageFilter
 S = 4                 # رسم بدقة أعلى ثم تصغير = حواف ناعمة
 SIZE = 128 * S
 OUT = Path(__file__).resolve().parent.parent / "assets" / "emojis"
+SMALL = OUT.parent / "emojis-small"
 
 # name: (لون فاتح, لون غامق, شكل الفم, إضافات)
 FACES = {
@@ -42,6 +43,13 @@ def radial(c1, c2):
     return img
 
 
+def overlay(img, draw_fn):
+    """الأشكال الشفافة لازم تنرسم على طبقة منفصلة وتندمج (ImageDraw يستبدل البكسل بدل ما يدمجه)."""
+    layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw_fn(ImageDraw.Draw(layer))
+    img.alpha_composite(layer)
+
+
 def face(name, c1, c2, mouth, extras):
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
 
@@ -61,7 +69,7 @@ def face(name, c1, c2, mouth, extras):
     ink = (45, 35, 40, 255)
 
     # لمعة
-    d.ellipse([SIZE * .15, SIZE * .14, SIZE * .3, SIZE * .23], fill=(255, 255, 255, 110))
+    overlay(img, lambda o: o.ellipse([SIZE * .15, SIZE * .14, SIZE * .3, SIZE * .23], fill=(255, 255, 255, 110)))
 
     # العيون
     ey = SIZE * .42
@@ -92,8 +100,7 @@ def face(name, c1, c2, mouth, extras):
         d.arc([mx - 24 * S, my + 2 * S, mx + 24 * S, my + 36 * S], 195, 345, fill=ink, width=7 * S)
 
     if "blush" in extras:
-        for bx in (SIZE * .22, SIZE * .78):
-            d.ellipse([bx - 13 * S, SIZE * .53, bx + 13 * S, SIZE * .6], fill=(255, 120, 140, 120))
+        overlay(img, lambda o: [o.ellipse([bx - 13 * S, SIZE * .53, bx + 13 * S, SIZE * .6], fill=(255, 120, 140, 120)) for bx in (SIZE * .22, SIZE * .78)])
     if "tear" in extras:
         tx, ty = SIZE * .69, SIZE * .52
         d.polygon([(tx, ty - 10 * S), (tx - 9 * S, ty + 8 * S), (tx + 9 * S, ty + 8 * S)], fill=(90, 170, 255, 255))
@@ -118,9 +125,125 @@ def report_icon():
     return img.resize((128, 128), Image.LANCZOS)
 
 
+def _canvas():
+    return Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+
+
+def _vgrad(w, h, top, bottom):
+    """تدرج عمودي."""
+    a, b = hex2rgb(top), hex2rgb(bottom)
+    g = Image.new("RGBA", (w, h))
+    d = ImageDraw.Draw(g)
+    for y in range(h):
+        t = y / max(h - 1, 1)
+        d.line([(0, y), (w, y)], fill=tuple(int(a[k] + (b[k] - a[k]) * t) for k in range(3)) + (255,))
+    return g
+
+
+def _fill_mask(mask, top, bottom):
+    img = _canvas()
+    img.paste(_vgrad(SIZE, SIZE, top, bottom), (0, 0), mask)
+    return img
+
+
+def _smooth(points, steps=16):
+    """منحنى ناعم (Catmull-Rom مغلق) يمر بالنقاط."""
+    out, n = [], len(points)
+    for i in range(n):
+        p0, p1, p2, p3 = points[i - 1], points[i], points[(i + 1) % n], points[(i + 2) % n]
+        for k in range(steps):
+            t = k / steps
+            t2, t3 = t * t, t * t * t
+            out.append(tuple(0.5 * (2 * p1[j] + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2
+                                   + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3) for j in (0, 1)))
+    return out
+
+
+FLAME = [(.5, .96), (.24, .88), (.13, .66), (.2, .45), (.31, .3), (.34, .16), (.43, .34), (.53, .04),
+         (.7, .24), (.78, .4), (.86, .27), (.9, .56), (.8, .86)]
+
+
+def _flame_mask(scale, cy=.96):
+    m = Image.new("L", (SIZE, SIZE), 0)
+    pts = [(SIZE * (.5 + (x - .5) * scale), SIZE * (cy - (cy - y) * scale)) for x, y in FLAME]
+    ImageDraw.Draw(m).polygon(_smooth(pts), fill=255)
+    return m
+
+
+def fire_icon():
+    """شعلة السلسلة 🔥"""
+    img = _fill_mask(_flame_mask(1), "#FFB347", "#F0543C")
+    img.alpha_composite(_fill_mask(_flame_mask(.52, .93), "#FFF6C2", "#FFC93C"))
+    return img.resize((128, 128), Image.LANCZOS)
+
+
+def heart_icon():
+    """قلب الامتنان 💛"""
+    m = Image.new("L", (SIZE, SIZE), 0)
+    d = ImageDraw.Draw(m)
+    r = SIZE * .22
+    d.ellipse([SIZE * .1, SIZE * .18, SIZE * .1 + 2 * r, SIZE * .18 + 2 * r], fill=255)
+    d.ellipse([SIZE * .9 - 2 * r, SIZE * .18, SIZE * .9, SIZE * .18 + 2 * r], fill=255)
+    d.polygon([(SIZE * .11, SIZE * .45), (SIZE * .5, SIZE * .9), (SIZE * .89, SIZE * .45), (SIZE * .5, SIZE * .3)], fill=255)
+    img = _fill_mask(m, "#FF8FB1", "#E5484D")
+    overlay(img, lambda o: o.ellipse([SIZE * .2, SIZE * .26, SIZE * .34, SIZE * .38], fill=(255, 255, 255, 120)))
+    return img.resize((128, 128), Image.LANCZOS)
+
+
+def sleep_icon():
+    """هلال النوم 😴"""
+    m = Image.new("L", (SIZE, SIZE), 0)
+    d = ImageDraw.Draw(m)
+    d.ellipse([SIZE * .1, SIZE * .14, SIZE * .82, SIZE * .86], fill=255)
+    d.ellipse([SIZE * .32, SIZE * .02, SIZE * 1.0, SIZE * .7], fill=0)
+    img = _fill_mask(m, "#A29BFE", "#4B3FB8")
+    d = ImageDraw.Draw(img)
+    for x, y, sz in ((.66, .52, 22), (.8, .36, 16)):
+        x, y, sz = SIZE * x, SIZE * y, sz * S
+        d.line([(x, y), (x + sz, y), (x, y + sz), (x + sz, y + sz)], fill=(255, 255, 255, 255), width=4 * S, joint="curve")
+    return img.resize((128, 128), Image.LANCZOS)
+
+
+def energy_icon():
+    """صاعقة الطاقة ⚡"""
+    m = Image.new("L", (SIZE, SIZE), 0)
+    pts = [(.58, .04), (.2, .56), (.46, .56), (.38, .96), (.8, .4), (.53, .4), (.66, .04)]
+    ImageDraw.Draw(m).polygon([(SIZE * x, SIZE * y) for x, y in pts], fill=255)
+    img = _fill_mask(m, "#FFE58A", "#F5A623")
+    return img.resize((128, 128), Image.LANCZOS)
+
+
+def trophy_icon():
+    """كأس الإنجاز 🏆"""
+    m = Image.new("L", (SIZE, SIZE), 0)
+    d = ImageDraw.Draw(m)
+    d.chord([SIZE * .22, SIZE * -.02, SIZE * .78, SIZE * .62], 0, 180, fill=255)
+    d.rectangle([SIZE * .22, SIZE * .1, SIZE * .78, SIZE * .3], fill=255)
+    for cx in (.2, .8):
+        d.ellipse([SIZE * (cx - .13), SIZE * .14, SIZE * (cx + .13), SIZE * .4], outline=255, width=6 * S)
+    d.rectangle([SIZE * .45, SIZE * .58, SIZE * .55, SIZE * .76], fill=255)
+    d.rounded_rectangle([SIZE * .28, SIZE * .76, SIZE * .72, SIZE * .9], radius=5 * S, fill=255)
+    img = _fill_mask(m, "#FFE58A", "#E0A100")
+    overlay(img, lambda o: o.polygon([(SIZE * .5, SIZE * .16), (SIZE * .54, SIZE * .26), (SIZE * .64, SIZE * .27), (SIZE * .56, SIZE * .33), (SIZE * .59, SIZE * .43),
+                                 (SIZE * .5, SIZE * .37), (SIZE * .41, SIZE * .43), (SIZE * .44, SIZE * .33), (SIZE * .36, SIZE * .27), (SIZE * .46, SIZE * .26)], fill=(255, 255, 255, 200)))
+    return img.resize((128, 128), Image.LANCZOS)
+
+
+def save(img, name):
+    img.save(OUT / f"{name}.png", optimize=True)
+    # نسخة صغيرة للتقارير (HTML) عشان حجم الملف يبقى خفيف
+    SMALL.mkdir(parents=True, exist_ok=True)
+    img.resize((48, 48), Image.LANCZOS).save(SMALL / f"{name}.png", optimize=True)
+
+
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
     for name, (c1, c2, mouth, extras) in FACES.items():
-        face(name, c1, c2, mouth, extras).save(OUT / f"{name}.png", optimize=True)
-    report_icon().save(OUT / "mood_report.png", optimize=True)
+        save(face(name, c1, c2, mouth, extras), name)
+    save(report_icon(), "mood_report")
+    save(fire_icon(), "mood_fire")
+    save(heart_icon(), "mood_heart")
+    save(sleep_icon(), "mood_sleep")
+    save(energy_icon(), "mood_energy")
+    save(trophy_icon(), "mood_trophy")
     print("done →", OUT)
