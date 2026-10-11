@@ -1,6 +1,7 @@
 /** الإعدادات: تنقرأ من .env ومن متغيرات البيئة، وتتحقق منها قبل التشغيل. */
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { isLang, type Lang } from "./i18n.ts";
 import { isValidTimeZone, parseHHMM, parseWeekday } from "./time.ts";
 
@@ -71,8 +72,60 @@ function time(raw: string | undefined, def: string, name: string): number {
 }
 
 /** يقرأ ملف .env (لو موجود) — المتغيرات الموجودة أصلاً لها الأولوية. */
-export function loadEnvFile(path = resolve(process.cwd(), ".env")): void {
-  if (existsSync(path)) process.loadEnvFile(path);
+const PROJECT_ROOT = fileURLToPath(new URL("..", import.meta.url));
+
+/** نتيجة قراءة .env (عشان نعطي رسالة واضحة لو فيه مشكلة). */
+export interface EnvInfo {
+  path: string | null;
+  tried: string[];
+  keys: string[];
+  similar: string[];
+}
+
+/**
+ * يقرأ ملف .env من مجلد البوت (مو من المكان اللي تشغّل منه) أو من المجلد الحالي.
+ * يتحمل: مسافات حول "="، علامات تنصيص، أسطر Windows (CRLF)، BOM، و "export KEY=…".
+ * القيم الموجودة في البيئة لها الأولوية — إلا لو كانت فاضية.
+ */
+export function loadEnvFile(): EnvInfo {
+  const tried = [...new Set([resolve(PROJECT_ROOT, ".env"), resolve(process.cwd(), ".env")])];
+  const found = tried.find((p) => existsSync(p)) ?? null;
+  const dirs = [...new Set([resolve(PROJECT_ROOT), resolve(process.cwd())])];
+  const similar = [...new Set(dirs.flatMap((d) => {
+    try {
+      return readdirSync(d).filter((f) => /^\.?env(\.[a-z0-9]+)?\s*$/i.test(f) && f !== ".env" && f !== ".env.example").map((f) => join(d, f));
+    } catch {
+      return [];
+    }
+  }))];
+  const keys: string[] = [];
+  if (found) {
+    const text = readFileSync(found, "utf8").replace(/^\uFEFF/, "");
+    for (const raw of text.split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line || line.startsWith("#")) continue;
+      const m = /^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/.exec(line);
+      if (!m) continue;
+      let v = m[2]!.trim();
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+      else v = v.replace(/\s+#.*$/, "");
+      keys.push(m[1]!);
+      if (!process.env[m[1]!]) process.env[m[1]!] = v;
+    }
+  }
+  return { path: found, tried, keys, similar };
+}
+
+/** يشرح ليش الإعداد ناقص. */
+export function explainEnv(info: EnvInfo, missing: string): string {
+  if (!info.path) {
+    const lines = [`ما لقيت ملف .env. دوّرت في:`, ...info.tried.map((p) => `   • ${p}`)];
+    if (info.similar.length) lines.push(`لقيت ملفات قريبة (يمكن الاسم غلط):`, ...info.similar.map((p) => `   • ${p}`), `   سمّه بالضبط .env`);
+    lines.push(`سوّه بـ:  cp .env.example .env   ثم  nano .env`);
+    return lines.join("\n");
+  }
+  if (!info.keys.includes(missing)) return `ملف ${info.path} موجود بس ما فيه سطر ${missing}=…`;
+  return `ملف ${info.path} فيه ${missing} بس قيمته فاضية — الصق القيمة بعد "=" مباشرة واحفظ (Ctrl+O ثم Enter في nano)`;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env, { requireToken = true } = {}): Config {

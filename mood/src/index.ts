@@ -7,7 +7,7 @@ import type { APIInteraction, APIMessage } from "discord-api-types/v10";
 import { AI } from "./ai.ts";
 import { MoodApp } from "./app.ts";
 import { registerCommands } from "./commands.ts";
-import { ConfigError, loadConfig, loadEnvFile } from "./config.ts";
+import { ConfigError, explainEnv, loadConfig, loadEnvFile } from "./config.ts";
 import { DiscordClient } from "./discord/api.ts";
 import { ActivityType, Intents } from "./discord/constants.ts";
 import { Gateway } from "./discord/gateway.ts";
@@ -25,13 +25,15 @@ const log = createLogger();
 
 async function main(): Promise<void> {
   console.log(`\n${logo()}\n${color.gray("  How was your day? · daily mood check-ins for Discord")}\n`);
-  loadEnvFile();
+  const envInfo = loadEnvFile();
   let config;
   try {
     config = loadConfig();
   } catch (e) {
     if (e instanceof ConfigError) {
-      log.error(`❌ ${e.message}\n   انسخ .env.example إلى .env وعبّي القيم (التفاصيل في README.md)`);
+      const key = /^([A-Z_]+):?/.exec(e.message.replace(/^\S+ /, ""))?.[1] ?? (e.message.match(/[A-Z_]{5,}/)?.[0] ?? "");
+      log.error(`❌ ${e.message}`);
+      if (key) console.error(`   ${explainEnv(envInfo, key).replace(/\n/g, "\n   ")}`);
       process.exit(1);
     }
     throw e;
