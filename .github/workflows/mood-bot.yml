@@ -10,11 +10,32 @@ jobs:
   check:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node: [22, 24]
     defaults:
       run:
         working-directory: mood
+    # قواعد بيانات حقيقية عشان نختبر كل الأنواع
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: pw, POSTGRES_DB: mood_test }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+      mysql:
+        image: mysql:8.4
+        env: { MYSQL_ROOT_PASSWORD: pw, MYSQL_DATABASE: mood_test }
+        ports: ["3306:3306"]
+        options: --health-cmd "mysqladmin ping -ppw" --health-interval 5s --health-timeout 5s --health-retries 20
+      mongo:
+        image: mongo:7
+        ports: ["27017:27017"]
+        options: --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TEST_POSTGRES_URL: postgres://postgres:pw@127.0.0.1:5432/mood_test
+      TEST_MYSQL_URL: mysql://root:pw@127.0.0.1:3306/mood_test
+      TEST_MONGO_URL: mongodb://127.0.0.1:27017/mood_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

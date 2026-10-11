@@ -1,15 +1,17 @@
 /**
- * تقرير HTML احترافي — ملف واحد يفتح بأي متصفح (بدون إنترنت).
+ * تقرير HTML احترافي — ملف واحد يفتح بأي متصفح (بدون إنترنت)، بالعربي أو الإنجليزي.
  * رسوم SVG/HTML خفيفة + تلميحات (tooltips) عند المرور/التركيز + وضع ليلي + جدول كامل.
  * الألوان: سلم متباعد (أحمر ← رمادي ← أزرق) مفحوص لعمى الألوان، والوجوه تعطي معنى إضافي.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { ACHIEVEMENTS } from "./achievements.ts";
-import { MOODS, mood, tagById } from "./moods.ts";
-import { describeCorr, type PeriodStats } from "./stats.ts";
-import { addDays, arabicDate, diffDays, weekdayOf, WEEKDAYS_AR } from "./time.ts";
 import type { ReportInsight } from "./ai.ts";
+import { L, type Lang, type Messages } from "./i18n.ts";
+import { MOODS, mood, tagById } from "./moods.ts";
+import { questionById, questionText } from "./questions.ts";
+import { describeCorr, type PeriodStats } from "./stats.ts";
+import { addDays, diffDays, localDate, weekdayOf, WEEKDAYS } from "./time.ts";
 
 const EMOJI_DIR = fileURLToPath(new URL("../assets/emojis/", import.meta.url));
 const SMALL_DIR = fileURLToPath(new URL("../assets/emojis-small/", import.meta.url));
@@ -47,7 +49,7 @@ export function esc(s: unknown): string {
 
 const fmt1 = (n: number) => n.toFixed(1);
 /** نعزل الأرقام بإشارة (LRI…PDI) عشان ما تنقلب الإشارة داخل النص العربي. */
-const iso = (s: string) => `\u2066${s}\u2069`;
+const iso = (s: string) => `⁦${s}⁩`;
 const signed = (n: number, d = 1, suffix = "") => iso(`${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(d)}${suffix}`);
 const tip = (...lines: string[]) => `data-tip="${esc(lines.join("|"))}" tabindex="0"`;
 
@@ -58,21 +60,30 @@ export interface ReportInput {
   unlocked: string[];
   generatedAt: string;
   title?: string;
+  lang?: Lang;
+}
+
+interface Ctx {
+  st: PeriodStats;
+  lang: Lang;
+  t: Messages["r"];
+  date: (d: string) => string;
+  label: (v: number) => string;
 }
 
 // ─────────── الرسوم ───────────
 
-function lineChart(st: PeriodStats): string {
-  if (st.count < 2) return `<p class="muted">نحتاج يومين على الأقل للرسم.</p>`;
-  const W = 760, H = 250, L = 34, R = 16, T = 14, B = 30;
+function lineChart({ st, t, date, label }: Ctx): string {
+  if (st.count < 2) return `<p class="muted">${t.needTwo}</p>`;
+  const W = 760, H = 250, L0 = 34, R = 16, T = 14, B = 30;
   const span = Math.max(st.days - 1, 1);
-  const x = (day: string) => L + ((W - L - R) * diffDays(day, st.start)) / span;
+  const x = (day: string) => L0 + ((W - L0 - R) * diffDays(day, st.start)) / span;
   const y = (v: number) => T + ((H - T - B) * (5 - v)) / 4;
 
-  const grid = MOODS.map((m) =>
-    `<line x1="${L}" x2="${W - R}" y1="${y(m.value)}" y2="${y(m.value)}" class="grid"/>` +
-    `<use href="#ei${m.value}" x="4" y="${y(m.value) - 10}"><title>${m.label}</title></use>`).join("");
   const defs = `<defs>${MOODS.map((m) => `<image id="ei${m.value}" href="${emojiDataUri(m.key)}" width="20" height="20"/>`).join("")}</defs>`;
+  const grid = MOODS.map((m) =>
+    `<line x1="${L0}" x2="${W - R}" y1="${y(m.value)}" y2="${y(m.value)}" class="grid"/>` +
+    `<use href="#ei${m.value}" x="4" y="${y(m.value) - 10}"><title>${label(m.value)}</title></use>`).join("");
 
   const pts = st.entries.map((e) => ({ x: x(e.day), y: y(e.mood), e }));
   // فترة قصيرة: نوصل النقاط ببعض. فترة طويلة: النقاط لحالها + خط المتوسط المتحرك (7 أيام) عشان يبان الاتجاه.
@@ -97,28 +108,27 @@ function lineChart(st: PeriodStats): string {
   }
   const last = series[series.length - 1]!;
   const lastVal = longRange ? st.movingAvg[st.movingAvg.length - 1]!.value : pts[pts.length - 1]!.e.mood;
-  const endText = longRange ? `متوسط ${fmt1(lastVal)}` : mood(lastVal).label;
-  const endLabel = `<text x="${Math.min(last.x + 8, W - R - 2).toFixed(1)}" y="${(last.y - 10).toFixed(1)}" class="end-label" text-anchor="${last.x > W - 80 ? "end" : "start"}">${endText}</text>`;
+  const endText = longRange ? t.avgShort(fmt1(lastVal)) : label(lastVal);
+  const endLabel = `<text x="${Math.min(last.x + 8, W - R - 2).toFixed(1)}" y="${(last.y - 10).toFixed(1)}" class="end-label" text-anchor="${last.x > W - 80 ? "end" : "start"}">${esc(endText)}</text>`;
 
   const ma = new Map(st.movingAvg.map((p) => [p.day, p.value]));
   const data = JSON.stringify(pts.map((p) => ({
-    x: +p.x.toFixed(1), y: +p.y.toFixed(1), d: arabicDate(p.e.day), m: mood(p.e.mood).label, v: p.e.mood,
-    a: longRange ? `متوسط 7 أيام: ${fmt1(ma.get(p.e.day) ?? p.e.mood)}` : "",
-  })))
-    .replace(/</g, "\\u003c");
+    x: +p.x.toFixed(1), y: +p.y.toFixed(1), d: date(p.e.day), m: label(p.e.mood), v: p.e.mood,
+    a: longRange ? t.ma7(fmt1(ma.get(p.e.day) ?? p.e.mood)) : "",
+  }))).replace(/</g, "\\u003c");
 
   return `<div class="chart-wrap" dir="ltr">
-<svg viewBox="0 0 ${W} ${H}" class="chart" id="line" role="img" aria-label="المزاج يوم بيوم">
-<line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" class="axis"/>
+<svg viewBox="0 0 ${W} ${H}" class="chart" id="line" role="img" aria-label="${esc(t.line)}">
+<line x1="${L0}" x2="${W - R}" y1="${H - B}" y2="${H - B}" class="axis"/>
 ${defs}${grid}${lines}${dots}${ticks.join("")}${endLabel}
 <line id="xhair" x1="0" x2="0" y1="${T}" y2="${H - B}" class="xhair" visibility="hidden"/>
-<rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent" id="line-hit"/>
+<rect x="${L0}" y="${T}" width="${W - L0 - R}" height="${H - T - B}" fill="transparent" id="line-hit"/>
 </svg></div>
-${longRange ? `<div class="legend"><span class="key"><i class="sw dotkey"></i>كل يوم (اللون = المزاج)</span><span class="key"><i class="linekey"></i>المتوسط المتحرك لـ 7 أيام</span></div>` : ""}
+${longRange ? `<div class="legend"><span class="key"><i class="sw dotkey"></i>${t.dailyKey}</span><span class="key"><i class="linekey"></i>${t.maKey}</span></div>` : ""}
 <script type="application/json" id="line-data">${data}</script>`;
 }
 
-function calendar(st: PeriodStats): string {
+function calendar({ st, t, lang, date, label }: Ctx): string {
   if (st.days < 14) return "";
   const byDay = new Map(st.entries.map((e) => [e.day, e]));
   const startPad = weekdayOf(st.start); // الأسبوع يبدأ الأحد
@@ -132,97 +142,114 @@ function calendar(st: PeriodStats): string {
       if (day < st.start || day > st.end) continue;
       const e = byDay.get(day);
       const cls = e ? `m${e.mood}` : "empty";
-      const t = e ? tip(mood(e.mood).label, arabicDate(day)) : tip("بدون تسجيل", arabicDate(day));
-      cells.push(`<rect x="${w * (C + G)}" y="${d * (C + G)}" width="${C}" height="${C}" rx="3" class="cell ${cls}" ${t}/>`);
+      const tp = e ? tip(label(e.mood), date(day)) : tip(t.noEntry, date(day));
+      cells.push(`<rect x="${w * (C + G)}" y="${d * (C + G)}" width="${C}" height="${C}" rx="3" class="cell ${cls}" ${tp}/>`);
     }
   }
   const W = weeks * (C + G), H = 7 * (C + G);
-  const rows = [0, 2, 4, 6].map((d) => `<span style="top:${d * (C + G)}px;line-height:${C}px">${WEEKDAYS_AR[d]}</span>`).join("");
-  const legend = [...MOODS].reverse().map((m) => `<span class="key"><i class="sw m${m.value}"></i>${m.label}</span>`).join("") +
-    `<span class="key"><i class="sw empty"></i>بدون تسجيل</span>`;
-  return `<section class="card"><h2>🗓️ خريطة الأيام</h2>
-<div class="cal"><div class="cal-days" style="height:${H}px">${rows}</div><div class="cal-grid" dir="ltr"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="خريطة أيام المزاج">${cells.join("")}</svg></div></div>
+  const rows = [0, 2, 4, 6].map((d) => `<span style="top:${d * (C + G)}px;line-height:${C}px">${WEEKDAYS[lang][d]}</span>`).join("");
+  const legend = [...MOODS].reverse().map((m) => `<span class="key"><i class="sw m${m.value}"></i>${label(m.value)}</span>`).join("") +
+    `<span class="key"><i class="sw empty"></i>${t.noEntry}</span>`;
+  return `<section class="card"><h2>${t.calendar}</h2>
+<div class="cal"><div class="cal-days" style="height:${H}px">${rows}</div><div class="cal-grid" dir="ltr"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t.calendar)}">${cells.join("")}</svg></div></div>
 <div class="legend">${legend}</div></section>`;
 }
 
-function distribution(st: PeriodStats): string {
+function distribution({ st, t, label }: Ctx): string {
   const max = Math.max(1, ...Object.values(st.dist));
   return MOODS.map((m) => {
     const n = st.dist[m.value];
     const pct = st.count ? Math.round((n / st.count) * 100) : 0;
-    return `<div class="hbar" ${tip(`${n} يوم (${pct}%)`, m.label)}>
-${emo(m.key)}<span class="hbar-label">${m.label}</span>
+    return `<div class="hbar" ${tip(t.daysCount(n, pct), label(m.value))}>
+${emo(m.key)}<span class="hbar-label">${label(m.value)}</span>
 <div class="hbar-track">${n ? `<div class="hbar-fill m${m.value}" style="width:${(n / max) * 100}%"></div>` : ""}<span class="hbar-val">${n}</span></div></div>`;
   }).join("");
 }
 
-function weekdays(st: PeriodStats): string {
+function weekdays({ st, t, lang }: Ctx): string {
   const cols = st.weekdayAvg.map((v, i) => {
     const h = v === null ? 0 : (v / 5) * 100;
-    const label = v === null ? "—" : fmt1(v);
-    return `<div class="col" ${tip(v === null ? "بدون بيانات" : `${label} / 5`, WEEKDAYS_AR[i]!)}>
-<div class="col-plot"><span class="col-val">${label}</span><div class="col-bar${i === st.bestWeekday ? " best" : ""}" style="height:${h}%"></div></div>
-<span class="col-label">${WEEKDAYS_AR[i]}</span></div>`;
+    const val = v === null ? "—" : fmt1(v);
+    return `<div class="col" ${tip(v === null ? t.noData : `${val} / 5`, WEEKDAYS[lang][i]!)}>
+<div class="col-plot"><span class="col-val">${val}</span><div class="col-bar${i === st.bestWeekday ? " best" : ""}" style="height:${h}%"></div></div>
+<span class="col-label">${WEEKDAYS[lang][i]}</span></div>`;
   }).join("");
   return `<div class="cols">${cols}</div>`;
 }
 
-function tagImpact(st: PeriodStats): string {
-  if (!st.tags.length) return `<p class="muted">حدد أنشطة يومك بعد كل تسجيل 🏷️ عشان نعرف وش يأثر على مزاجك.</p>`;
-  const max = Math.max(0.5, ...st.tags.map((t) => Math.abs(t.delta)));
-  return `<div class="div-chart" dir="ltr">${st.tags.slice(0, 12).map((t) => {
-    const w = (Math.abs(t.delta) / max) * 100;
-    const pos = t.delta >= 0;
-    const bar = `<div class="div-bar ${pos ? "pos" : "neg"}" style="width:${w}%"></div><span class="div-val">${signed(t.delta)}</span>`;
-    return `<div class="div-row" ${tip(`${signed(t.delta)} عن متوسطك`, `${t.label} · ${t.count} مرات · متوسط ${fmt1(t.avg)}`)}>
+function tagImpact({ st, t, lang }: Ctx): string {
+  if (!st.tags.length) return `<p class="muted">${t.tagsEmpty}</p>`;
+  const max = Math.max(0.5, ...st.tags.map((x) => Math.abs(x.delta)));
+  return `<div class="div-chart" dir="ltr">${st.tags.slice(0, 12).map((x) => {
+    const w = (Math.abs(x.delta) / max) * 100;
+    const pos = x.delta >= 0;
+    const bar = `<div class="div-bar ${pos ? "pos" : "neg"}" style="width:${w}%"></div><span class="div-val">${signed(x.delta)}</span>`;
+    return `<div class="div-row" ${tip(t.vsAvg(signed(x.delta)), t.tagMeta(x.label[lang], x.count, fmt1(x.avg)))}>
 <div class="div-half neg-side">${pos ? "" : bar}</div><div class="div-half pos-side">${pos ? bar : ""}</div>
-<div class="div-label" dir="rtl">${t.emoji} ${esc(t.label)}</div></div>`;
+<div class="div-label" dir="${lang === "ar" ? "rtl" : "ltr"}">${x.emoji} ${esc(x.label[lang])}</div></div>`;
   }).join("")}</div>
-<div class="legend"><span class="key"><i class="sw pos"></i>يرفع المزاج</span><span class="key"><i class="sw neg"></i>ينزّل المزاج</span></div>`;
-}
-
-function sleepEnergy(st: PeriodStats): string {
-  if (st.sleepAvg === null && st.energyAvg === null) return "";
-  const tiles: string[] = [];
-  if (st.sleepAvg !== null) tiles.push(tile("متوسط النوم", `${fmt1(st.sleepAvg)} س`, describeCorr(st.sleepCorr) ? `مع المزاج: ${describeCorr(st.sleepCorr)}` : ""));
-  if (st.sleepGood !== null) tiles.push(tile("النوم في الأيام الحلوة", `${fmt1(st.sleepGood)} س`, ""));
-  if (st.sleepBad !== null) tiles.push(tile("النوم في الأيام السيئة", `${fmt1(st.sleepBad)} س`, ""));
-  if (st.energyAvg !== null) tiles.push(tile("متوسط الطاقة", `${fmt1(st.energyAvg)} / 10`, describeCorr(st.energyCorr) ? `مع المزاج: ${describeCorr(st.energyCorr)}` : ""));
-  return `<section class="card"><h2>😴 النوم والطاقة</h2><div class="tiles">${tiles.join("")}</div></section>`;
+<div class="legend"><span class="key"><i class="sw pos"></i>${t.lifts}</span><span class="key"><i class="sw neg"></i>${t.lowers}</span></div>`;
 }
 
 function tile(label: string, value: string, sub: string, cls = ""): string {
   return `<div class="tile"><div class="tile-label">${label}</div><div class="tile-value ${cls}">${value}</div>${sub ? `<div class="tile-sub">${sub}</div>` : ""}</div>`;
 }
 
-function deltaTile(st: PeriodStats): string {
-  if (st.delta === null) return tile("مقارنة بالفترة السابقة", "—", "ما فيه بيانات قبلها");
+function sleepEnergy({ st, t, lang }: Ctx): string {
+  if (st.sleepAvg === null && st.energyAvg === null) return "";
+  const tiles: string[] = [];
+  const sc = describeCorr(st.sleepCorr, lang), ec = describeCorr(st.energyCorr, lang);
+  if (st.sleepAvg !== null) tiles.push(tile(t.sleepAvg, t.hours(fmt1(st.sleepAvg)), sc ? t.withMood(sc) : ""));
+  if (st.sleepGood !== null) tiles.push(tile(t.sleepGood, t.hours(fmt1(st.sleepGood)), ""));
+  if (st.sleepBad !== null) tiles.push(tile(t.sleepBad, t.hours(fmt1(st.sleepBad)), ""));
+  if (st.energyAvg !== null) tiles.push(tile(t.energyAvg, `${fmt1(st.energyAvg)} / 10`, ec ? t.withMood(ec) : ""));
+  return `<section class="card"><h2>${t.sleep}</h2><div class="tiles">${tiles.join("")}</div></section>`;
+}
+
+function deltaTile({ st, t }: Ctx): string {
+  if (st.delta === null) return tile(t.vsPrev, "—", t.noPrev);
   const up = st.delta >= 0.05, down = st.delta <= -0.05;
   const cls = up ? "good" : down ? "bad" : "";
   const icon = up ? "▲" : down ? "▼" : "●";
-  const word = up ? "تحسّن" : down ? "تراجع" : "ثابت";
+  const word = up ? t.improved : down ? t.declined : t.steady;
   const pct = st.changePct !== null ? ` (${signed(st.changePct, 0, "%")})` : "";
-  return tile("مقارنة بالفترة السابقة", `<span aria-hidden="true">${icon}</span> ${signed(st.delta)}`, `${word}${pct} · قبل: ${fmt1(st.prevAvg!)}`, cls);
+  return tile(t.vsPrev, `<span aria-hidden="true">${icon}</span> ${signed(st.delta)}`, `${word}${pct} · ${t.before(fmt1(st.prevAvg!))}`, cls);
 }
 
 function list(items: string[], empty = "—"): string {
   return items.length ? `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>` : `<p class="muted">${empty}</p>`;
 }
 
-function badges(unlocked: string[]): string {
-  const set = new Set(unlocked);
-  return `<div class="badges">${ACHIEVEMENTS.map((a) => `<div class="badge${set.has(a.code) ? "" : " locked"}" ${tip(set.has(a.code) ? "مفتوح ✓" : "لسا 🔒", a.description)}>
-<span class="badge-emoji">${a.emoji}</span><span class="badge-title">${esc(a.title)}</span></div>`).join("")}</div>`;
+function answers({ st, t, lang, date }: Ctx): string {
+  const qa = st.entries.filter((e) => e.answer || e.gratitude).reverse().slice(0, 14);
+  if (!qa.length) return "";
+  const rows = qa.map((e) => {
+    const q = questionById(e.question || "gratitude");
+    const ans = e.answer || e.gratitude;
+    return `<div class="qa"><div class="qa-q">${q ? esc(questionText(q, lang)) : "💭"} <span class="muted">· ${esc(date(e.day))}</span></div><div class="qa-a">${esc(ans)}</div></div>`;
+  }).join("");
+  return `<section class="card"><h2>${t.answers}</h2>${rows}</section>`;
 }
 
-function table(st: PeriodStats): string {
-  const rows = [...st.entries].reverse().map((e) => `<tr>
+function badges(unlocked: string[], { t, lang }: Ctx): string {
+  const set = new Set(unlocked);
+  return `<div class="badges">${ACHIEVEMENTS.map((a) => `<div class="badge${set.has(a.code) ? "" : " locked"}" ${tip(set.has(a.code) ? t.unlocked : t.locked, a.description[lang])}>
+<span class="badge-emoji">${a.emoji}</span><span class="badge-title">${esc(a.title[lang])}</span></div>`).join("")}</div>`;
+}
+
+function table({ st, t, lang, label }: Ctx): string {
+  const rows = [...st.entries].reverse().map((e) => {
+    const q = e.question ? questionById(e.question) : undefined;
+    const ans = e.answer || e.gratitude;
+    return `<tr>
 <td class="nw">${esc(e.day)}</td>
-<td class="nw">${emo(mood(e.mood).key, "", "mini")} ${mood(e.mood).label}</td>
+<td class="nw">${emo(mood(e.mood).key, "", "mini")} ${label(e.mood)}</td>
 <td class="num">${e.energy ?? "—"}</td><td class="num">${e.sleep ?? "—"}</td>
-<td>${e.tags.map((t) => tagById(t)).filter(Boolean).map((t) => `<span class="chip">${t!.emoji} ${esc(t!.label)}</span>`).join(" ") || "—"}</td>
-<td>${esc(e.highlight) || "—"}</td><td>${esc(e.problems) || "—"}</td><td>${esc(e.gratitude) || "—"}</td></tr>`).join("");
-  return `<div class="tbl"><table><thead><tr><th>اليوم</th><th>المزاج</th><th>الطاقة</th><th>النوم</th><th>الأنشطة</th><th>أبرز شي</th><th>المشاكل</th><th>ممتن لـ</th></tr></thead><tbody>${rows || `<tr><td colspan="8" class="muted">ما فيه تسجيلات</td></tr>`}</tbody></table></div>`;
+<td>${e.tags.map((x) => tagById(x)).filter(Boolean).map((x) => `<span class="chip">${x!.emoji} ${esc(x!.label[lang])}</span>`).join(" ") || "—"}</td>
+<td>${esc(e.highlight) || "—"}</td><td>${esc(e.problems) || "—"}</td>
+<td>${ans ? `${q ? `<span class="muted">${esc(questionText(q, lang))}</span><br>` : ""}${esc(ans)}` : "—"}</td></tr>`;
+  }).join("");
+  return `<div class="tbl"><table><thead><tr>${t.cols.map((c) => `<th>${c}</th>`).join("")}</tr></thead><tbody>${rows || `<tr><td colspan="8" class="muted">${t.noEntries}</td></tr>`}</tbody></table></div>`;
 }
 
 // ─────────── الصفحة ───────────
@@ -289,6 +316,7 @@ th,td{text-align:start;padding:9px 8px;border-bottom:1px solid var(--grid);verti
 .chip{display:inline-block;background:var(--page);border:1px solid var(--border);border-radius:99px;padding:0 8px;font-size:.8rem;margin:1px 0;white-space:nowrap}
 #tip{position:fixed;pointer-events:none;background:var(--card);color:var(--ink);border:1px solid var(--border);box-shadow:0 6px 24px rgba(0,0,0,.14);border-radius:10px;padding:7px 11px;font-size:.85rem;z-index:9;opacity:0;transition:opacity .08s;max-width:240px}
 #tip strong{display:block;font-size:.95rem}#tip span{color:var(--ink2)}
+.qa{padding:8px 0;border-bottom:1px solid var(--grid)}.qa:last-child{border:0}.qa-q{font-size:.88rem;color:var(--ink2)}.qa-a{margin-top:2px}
 footer{text-align:center;color:var(--muted);font-size:.82rem;margin-top:26px}
 @media (max-width:560px){header{padding:18px}.hero{font-size:44px}.div-row{grid-template-columns:1fr 1fr 92px}.cols{gap:2px}.col-label{font-size:.7rem}}
 @media print{body{background:#fff}.theme,#tip{display:none}.card,.tile{break-inside:avoid}}
@@ -324,47 +352,51 @@ try{var t=localStorage.getItem('mood-theme');if(t)document.documentElement.setAt
 
 export function buildReportHTML(input: ReportInput): string {
   const { stats: st, insight, name } = input;
+  const lang = input.lang ?? "ar";
+  const t = L(lang).r;
+  const ctx: Ctx = { st, lang, t, date: (d) => localDate(d, lang), label: (v) => mood(v).label[lang] };
   const avgMood = st.count ? mood(st.avg) : mood(3);
-  const title = input.title ?? `تقرير المزاج — ${name}`;
+  const title = input.title ?? t.title(name);
   const trend = st.trend === null ? "—" : `${signed(st.trend, 2)}`;
 
   return `<!doctype html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="${lang}" dir="${lang === "ar" ? "rtl" : "ltr"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><style>${CSS}${emojiCSS()}</style></head>
 <body><div class="wrap">
 <header>
-<img class="emo big" src="${emojiDataUri(avgMood.key, true)}" alt="${avgMood.label}">
-<div class="head-main"><h1>${esc(title)}</h1><p>من <bdi>${st.start}</bdi> إلى <bdi>${st.end}</bdi> · ${st.days} يوم</p></div>
-<div><div class="hero">${st.count ? fmt1(st.avg) : "—"}<small> / 5</small></div><div>متوسط المزاج · ${avgMood.label}</div></div>
-<button class="theme" id="theme" type="button" aria-label="تبديل الوضع الليلي">🌓</button>
+<img class="emo big" src="${emojiDataUri(avgMood.key, true)}" alt="${avgMood.label[lang]}">
+<div class="head-main"><h1>${esc(title)}</h1><p>${t.range(st.start, st.end, st.days)}</p></div>
+<div><div class="hero">${st.count ? fmt1(st.avg) : "—"}<small> / 5</small></div><div>${t.avgMood} · ${avgMood.label[lang]}</div></div>
+<button class="theme" id="theme" type="button" aria-label="${t.theme}">🌓</button>
 </header>
 
 <div class="tiles kpis">
-${deltaTile(st)}
-${tile("أيام حلوة", `${st.goodPct}%`, `سيئة: ${st.badPct}%`)}
-${tile("سلسلة التسجيل 🔥", `${st.streak}`, `أفضل سلسلة: ${st.bestStreak}`)}
-${tile("الاتجاه الأسبوعي", trend, "نقطة مزاج لكل أسبوع")}
-${tile("أيام مسجّلة", `${st.count}`, `من ${st.days} (${Math.round(st.coverage * 100)}%)`)}
+${deltaTile(ctx)}
+${tile(t.goodDays, `${st.goodPct}%`, t.badShort(st.badPct))}
+${tile(t.streak, `${st.streak}`, t.bestStreak(st.bestStreak))}
+${tile(t.trend, trend, t.trendSub)}
+${tile(t.logged, `${st.count}`, t.ofDays(st.days, Math.round(st.coverage * 100)))}
 </div>
 
-<section class="card"><h2>📝 الملخص</h2><p class="summary">${esc(insight.summary)}</p>
-${insight.source === "ai" ? `<div class="ai-note">✨ التحليل بالذكاء الاصطناعي — مو بديل عن مختص</div>` : ""}</section>
+<section class="card"><h2>${t.summary}</h2><p class="summary">${esc(insight.summary)}</p>
+${insight.source === "ai" ? `<div class="ai-note">${t.aiNote}</div>` : ""}</section>
 
-<section class="card"><h2>📈 المزاج يوم بيوم</h2>${lineChart(st)}</section>
-${calendar(st)}
+<section class="card"><h2>${t.line}</h2>${lineChart(ctx)}</section>
+${calendar(ctx)}
 <div class="two">
-<section class="card"><h2>📊 توزيع المزاج</h2>${distribution(st)}</section>
-<section class="card"><h2>📅 المزاج حسب أيام الأسبوع</h2>${weekdays(st)}</section>
+<section class="card"><h2>${t.dist}</h2>${distribution(ctx)}</section>
+<section class="card"><h2>${t.weekdays}</h2>${weekdays(ctx)}</section>
 </div>
-<section class="card"><h2>🏷️ وش يأثر على مزاجك؟</h2>${tagImpact(st)}</section>
-${sleepEnergy(st)}
+<section class="card"><h2>${t.tags}</h2>${tagImpact(ctx)}</section>
+${sleepEnergy(ctx)}
 <div class="two">
-<section class="card"><h2>🌟 اللي يحسّن مزاجك</h2>${list(insight.good_things)}</section>
-<section class="card"><h2>⚡ اللي يضايقك</h2>${list(insight.bad_things)}</section>
+<section class="card"><h2>${t.improves}</h2>${list(insight.good_things)}</section>
+<section class="card"><h2>${t.worsens}</h2>${list(insight.bad_things)}</section>
 </div>
-<section class="card"><h2>💡 نصائح لك</h2>${list(insight.tips)}</section>
-<section class="card"><h2>🏆 الإنجازات (${input.unlocked.length}/${ACHIEVEMENTS.length})</h2>${badges(input.unlocked)}</section>
-<section class="card"><h2>📋 السجل اليومي</h2>${table(st)}</section>
+<section class="card"><h2>${t.tips}</h2>${list(insight.tips)}</section>
+${answers(ctx)}
+<section class="card"><h2>${t.badges(input.unlocked.length, ACHIEVEMENTS.length)}</h2>${badges(input.unlocked, ctx)}</section>
+<section class="card"><h2>${t.log}</h2>${table(ctx)}</section>
 <footer>Mood Bot 🌈 · ${esc(input.generatedAt)}</footer>
 </div><div id="tip" role="tooltip"></div>
 <script>${JS}</script></body></html>`;

@@ -47,12 +47,13 @@ export class DiscordClient {
     return user;
   }
 
-  async displayName(id: string): Promise<string> {
+  /** الاسم الظاهر، أو null لو ما قدرنا نجيبه. */
+  async displayName(id: string): Promise<string | null> {
     try {
       const u = await this.getUser(id);
       return u.global_name ?? u.username;
     } catch {
-      return "صديقنا";
+      return null;
     }
   }
 
@@ -85,8 +86,9 @@ export class DiscordClient {
 
   // ─────────── التفاعلات ───────────
 
+  /** ردود التفاعلات لازم خلال 3 ثواني: بدون طابور وبدون انتظار إعادة محاولات طويلة. */
   private callback(i: APIInteraction, body: unknown, files?: FileUpload[]): Promise<unknown> {
-    return this.rest.post(`/interactions/${i.id}/${i.token}/callback`, { body, files, auth: false });
+    return this.rest.post(`/interactions/${i.id}/${i.token}/callback`, { body, files, auth: false, direct: true, retries: 1 });
   }
 
   reply(i: APIInteraction, data: MessagePayload, opts: { ephemeral?: boolean; files?: FileUpload[] } = {}) {

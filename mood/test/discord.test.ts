@@ -12,7 +12,7 @@ describe("REST", () => {
     assert.equal(routeKey("POST", "/channels/123456789012345678/messages"), "POST /channels/123456789012345678/messages");
     assert.equal(routeKey("PATCH", "/channels/123456789012345678/messages/223456789012345678"), "PATCH /channels/123456789012345678/messages/:id");
     assert.equal(routeKey("POST", "/interactions/123456789012345678/aW50ZXJhY3Rpb24/callback"), "POST /interactions/:id/:token/callback");
-    assert.equal(routeKey("POST", "/webhooks/1/abc.def/messages/@original"), "POST /webhooks/1/:token/messages/@original");
+    assert.equal(routeKey("POST", "/webhooks/1/abc.def/messages/@original"), "POST /webhooks/1/abc.def/messages/@original", "each interaction token has its own queue");
     assert.equal(routeKey("GET", "/users/123456789012345678"), "GET /users/:id");
   });
 
@@ -75,6 +75,25 @@ describe("REST", () => {
     await rest.post("/channels/1/messages", { body: { content: "x" }, files: [{ name: "r.html", data: "<html>" }] });
     await rest.post("/interactions/1/abc/callback", { body: {}, auth: false });
     assert.deepEqual(seen, [{ auth: "Bot tok", form: true }, { auth: undefined, form: false }]);
+  });
+
+  test("interaction callbacks bypass the queue and don't wait on retries", async () => {
+    let n = 0;
+    const order: string[] = [];
+    const rest = new REST("t", {
+      sleep: async () => {},
+      fetch: async (url) => {
+        const p = new URL(url).pathname;
+        order.push(p);
+        if (p.includes("/channels/")) { await new Promise((r) => setTimeout(r, 30)); return json({}); }
+        n++;
+        return new Response("down", { status: 503 });
+      },
+    });
+    const slow = rest.post("/channels/1/messages", { body: {} });
+    await assert.rejects(rest.post("/interactions/1/tok/callback", { body: {}, auth: false, direct: true, retries: 1 }));
+    assert.equal(n, 2, "one retry only");
+    await slow;
   });
 
   test("requests on the same route run in order", async () => {

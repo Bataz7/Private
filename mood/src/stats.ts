@@ -1,6 +1,7 @@
 /** حسابات الإحصائيات والأنماط — دوال صافية (pure) سهلة الاختبار. */
-import type { Entry } from "./db.ts";
+import { L, type Lang } from "./i18n.ts";
 import { tagById } from "./moods.ts";
+import type { Entry } from "./store/types.ts";
 import { addDays, diffDays, weekdayOf } from "./time.ts";
 
 export const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
@@ -66,7 +67,7 @@ export function bestStreak(days: Set<string>): number {
 
 export interface TagImpact {
   id: string;
-  label: string;
+  label: Record<Lang, string>;
   emoji: string;
   count: number;
   avg: number;
@@ -189,18 +190,18 @@ export function computeStats(
   };
 }
 
-/** وصف عربي لقوة الارتباط. */
-export function describeCorr(r: number | null): string | null {
+/** وصف قوة الارتباط بلغة المستخدم (أو null لو ضعيف جداً). */
+export function describeCorr(r: number | null, lang: Lang = "ar"): string | null {
   if (r === null) return null;
   const a = Math.abs(r);
   if (a < 0.2) return null;
-  const strength = a >= 0.6 ? "قوي" : a >= 0.4 ? "واضح" : "خفيف";
-  return `${r > 0 ? "ارتباط إيجابي" : "ارتباط عكسي"} ${strength}`;
+  return L(lang).corr(r > 0, a >= 0.6 ? 2 : a >= 0.4 ? 1 : 0);
 }
 
 /** أكثر الأشياء تكراراً في النصوص (للتحليل بدون AI). */
-const STOP = new Set("في من على الى إلى عن مع و او أو ما لا انا أنا هو هي كان كانت اليوم يوم شي شيء بس مرة جداً جدا كثير وايد حيل".split(" "));
-export function commonThemes(texts: string[], n = 4): string[] {
+const STOP = new Set(("في من على الى إلى عن مع و او أو ما لا انا أنا هو هي كان كانت اليوم يوم شي شيء بس مرة جداً جدا كثير وايد حيل " +
+  "the and a an to of in on at for with was were is are i my me it this that today day very so but just had have").split(" "));
+export function commonThemes(texts: string[], lang: Lang = "ar", n = 4): string[] {
   const clean = texts.map((t) => t.trim()).filter(Boolean);
   const phrases = new Map<string, number>();
   for (const t of clean) if (t.length <= 60) phrases.set(t, (phrases.get(t) ?? 0) + 1);
@@ -208,12 +209,12 @@ export function commonThemes(texts: string[], n = 4): string[] {
   if (out.length < n) {
     const words = new Map<string, number>();
     for (const t of clean) for (const w of t.split(/\s+/)) {
-      const x = w.replace(/[.,!؟?،]/g, "");
+      const x = w.replace(/[.,!؟?،]/g, "").toLowerCase();
       if (x.length > 2 && !STOP.has(x)) words.set(x, (words.get(x) ?? 0) + 1);
     }
     for (const [w, c] of [...words].sort((a, b) => b[1] - a[1])) {
       if (out.length >= n) break;
-      if (c > 1 && !out.some((o) => o.includes(w))) out.push(`تكرر ذكر «${w}» (×${c})`);
+      if (c > 1 && !out.some((o) => o.includes(w))) out.push(L(lang).repeated(w, c));
     }
   }
   return out;

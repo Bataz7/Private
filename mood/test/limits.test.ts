@@ -4,6 +4,8 @@ import { describe, test } from "node:test";
 import { COMMANDS } from "../src/commands.ts";
 import { checkinMessage, entryModal, entryResult } from "../src/features/checkin.ts";
 import { MOODS, TAGS } from "../src/moods.ts";
+import { ALL_QUESTIONS } from "../src/questions.ts";
+import { addDays } from "../src/time.ts";
 import { makeApp, TARGET } from "./helpers.ts";
 
 const NAME = /^[-_\p{L}\p{N}]{1,32}$/u;
@@ -68,15 +70,15 @@ describe("Discord API limits", () => {
   });
 
   test("check-in message, modal and result fit the limits (worst case)", async () => {
-    const t = makeApp();
+    const t = await makeApp();
     const msg = await checkinMessage(t.app, TARGET, "2026-10-09", { reminder: true });
     checkComponents(msg.components, "checkin");
     checkEmbed(msg.embeds[0], "checkin");
 
-    for (const m of MOODS) {
-      const modal = entryModal("2026-10-09", m.value, {
+    for (const m of MOODS) for (const lang of ["ar", "en"] as const) for (const q of ALL_QUESTIONS) {
+      const modal = entryModal("2026-10-09", m.value, lang, q, {
         user_id: TARGET, day: "2026-10-09", mood: m.value, energy: 10, sleep: 12.5,
-        highlight: "x".repeat(600), problems: "y".repeat(600), gratitude: "z".repeat(150), tags: [], ai_reply: "", created_at: "", updated_at: "",
+        highlight: "x".repeat(600), problems: "y".repeat(600), gratitude: "z".repeat(150), tags: [], question: q.id, answer: "w".repeat(400), ai_reply: "", created_at: "", updated_at: "",
       });
       assert.ok(modal.title.length <= 45, `modal title "${modal.title}"`);
       assert.ok(modal.components.length <= 5);
@@ -91,22 +93,28 @@ describe("Discord API limits", () => {
     const worst = {
       user_id: TARGET, day: "2026-10-09", mood: 1, energy: 1, sleep: 0,
       highlight: "ا".repeat(600), problems: "ب".repeat(600), gratitude: "ج".repeat(150),
-      tags: TAGS.map((x) => x.id), ai_reply: "", created_at: "", updated_at: "",
+      tags: TAGS.map((x) => x.id), question: "laugh", answer: "د".repeat(400), ai_reply: "", created_at: "", updated_at: "",
     };
-    const res = entryResult(t.app, worst, "رد ".repeat(3000), { streak: 999, newBadges: Array(16).fill("🏆 **عنوان** — وصف الإنجاز"), warnings: ["a", "b"] });
-    checkComponents(res.components, "result");
-    checkEmbed(res.embeds[0], "result");
+    for (const lang of ["ar", "en"] as const) {
+      const res = entryResult(t.app, worst, "رد ".repeat(3000), lang, { streak: 999, newBadges: Array(17).fill("🏆 **عنوان** — وصف الإنجاز"), warnings: ["a", "b"] });
+      checkComponents(res.components, `result ${lang}`);
+      checkEmbed(res.embeds[0], `result ${lang}`);
+    }
   });
 
-  test("report embed stays within limits even with a huge AI answer", async () => {
-    const t = makeApp();
-    for (let k = 1; k <= 28; k++) t.app.db.upsertEntry({ user_id: TARGET, day: `2026-09-${String(k).padStart(2, "0")}`, mood: (k % 5) + 1 });
+  test("report embed stays within limits even with a huge AI answer and a full year of custom emojis", async () => {
+    const t = await makeApp();
+    for (const m of MOODS) t.app.emojis.set(m.key, "123456789012345678"); // إيموجي خاص طويل (~33 حرف)
+    for (let k = 0; k < 365; k += 2) await t.app.db.upsertEntry({ user_id: TARGET, day: addDays("2025-10-01", k), mood: (k % 5) + 1 });
+    for (let k = 1; k <= 28; k++) await t.app.db.upsertEntry({ user_id: TARGET, day: `2026-09-${String(k).padStart(2, "0")}`, mood: (k % 5) + 1 });
     const long = (c: string) => Array(8).fill(c.repeat(400));
     t.app.ai.analyze = async () => ({ summary: "س".repeat(5000), good_things: long("ح"), bad_things: long("ض"), tips: long("ن"), source: "ai" as const });
     const { buildReport } = await import("../src/features/reports.ts");
-    const r = await buildReport(t.app, TARGET, "2026-09-01", "2026-09-30", "تقرير شهر سبتمبر");
-    checkEmbed((r.payload.embeds as any[])[0], "report");
-    checkComponents(r.payload.components as any[], "report");
+    for (const [start, end] of [["2026-09-01", "2026-09-30"], ["2025-10-01", "2026-09-30"]] as const) {
+      const r = await buildReport(t.app, TARGET, start, end, () => "تقرير");
+      checkEmbed((r.payload.embeds as any[])[0], `report ${start}`);
+      checkComponents(r.payload.components as any[], "report");
+    }
   });
 
   test("every tag fits a select option and is unique", () => {

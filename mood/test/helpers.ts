@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { AI } from "../src/ai.ts";
 import { MoodApp } from "../src/app.ts";
 import { loadConfig, type Config } from "../src/config.ts";
-import { MoodDB } from "../src/db.ts";
+import { sqliteExec, SqlStore } from "../src/store/sql.ts";
 import { DiscordClient } from "../src/discord/api.ts";
 import { REST } from "../src/discord/rest.ts";
 import { silentLogger } from "../src/log.ts";
@@ -53,15 +53,17 @@ export function fakeDiscordFetch(overrides: (c: Call) => Response | undefined = 
   return { fetch, calls };
 }
 
-/** fetch وهمي لـ Claude: يرجع نص أو JSON حسب الطلب. */
+/** fetch وهمي للذكاء الاصطناعي: يفهم صيغة OpenRouter/OpenAI (chat/completions) وصيغة Anthropic (messages). */
 export function fakeClaudeFetch(reply = "رد ذكي من مود 🌟") {
-  const requests: { headers: Record<string, string>; body: any }[] = [];
-  const fetch = async (_url: string, init: RequestInit): Promise<Response> => {
+  const requests: { url: string; headers: Record<string, string>; body: any }[] = [];
+  const fetch = async (url: string, init: RequestInit): Promise<Response> => {
     const body = JSON.parse(String(init.body));
-    requests.push({ headers: init.headers as Record<string, string>, body });
-    const text = body.output_config?.format
+    requests.push({ url, headers: init.headers as Record<string, string>, body });
+    const structured = body.output_config?.format || body.response_format;
+    const text = structured
       ? JSON.stringify({ summary: "ملخص ذكي", good_things: ["الرياضة"], bad_things: ["الضغط"], tips: ["نم بدري"] })
       : reply;
+    if (url.endsWith("/chat/completions")) return json({ id: "gen-1", choices: [{ index: 0, finish_reason: "stop", message: { role: "assistant", content: text } }] });
     return json({ stop_reason: "end_turn", content: [{ type: "thinking", thinking: "" }, { type: "text", text }] });
   };
   return { fetch, requests };
@@ -75,7 +77,7 @@ export interface TestApp {
   config: Config;
 }
 
-export function makeApp(opts: { ai?: boolean; env?: Record<string, string>; override?: (c: Call) => Response | undefined } = {}): TestApp {
+export async function makeApp(opts: { ai?: boolean; env?: Record<string, string>; override?: (c: Call) => Response | undefined } = {}): Promise<TestApp> {
   const dataDir = mkdtempSync(join(tmpdir(), "mood-test-"));
   const config = loadConfig({
     DISCORD_TOKEN: "test-token",
@@ -83,7 +85,7 @@ export function makeApp(opts: { ai?: boolean; env?: Record<string, string>; over
     OWNER_ID: OWNER,
     TIMEZONE: "Asia/Riyadh",
     DATA_DIR: dataDir,
-    ANTHROPIC_API_KEY: opts.ai === false ? "" : "sk-test",
+    OPENROUTER_API_KEY: opts.ai === false ? "" : "sk-or-test",
     ...opts.env,
   });
   const d = fakeDiscordFetch(opts.override);
@@ -91,9 +93,11 @@ export function makeApp(opts: { ai?: boolean; env?: Record<string, string>; over
   const discord = new DiscordClient(rest);
   discord.applicationId = "999999999999999999";
   const claude = fakeClaudeFetch();
-  const ai = new AI({ apiKey: config.anthropicKey, model: config.aiModel, fetch: claude.fetch, sleep: async () => {} });
+  const ai = new AI({ provider: config.aiProvider, apiKey: config.aiKey, model: config.aiModel, baseUrl: config.aiBaseUrl, fetch: claude.fetch, sleep: async () => {} });
   const clock = { now: new Date("2026-10-09T11:30:00Z") }; // الجمعة 14:30 بتوقيت الرياض
-  const app = new MoodApp({ config, db: new MoodDB(":memory:"), discord, ai, log: silentLogger, now: () => clock.now });
+  const db = new SqlStore(await sqliteExec(":memory:"));
+  await db.init();
+  const app = new MoodApp({ config, db, discord, ai, log: silentLogger, now: () => clock.now });
   return { app, calls: d.calls, claude, clock, config };
 }
 

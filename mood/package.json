@@ -1,6 +1,6 @@
 {
   "name": "mood-bot",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Mood Bot — بوت ديسكورد يسأل كل يوم: كيف كان يومك؟ ويطلع تقارير مزاج احترافية",
   "type": "module",
   "private": true,
@@ -15,11 +15,33 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm test",
     "demo": "node --disable-warning=ExperimentalWarning scripts/demo-report.ts",
-    "size": "node --disable-warning=ExperimentalWarning scripts/size.ts"
+    "size": "node --disable-warning=ExperimentalWarning scripts/size.ts",
+    "migrate": "node --disable-warning=ExperimentalWarning scripts/migrate-db.ts",
+    "test:db": "node --disable-warning=ExperimentalWarning --test test/store.test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
     "discord-api-types": "^0.38.56",
+    "mongodb": "^7.7.0",
+    "mysql2": "^3.24.5",
+    "pg": "^8.23.1",
     "typescript": "^7.0.2"
+  },
+  "peerDependencies": {
+    "pg": ">=8.11",
+    "mysql2": ">=3.9",
+    "mongodb": ">=6.3"
+  },
+  "peerDependenciesMeta": {
+    "pg": {
+      "optional": true
+    },
+    "mysql2": {
+      "optional": true
+    },
+    "mongodb": {
+      "optional": true
+    }
   }
 }

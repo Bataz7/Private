@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { ACHIEVEMENTS, evaluate } from "../src/achievements.ts";
-import { ConfigError, loadConfig } from "../src/config.ts";
-import { MoodDB, type Entry } from "../src/db.ts";
+import { ConfigError, isAllowed, isOwner, loadConfig } from "../src/config.ts";
+import type { Entry } from "../src/store/types.ts";
 import { detectRisk, normalizeArabic } from "../src/safety.ts";
 import { bestStreak, commonThemes, computeStats, currentStreak, pearson, tagImpacts, trendPerWeek } from "../src/stats.ts";
 import { addDays, arabicTime, diffDays, isoWeekKey, parseHHMM, parseWeekday, toLatinDigits, weekdayOf, zoned } from "../src/time.ts";
 import { parseNumber } from "../src/features/checkin.ts";
 
 const E = (day: string, mood: number, extra: Partial<Entry> = {}): Entry => ({
-  user_id: "1", day, mood, energy: null, sleep: null, highlight: "", problems: "", gratitude: "", tags: [], ai_reply: "", created_at: "", updated_at: "", ...extra,
+  user_id: "1", day, mood, energy: null, sleep: null, highlight: "", problems: "", gratitude: "", tags: [], question: "", answer: "", ai_reply: "", created_at: "", updated_at: "", ...extra,
 });
 
 describe("time", () => {
@@ -48,8 +48,34 @@ describe("config", () => {
     assert.equal(c.checkinMinutes, 870);
     assert.equal(c.timezone, "Asia/Riyadh");
     assert.equal(c.weeklyReportDay, 5);
-    assert.equal(c.aiModel, "claude-opus-5-5");
+    assert.equal(c.aiProvider, "none");
+    assert.equal(c.defaultLang, "ar");
     assert.deepEqual(c.targetIds, ["111111111111111111"]);
+  });
+  test("AI provider auto-detection", () => {
+    const or = loadConfig({ ...base, OPENROUTER_API_KEY: "sk-or-x" });
+    assert.equal(or.aiProvider, "openrouter");
+    assert.equal(or.aiModel, "openai/gpt-4o");
+    assert.equal(or.aiBaseUrl, "https://openrouter.ai/api/v1");
+    const an = loadConfig({ ...base, ANTHROPIC_API_KEY: "sk-ant-x" });
+    assert.equal(an.aiProvider, "anthropic");
+    assert.equal(an.aiModel, "claude-opus-5-5");
+    const custom = loadConfig({ ...base, OPENAI_API_KEY: "k", AI_BASE_URL: "http://localhost:11434/v1/", AI_MODEL: "llama3" });
+    assert.equal(custom.aiProvider, "openai");
+    assert.equal(custom.aiBaseUrl, "http://localhost:11434/v1");
+    assert.equal(custom.aiModel, "llama3");
+    assert.equal(loadConfig({ ...base, AI_PROVIDER: "openrouter" }).aiProvider, "none", "no key → off");
+    assert.throws(() => loadConfig({ ...base, AI_PROVIDER: "skynet" }), /AI_PROVIDER/);
+    assert.throws(() => loadConfig({ ...base, DEFAULT_LANG: "fr" }), /DEFAULT_LANG/);
+    assert.equal(loadConfig({ ...base, DEFAULT_LANG: "EN" }).defaultLang, "en");
+  });
+  test("owner fallback only for a single target (no data leaks between targets)", () => {
+    const one = loadConfig({ ...base });
+    assert.ok(isOwner(one, "111111111111111111"));
+    const two = loadConfig({ ...base, TARGET_USER_ID: "111111111111111111,222222222222222222" });
+    assert.ok(!isOwner(two, "111111111111111111"));
+    assert.ok(!isOwner(two, "222222222222222222"));
+    assert.ok(isAllowed(two, "222222222222222222"));
   });
   test("multiple targets & dedupe", () => {
     assert.deepEqual(loadConfig({ ...base, TARGET_USER_ID: "111111111111111111, 222222222222222222,111111111111111111" }).targetIds.length, 2);
@@ -60,43 +86,6 @@ describe("config", () => {
     assert.throws(() => loadConfig({ ...base, TIMEZONE: "Mars/Base" }), /منطقة زمنية/);
     assert.throws(() => loadConfig({ ...base, CHECKIN_TIME: "2.5pm" }), /HH:MM/);
     assert.throws(() => loadConfig({ ...base, REMINDER_AFTER_HOURS: "99" }), ConfigError);
-  });
-});
-
-describe("db", () => {
-  test("upsert, tags, ranges, chat memory, achievements, meta, delete", () => {
-    const db = new MoodDB(":memory:");
-    db.upsertEntry({ user_id: "1", day: "2026-10-01", mood: 4, sleep: 7.5, energy: 8, highlight: " رياضة " });
-    db.setTags("1", "2026-10-01", ["sport"]);
-    const e = db.upsertEntry({ user_id: "1", day: "2026-10-01", mood: 5, highlight: "عدلت" });
-    assert.equal(e.mood, 5);
-    assert.deepEqual(e.tags, ["sport"], "tags survive an edit");
-    assert.equal(db.getEntry("1", "2026-10-01")!.highlight, "عدلت");
-    db.upsertEntry({ user_id: "1", day: "2026-10-03", mood: 2 });
-    assert.equal(db.entriesBetween("1", "2026-10-01", "2026-10-02").length, 1);
-    assert.equal(db.countEntries("1"), 2);
-    assert.throws(() => db.upsertEntry({ user_id: "1", day: "2026-10-04", mood: 9 }), "mood is constrained");
-
-    for (let k = 0; k < 50; k++) db.addChat("1", k % 2 ? "assistant" : "user", `m${k}`, 40);
-    assert.equal(db.recentChat("1", 100).length, 40);
-    assert.equal(db.recentChat("1", 2).at(-1)!.content, "m49");
-
-    assert.equal(db.unlock("1", "first"), true);
-    assert.equal(db.unlock("1", "first"), false);
-    assert.equal(db.once("k"), true);
-    assert.equal(db.once("k"), false);
-
-    db.deleteUserData("1");
-    assert.equal(db.countEntries("1"), 0);
-    assert.equal(db.recentChat("1").length, 0);
-    assert.equal(db.achievements("1").length, 0);
-  });
-  test("users settings", () => {
-    const db = new MoodDB(":memory:");
-    db.ensureUser("1");
-    db.updateUser("1", { timezone: "Asia/Dubai", checkin_minutes: 600 });
-    assert.equal(db.getUser("1")!.timezone, "Asia/Dubai");
-    assert.equal(db.getUser("1")!.checkin_minutes, 600);
   });
 });
 
@@ -139,6 +128,7 @@ describe("stats", () => {
   });
   test("common themes", () => {
     assert.deepEqual(commonThemes(["رحت الجيم", "رحت الجيم", "نمت"]), ["رحت الجيم (×2)"]);
+    assert.deepEqual(commonThemes(["gym gym", "Gym day"], "en"), ['"gym" came up often (×3)']);
   });
 });
 
@@ -146,7 +136,7 @@ describe("achievements", () => {
   test("evaluates badges", () => {
     const es = Array.from({ length: 7 }, (_, k) => E(addDays("2026-10-01", k), k === 0 ? 1 : 5, { gratitude: "أهلي" }));
     const got = evaluate({ entries: es, streak: 7, bestStreak: 7 }).map((a) => a.code);
-    for (const c of ["first", "streak3", "streak7", "great5", "comeback", "grateful7"]) assert.ok(got.includes(c), c);
+    for (const c of ["first", "streak3", "streak7", "great5", "comeback", "grateful"]) assert.ok(got.includes(c), c);
     assert.ok(!got.includes("goodweek"), "first day was bad");
     assert.equal(new Set(ACHIEVEMENTS.map((a) => a.code)).size, ACHIEVEMENTS.length, "codes unique");
   });

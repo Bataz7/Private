@@ -1,12 +1,13 @@
 /** الإنجازات (badges) — تحفيز بسيط يخلي التسجيل اليومي عادة. */
-import type { Entry } from "./db.ts";
+import type { Lang } from "./i18n.ts";
+import type { Entry } from "./store/types.ts";
 import { diffDays } from "./time.ts";
 
 export interface AchievementDef {
   code: string;
   emoji: string;
-  title: string;
-  description: string;
+  title: Record<Lang, string>;
+  description: Record<Lang, string>;
   check(ctx: AchievementContext): boolean;
 }
 
@@ -37,23 +38,27 @@ function goodRun(entries: Entry[], len: number): boolean {
   return false;
 }
 
+const A = (code: string, emoji: string, ar: [string, string], en: [string, string], check: AchievementDef["check"]): AchievementDef =>
+  ({ code, emoji, title: { ar: ar[0], en: en[0] }, description: { ar: ar[1], en: en[1] }, check });
+
 export const ACHIEVEMENTS: readonly AchievementDef[] = [
-  { code: "first", emoji: "🌱", title: "أول خطوة", description: "سجّلت أول يوم", check: (c) => c.entries.length >= 1 },
-  { code: "streak3", emoji: "🔥", title: "بداية نار", description: "3 أيام ورا بعض", check: (c) => c.bestStreak >= 3 },
-  { code: "streak7", emoji: "⚡", title: "أسبوع كامل", description: "7 أيام ورا بعض", check: (c) => c.bestStreak >= 7 },
-  { code: "streak14", emoji: "💪", title: "ثابت", description: "14 يوم ورا بعض", check: (c) => c.bestStreak >= 14 },
-  { code: "streak30", emoji: "🏅", title: "شهر بدون انقطاع", description: "30 يوم ورا بعض", check: (c) => c.bestStreak >= 30 },
-  { code: "streak100", emoji: "👑", title: "أسطورة", description: "100 يوم ورا بعض", check: (c) => c.bestStreak >= 100 },
-  { code: "entries10", emoji: "📒", title: "مذكرات", description: "10 تسجيلات", check: (c) => c.entries.length >= 10 },
-  { code: "entries50", emoji: "📚", title: "كتاب أيامك", description: "50 تسجيل", check: (c) => c.entries.length >= 50 },
-  { code: "entries100", emoji: "🏛️", title: "أرشيف", description: "100 تسجيل", check: (c) => c.entries.length >= 100 },
-  { code: "great5", emoji: "🌟", title: "أيام ذهبية", description: "5 أيام ممتازة", check: (c) => count(c, (e) => e.mood === 5) >= 5 },
-  { code: "goodweek", emoji: "☀️", title: "أسبوع مشمس", description: "7 أيام حلوة ورا بعض", check: (c) => goodRun(c.entries, 7) },
-  { code: "comeback", emoji: "🌈", title: "رجعة قوية", description: "من يوم سيء ليوم حلو مباشرة", check: (c) => hasComeback(c.entries) },
-  { code: "grateful7", emoji: "🙏", title: "قلب ممتن", description: "كتبت شي ممتن له 7 مرات", check: (c) => count(c, (e) => e.gratitude.length > 0) >= 7 },
-  { code: "storyteller", emoji: "✍️", title: "حكواتي", description: "كتبت تفاصيل يومك 20 مرة", check: (c) => count(c, (e) => e.highlight.length + e.problems.length > 40) >= 20 },
-  { code: "sleeper", emoji: "😴", title: "نوم ملوكي", description: "نمت 7 ساعات أو أكثر 7 مرات", check: (c) => count(c, (e) => (e.sleep ?? 0) >= 7) >= 7 },
-  { code: "tagger", emoji: "🏷️", title: "منظم", description: "حددت أنشطة يومك 10 مرات", check: (c) => count(c, (e) => e.tags.length > 0) >= 10 },
+  A("first", "🌱", ["أول خطوة", "سجّلت أول يوم"], ["First step", "Logged your first day"], (c) => c.entries.length >= 1),
+  A("streak3", "🔥", ["بداية نار", "3 أيام ورا بعض"], ["On fire", "3 days in a row"], (c) => c.bestStreak >= 3),
+  A("streak7", "⚡", ["أسبوع كامل", "7 أيام ورا بعض"], ["Full week", "7 days in a row"], (c) => c.bestStreak >= 7),
+  A("streak14", "💪", ["ثابت", "14 يوم ورا بعض"], ["Steady", "14 days in a row"], (c) => c.bestStreak >= 14),
+  A("streak30", "🏅", ["شهر بدون انقطاع", "30 يوم ورا بعض"], ["Unbroken month", "30 days in a row"], (c) => c.bestStreak >= 30),
+  A("streak100", "👑", ["أسطورة", "100 يوم ورا بعض"], ["Legend", "100 days in a row"], (c) => c.bestStreak >= 100),
+  A("entries10", "📒", ["مذكرات", "10 تسجيلات"], ["Journal", "10 entries"], (c) => c.entries.length >= 10),
+  A("entries50", "📚", ["كتاب أيامك", "50 تسجيل"], ["Book of days", "50 entries"], (c) => c.entries.length >= 50),
+  A("entries100", "🏛️", ["أرشيف", "100 تسجيل"], ["Archive", "100 entries"], (c) => c.entries.length >= 100),
+  A("great5", "🌟", ["أيام ذهبية", "5 أيام ممتازة"], ["Golden days", "5 great days"], (c) => count(c, (e) => e.mood === 5) >= 5),
+  A("goodweek", "☀️", ["أسبوع مشمس", "7 أيام حلوة ورا بعض"], ["Sunny week", "7 good days in a row"], (c) => goodRun(c.entries, 7)),
+  A("comeback", "🌈", ["رجعة قوية", "من يوم سيء ليوم حلو مباشرة"], ["Comeback", "From a bad day straight to a good one"], (c) => hasComeback(c.entries)),
+  A("grateful", "🙏", ["قلب ممتن", "كتبت شي ممتن له 4 مرات"], ["Grateful heart", "Wrote what you're grateful for 4 times"], (c) => count(c, (e) => e.gratitude.length > 0) >= 4),
+  A("thinker", "💭", ["فيلسوف", "جاوبت على سؤال اليوم 10 مرات"], ["Deep thinker", "Answered the daily question 10 times"], (c) => count(c, (e) => e.answer.length > 0 || e.gratitude.length > 0) >= 10),
+  A("storyteller", "✍️", ["حكواتي", "كتبت تفاصيل يومك 20 مرة"], ["Storyteller", "Wrote about your day 20 times"], (c) => count(c, (e) => e.highlight.length + e.problems.length > 40) >= 20),
+  A("sleeper", "😴", ["نوم ملوكي", "نمت 7 ساعات أو أكثر 7 مرات"], ["Royal sleep", "Slept 7+ hours 7 times"], (c) => count(c, (e) => (e.sleep ?? 0) >= 7) >= 7),
+  A("tagger", "🏷️", ["منظم", "حددت أنشطة يومك 10 مرات"], ["Organized", "Tagged your activities 10 times"], (c) => count(c, (e) => e.tags.length > 0) >= 10),
 ];
 
 export const achievementByCode = (code: string) => ACHIEVEMENTS.find((a) => a.code === code);

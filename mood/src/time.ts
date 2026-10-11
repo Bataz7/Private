@@ -62,14 +62,17 @@ export function formatMinutes(min: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-/** 14:30 → "2:30 الظهر" */
-export function arabicTime(min: number): string {
+/** 14:30 → "2:30 الظهر" أو "2:30 PM" */
+export function localTime(min: number, lang: "ar" | "en" = "ar"): string {
   const h = Math.floor(min / 60) % 24;
   const m = String(min % 60).padStart(2, "0");
   const h12 = h % 12 === 0 ? 12 : h % 12;
+  if (lang === "en") return `${h12}:${m} ${h < 12 ? "AM" : "PM"}`;
   const period = h < 4 ? "الفجر" : h < 12 ? "الصباح" : h < 15 ? "الظهر" : h < 18 ? "العصر" : h < 20 ? "المغرب" : "الليل";
   return `${h12}:${m} ${period}`;
 }
+
+export const arabicTime = (min: number) => localTime(min, "ar");
 
 function toUTC(day: string): number {
   const [y, m, d] = day.split("-").map(Number);
@@ -102,7 +105,11 @@ export function daysInMonth(year: number, month1: number): number {
   return new Date(Date.UTC(year, month1, 0)).getUTCDate();
 }
 
-export const WEEKDAYS_AR = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+export const WEEKDAYS = {
+  ar: ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],
+  en: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+} as const;
+export const WEEKDAYS_AR = WEEKDAYS.ar;
 const WEEKDAY_ALIASES: Record<string, number> = {
   sun: 0, sunday: 0, "الأحد": 0, "الاحد": 0,
   mon: 1, monday: 1, "الاثنين": 1, "الإثنين": 1,
@@ -127,13 +134,18 @@ export function toLatinDigits(s: string): string {
     .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
 }
 
-/** تاريخ عربي لطيف: "الجمعة 10 أكتوبر" */
-export function arabicDate(day: string): string {
-  const d = new Date(toUTC(day));
-  return new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  }).format(d);
+const dateFmt = {
+  ar: new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }),
+  en: new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }),
+};
+
+/** تاريخ لطيف: "الجمعة 10 أكتوبر" أو "Friday 10 October" */
+export function localDate(day: string, lang: "ar" | "en" = "ar"): string {
+  return dateFmt[lang].format(new Date(toUTC(day)));
+}
+
+export const arabicDate = (day: string) => localDate(day, "ar");
+
+export function monthName(day: string, lang: "ar" | "en"): string {
+  return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "ar-SA-u-ca-gregory", { month: "long", timeZone: "UTC" }).format(new Date(toUTC(day)));
 }

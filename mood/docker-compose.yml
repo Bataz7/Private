@@ -1,6 +1,10 @@
 services:
   mood-bot:
-    build: .
+    build:
+      context: .
+      args:
+        # فاضي = SQLite. للقواعد الثانية: pg أو mysql2 أو mongodb
+        DB_DRIVER: ""
     container_name: mood-bot
     restart: unless-stopped
     env_file: .env

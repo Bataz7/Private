@@ -13,7 +13,8 @@ import { onCheckinCommand, onEdit, onEntryModal, onMoodButton, onSnooze, onTags 
 import { onTalkCommand } from "./features/companion.ts";
 import { onAchievementsCommand, onAdminCommand, onAdminSendButton, onExportCommand, onForgetButton, onForgetCommand, onHelpCommand } from "./features/misc.ts";
 import { onHistoryCommand, onInsightsCommand, onReportButton, onReportCommand } from "./features/reports.ts";
-import { onSettingsAutocomplete, onSettingsCommand } from "./features/settings.ts";
+import { onLanguageCommand, onSettingsAutocomplete, onSettingsCommand } from "./features/settings.ts";
+import { L } from "./i18n.ts";
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const ID = /^\d{15,21}$/;
@@ -30,12 +31,13 @@ async function command(app: MoodApp, i: APIInteraction): Promise<unknown> {
     case "achievements": return onAchievementsCommand(app, i, user);
     case "talk": return onTalkCommand(app, i, optValue<string>(options, "message"), optValue<boolean>(options, "reset"));
     case "settings": return onSettingsCommand(app, i);
+    case "language": return onLanguageCommand(app, i);
     case "export": return onExportCommand(app, i);
     case "forget": return onForgetCommand(app, i);
     case "help": return onHelpCommand(app, i);
     case "admin": return onAdminCommand(app, i);
   }
-  return app.discord.reply(i, { content: "🤔 أمر غير معروف — يمكن البوت يتحدث. جرّب بعد دقيقة." }, { ephemeral: true });
+  return app.discord.reply(i, { content: (await app.t(interactionUser(i).id)).unknownCommand }, { ephemeral: true });
 }
 
 async function component(app: MoodApp, i: APIMessageComponentInteraction): Promise<unknown> {
@@ -49,7 +51,7 @@ async function component(app: MoodApp, i: APIMessageComponentInteraction): Promi
     case "del": return onForgetButton(app, i, a === "yes");
     case "ad": if (a === "ci" && ID.test(b)) return onAdminSendButton(app, i, b); break;
   }
-  return app.discord.reply(i, { content: "هذا الزر قديم 🙂 جرّب /checkin" }, { ephemeral: true });
+  return app.discord.reply(i, { content: (await app.t(interactionUser(i).id)).staleButton }, { ephemeral: true });
 }
 
 async function modal(app: MoodApp, i: APIModalSubmitInteraction): Promise<unknown> {
@@ -73,7 +75,9 @@ export async function handleInteraction(app: MoodApp, i: APIInteraction): Promis
       return;
     }
     if (!isAllowed(app.config, uid)) {
-      await app.discord.reply(i, { content: "🔒 هذا البوت خاص." }, { ephemeral: true });
+      // الغريب ما عنده لغة محفوظة: نستخدم لغة ديسكورد حقه
+      const lang = (i as { locale?: string }).locale?.startsWith("ar") ? "ar" : (i as { locale?: string }).locale ? "en" : app.config.defaultLang;
+      await app.discord.reply(i, { content: L(lang).privateBot }, { ephemeral: true });
       return;
     }
     switch (i.type) {
@@ -99,7 +103,7 @@ export async function handleInteraction(app: MoodApp, i: APIInteraction): Promis
 
 /** نحاول نعلم المستخدم إن صار خطأ — رد جديد أو متابعة لو سبق ورديّنا. */
 async function reportError(app: MoodApp, i: APIInteraction): Promise<void> {
-  const content = "😵‍💫 صار خطأ غير متوقع. جرّب مرة ثانية بعد شوي.";
+  const content = await app.t(interactionUser(i).id).then((t) => t.error).catch(() => L(app.config.defaultLang).error);
   try {
     await app.discord.reply(i, { content }, { ephemeral: true });
   } catch (e) {

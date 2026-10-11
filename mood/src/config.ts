@@ -1,7 +1,10 @@
 /** الإعدادات: تنقرأ من .env ومن متغيرات البيئة، وتتحقق منها قبل التشغيل. */
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { isLang, type Lang } from "./i18n.ts";
 import { isValidTimeZone, parseHHMM, parseWeekday } from "./time.ts";
+
+export type AIProvider = "openrouter" | "openai" | "anthropic" | "none";
 
 export interface Config {
   token: string;
@@ -16,12 +19,19 @@ export interface Config {
   notifyOwner: boolean;
   alerts: boolean;
   lowMoodAlertDays: number;
-  anthropicKey: string;
+  defaultLang: Lang;
+  aiProvider: AIProvider;
+  aiKey: string;
   aiModel: string;
+  aiBaseUrl: string;
   aiChat: boolean;
+  appUrl: string;
+  appName: string;
+  databaseUrl: string;
   dataDir: string;
   backupKeep: number;
   logLevel: string;
+  /** رسالة الأمان المخصصة (لو فاضية نستخدم الافتراضية حسب اللغة) */
   safetyMessage: string;
   statusText: string;
   /** للاختبارات فقط: سيرفر ديسكورد وهمي */
@@ -30,13 +40,6 @@ export interface Config {
 }
 
 export class ConfigError extends Error {}
-
-const DEFAULT_SAFETY =
-  "🫂 كلامك مهم، وأنت مهم. لو تحس إنك ممكن تأذي نفسك، تكفى لا تبقى لحالك:\n" +
-  "• كلّم شخص تثق فيه الحين\n" +
-  "• الطوارئ في السعودية: **911** (أو **997** للإسعاف)\n" +
-  "• مركز اتصال وزارة الصحة: **937** (24 ساعة)\n" +
-  "أنا هنا معك، وفيه ناس تبي تساعدك 💛";
 
 const SNOWFLAKE = /^\d{15,21}$/;
 
@@ -79,6 +82,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, { requireToken 
   const timezone = (env.TIMEZONE || "Asia/Riyadh").trim();
   if (!isValidTimeZone(timezone)) throw new ConfigError(`TIMEZONE: "${timezone}" منطقة زمنية غير معروفة (مثال: Asia/Riyadh)`);
 
+  const defaultLang = (env.DEFAULT_LANG || "ar").trim().toLowerCase();
+  if (!isLang(defaultLang)) throw new ConfigError("DEFAULT_LANG: لازم ar أو en");
+
+  const ai = resolveAI(env);
+
   const weeklyReportDay = parseWeekday(env.WEEKLY_REPORT_DAY || "friday");
   if (weeklyReportDay === null) throw new ConfigError("WEEKLY_REPORT_DAY: اكتب اسم يوم مثل friday أو الجمعة");
 
@@ -95,19 +103,54 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, { requireToken 
     notifyOwner: bool(env.NOTIFY_OWNER, false),
     alerts: bool(env.ALERTS, true),
     lowMoodAlertDays: num(env.LOW_MOOD_ALERT_DAYS, 3, "LOW_MOOD_ALERT_DAYS", 2, 14),
-    anthropicKey: (env.ANTHROPIC_API_KEY ?? "").trim(),
-    aiModel: (env.AI_MODEL || "claude-opus-5-5").trim(),
+    defaultLang,
+    ...ai,
     aiChat: bool(env.AI_CHAT, true),
+    appUrl: env.APP_URL || "https://github.com/bataz7/private",
+    appName: env.APP_NAME || "Mood Bot",
+    databaseUrl: (env.DATABASE_URL ?? "").trim(),
     dataDir: resolve(env.DATA_DIR || "data"),
     backupKeep: num(env.BACKUP_KEEP, 14, "BACKUP_KEEP", 0, 365),
     logLevel: env.LOG_LEVEL || "info",
-    safetyMessage: env.SAFETY_MESSAGE?.replace(/\\n/g, "\n") || DEFAULT_SAFETY,
+    safetyMessage: env.SAFETY_MESSAGE?.replace(/\\n/g, "\n") ?? "",
     statusText: env.STATUS_TEXT || "كيف كان يومك؟ 🌈",
     apiUrl: env.DISCORD_API_URL || undefined,
     gatewayUrl: env.DISCORD_GATEWAY_URL || undefined,
   };
 }
 
-export const isOwner = (c: Config, id: string) => c.ownerIds.includes(id) || (c.ownerIds.length === 0 && c.targetIds.includes(id));
+const DEFAULT_MODELS: Record<Exclude<AIProvider, "none">, string> = {
+  openrouter: "openai/gpt-4o",
+  openai: "gpt-4o",
+  anthropic: "claude-opus-5-5",
+};
+const BASE_URLS: Record<Exclude<AIProvider, "none">, string> = {
+  openrouter: "https://openrouter.ai/api/v1",
+  openai: "https://api.openai.com/v1",
+  anthropic: "https://api.anthropic.com/v1",
+};
+
+/** يختار مزوّد الذكاء الاصطناعي: AI_PROVIDER، أو تلقائياً حسب المفتاح الموجود. */
+function resolveAI(env: NodeJS.ProcessEnv): { aiProvider: AIProvider; aiKey: string; aiModel: string; aiBaseUrl: string } {
+  const keys = {
+    openrouter: (env.OPENROUTER_API_KEY ?? "").trim(),
+    openai: (env.OPENAI_API_KEY ?? "").trim(),
+    anthropic: (env.ANTHROPIC_API_KEY ?? "").trim(),
+  };
+  let provider = (env.AI_PROVIDER || "auto").trim().toLowerCase();
+  if (provider === "auto") provider = keys.openrouter ? "openrouter" : keys.openai ? "openai" : keys.anthropic ? "anthropic" : "none";
+  if (!["openrouter", "openai", "anthropic", "none"].includes(provider)) {
+    throw new ConfigError("AI_PROVIDER: لازم openrouter أو openai أو anthropic أو none");
+  }
+  if (provider === "none") return { aiProvider: "none", aiKey: "", aiModel: "", aiBaseUrl: "" };
+  const p = provider as Exclude<AIProvider, "none">;
+  const key = keys[p] || (env.AI_API_KEY ?? "").trim();
+  if (!key) return { aiProvider: "none", aiKey: "", aiModel: "", aiBaseUrl: "" };
+  return { aiProvider: p, aiKey: key, aiModel: (env.AI_MODEL || DEFAULT_MODELS[p]).trim(), aiBaseUrl: (env.AI_BASE_URL || BASE_URLS[p]).replace(/\/+$/, "") };
+}
+
+/** المالك: اللي في OWNER_ID. لو فاضي والشخص واحد بس، هو المالك (عشان ما يشوف أحد بيانات غيره). */
+export const isOwner = (c: Config, id: string) =>
+  c.ownerIds.length ? c.ownerIds.includes(id) : c.targetIds.length === 1 && c.targetIds[0] === id;
 export const isTarget = (c: Config, id: string) => c.targetIds.includes(id);
 export const isAllowed = (c: Config, id: string) => isOwner(c, id) || isTarget(c, id);

@@ -1,8 +1,11 @@
 # Mood Bot — صورة خفيفة: Node فقط، بدون أي مكتبات (zero dependencies)
+# لقاعدة PostgreSQL/MySQL/MongoDB:  docker compose build --build-arg DB_DRIVER=pg   (أو mysql2 أو mongodb)
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+ARG DB_DRIVER=""
 COPY package.json start.mjs ./
+RUN if [ -n "$DB_DRIVER" ]; then npm install --omit=dev --no-save --no-audit --no-fund "$DB_DRIVER" && npm cache clean --force; fi
 COPY src ./src
 COPY assets ./assets
 RUN mkdir -p /app/data && chown -R node:node /app

@@ -20,6 +20,10 @@ export interface RequestOptions {
   /** مسارات webhook التفاعلات ما تحتاج توكن البوت. */
   auth?: boolean;
   reason?: string;
+  /** يتجاوز طابور المسار (لردود التفاعلات المستعجلة) */
+  direct?: boolean;
+  /** عدد إعادة المحاولات لهالطلب (الافتراضي من الإعدادات) */
+  retries?: number;
 }
 
 export class DiscordAPIError extends Error {
@@ -63,7 +67,6 @@ const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 export function routeKey(method: string, path: string): string {
   const p = path
     .replace(/\/interactions\/\d+\/[^/]+/, "/interactions/:id/:token")
-    .replace(/\/webhooks\/(\d+)\/[^/?]+/, "/webhooks/$1/:token")
     .replace(/\/(?!channels\/|guilds\/|webhooks\/)([a-z-]+)\/\d{15,21}/g, "/$1/:id")
     .replace(/\/reactions\/[^/]+/, "/reactions/:emoji");
   return `${method} ${p}`;
@@ -102,6 +105,7 @@ export class REST {
   /** الطلبات على نفس المسار تمشي بالدور عشان ما نكسر حدود السرعة. */
   request<T = unknown>(method: string, path: string, opts: RequestOptions = {}): Promise<T> {
     const key = routeKey(method, path);
+    if (opts.direct) return this.execute<T>(method, path, key, opts);
     const prev = this.queues.get(key) ?? Promise.resolve();
     const run = prev.catch(() => undefined).then(() => this.execute<T>(method, path, key, opts));
     const tail = run.catch(() => undefined);
@@ -167,6 +171,7 @@ export class REST {
       if (s) url += `?${s}`;
     }
 
+    const maxRetries = opts.retries ?? this.maxRetries;
     for (let attempt = 0; ; attempt++) {
       await this.waitForLimits(key);
       const { body, headers } = this.buildBody(opts);
@@ -178,7 +183,7 @@ export class REST {
       try {
         res = await this.fetchImpl(url, { method, headers, body, signal: AbortSignal.timeout(this.timeoutMs) });
       } catch (err) {
-        if (attempt >= this.maxRetries) throw err;
+        if (attempt >= maxRetries) throw err;
         const wait = Math.min(1000 * 2 ** attempt, 15_000);
         const cause = (err as { cause?: { code?: string } }).cause?.code;
         this.log.warn(`network error on ${method} ${path}${cause ? ` (${cause})` : ""}, retry in ${wait}ms:`, (err as Error).message);
@@ -193,12 +198,12 @@ export class REST {
         const retryAfter = Math.ceil((data.retry_after ?? Number(res.headers.get("retry-after") ?? 1)) * 1000) + 100;
         if (data.global || res.headers.get("x-ratelimit-global")) this.globalResetAt = Date.now() + retryAfter;
         this.log.warn(`rate limited on ${key} (${data.global ? "global" : "route"}), waiting ${retryAfter}ms`);
-        if (attempt >= this.maxRetries) throw new DiscordAPIError(429, data, method, path);
+        if (attempt >= maxRetries) throw new DiscordAPIError(429, data, method, path);
         await this.sleep(retryAfter);
         continue;
       }
 
-      if (res.status >= 500 && attempt < this.maxRetries) {
+      if (res.status >= 500 && attempt < maxRetries) {
         const wait = Math.min(1000 * 2 ** attempt, 15_000);
         this.log.warn(`Discord ${res.status} on ${method} ${path}, retry in ${wait}ms`);
         await this.sleep(wait);

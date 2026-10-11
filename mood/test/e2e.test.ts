@@ -24,6 +24,7 @@ describe("end-to-end: real bot process against a mock Discord", () => {
         OWNER_ID: "222222222222222222",
         DATA_DIR: mkdtempSync(join(tmpdir(), "mood-e2e-")),
         ANTHROPIC_API_KEY: "",
+        OPENROUTER_API_KEY: "",
         DISCORD_API_URL: mock.apiUrl,
         DISCORD_GATEWAY_URL: mock.gatewayUrl,
         LOG_LEVEL: "debug",
@@ -42,7 +43,7 @@ describe("end-to-end: real bot process against a mock Discord", () => {
 
   test("boots: registers commands, uploads emojis, identifies, goes ready, sends the check-in", async () => {
     await mock.waitFor(() => output.includes("شغّال"));
-    assert.ok(mock.requests.some((r) => r.method === "PUT" && r.path.endsWith("/commands") && r.body.length >= 10), "slash commands registered");
+    assert.ok(mock.requests.some((r) => r.method === "PUT" && r.path.endsWith("/commands") && r.body.length >= 12 && r.body.some((c: any) => c.name === "language")), "slash commands registered (incl. /language)");
     assert.equal(mock.requests.filter((r) => r.method === "POST" && r.path.endsWith("/emojis")).length, 11, "11 custom emojis uploaded");
     const identify = mock.gatewayIn.find((p) => p.op === 2);
     assert.equal(identify.d.token, "e2e-token");

@@ -66,3 +66,13 @@ export function isEphemeralMessage(i: APIInteraction): boolean {
 }
 
 export const inGuild = (i: APIInteraction) => Boolean(i.guild_id);
+
+/**
+ * هل الرد لازم يكون مخفي (ephemeral)؟ نعم في كل مكان إلا الخاص مع البوت نفسه —
+ * عشان ما تنكشف بيانات المزاج في سيرفر أو قروب أو خاص مع شخص ثاني (تثبيت المستخدم).
+ */
+export function shouldHide(i: APIInteraction): boolean {
+  const ctx = (i as { context?: number }).context;
+  if (ctx !== undefined) return ctx !== 1; // 1 = BotDM
+  return Boolean(i.guild_id);
+}

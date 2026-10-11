@@ -8,7 +8,6 @@ import { AI } from "./ai.ts";
 import { MoodApp } from "./app.ts";
 import { registerCommands } from "./commands.ts";
 import { ConfigError, loadConfig, loadEnvFile } from "./config.ts";
-import { MoodDB } from "./db.ts";
 import { DiscordClient } from "./discord/api.ts";
 import { ActivityType, Intents } from "./discord/constants.ts";
 import { Gateway } from "./discord/gateway.ts";
@@ -17,6 +16,7 @@ import { onDirectMessage } from "./features/companion.ts";
 import { createLogger, setLogLevel } from "./log.ts";
 import { handleInteraction } from "./router.ts";
 import { Scheduler } from "./scheduler.ts";
+import { createStore, detectKind, redact, StoreError, type Store } from "./store/index.ts";
 import { arabicTime } from "./time.ts";
 
 const log = createLogger();
@@ -35,7 +35,14 @@ async function main(): Promise<void> {
   }
   setLogLevel(config.logLevel);
 
-  const db = new MoodDB(join(config.dataDir, "mood.db"));
+  let db: Store;
+  try {
+    db = await createStore(config.databaseUrl, config.dataDir);
+    log.info(`🗄️ قاعدة البيانات: ${detectKind(config.databaseUrl)}${config.databaseUrl ? ` (${redact(config.databaseUrl)})` : ` (${join(config.dataDir, "mood.db")})`}`);
+  } catch (e) {
+    log.error(e instanceof StoreError ? `❌ ${e.message}` : `❌ ما قدرت أتصل بقاعدة البيانات: ${(e as Error).message}`);
+    process.exit(1);
+  }
   const rest = new REST(config.token, { logger: log.child("rest"), baseUrl: config.apiUrl });
   const discord = new DiscordClient(rest);
   // نحاول نوصل لديسكورد — لو النت فاصل نعيد المحاولة بدل ما نطفي
@@ -54,9 +61,12 @@ async function main(): Promise<void> {
     }
   }
 
-  const ai = new AI({ apiKey: config.anthropicKey, model: config.aiModel, logger: log.child("ai") });
+  const ai = new AI({
+    provider: config.aiProvider, apiKey: config.aiKey, model: config.aiModel, baseUrl: config.aiBaseUrl,
+    appUrl: config.appUrl, appName: config.appName, logger: log.child("ai"),
+  });
   const app = new MoodApp({ config, db, discord, ai, log });
-  for (const uid of config.targetIds) db.ensureUser(uid);
+  for (const uid of config.targetIds) await db.ensureUser(uid);
 
   await registerCommands(app).catch((e) => log.error("command registration failed:", (e as Error).message));
   await app.emojis.sync(discord, log.child("emoji"));
@@ -72,7 +82,7 @@ async function main(): Promise<void> {
 
   gateway.on("READY", (d: { user: { id: string; username: string } }) => {
     discord.user = d.user as never;
-    log.info(`✅ ${d.user.username} شغّال | السؤال اليومي ${arabicTime(config.checkinMinutes)} (${config.timezone}) | AI: ${ai.enabled ? ai.model : "مطفي"} | ${config.targetIds.length} شخص`);
+    log.info(`✅ ${d.user.username} شغّال | السؤال اليومي ${arabicTime(config.checkinMinutes)} (${config.timezone}) | AI: ${ai.label} | DB: ${db.kind} | ${config.targetIds.length} شخص`);
     scheduler.start();
   });
   gateway.on("INTERACTION_CREATE", (i: APIInteraction) => void handleInteraction(app, i));
@@ -92,12 +102,7 @@ async function main(): Promise<void> {
     log.info("🛑 إيقاف البوت…");
     scheduler.stop();
     gateway.destroy();
-    try {
-      db.close();
-    } catch {
-      /* ignore */
-    }
-    setTimeout(() => process.exit(code), 300).unref();
+    void db.close().catch(() => undefined).finally(() => setTimeout(() => process.exit(code), 200).unref());
   }
   process.on("SIGINT", () => shutdown(0));
   process.on("SIGTERM", () => shutdown(0));
