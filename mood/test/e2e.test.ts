@@ -42,13 +42,13 @@ describe("end-to-end: real bot process against a mock Discord", () => {
   });
 
   test("boots: registers commands, uploads emojis, identifies, goes ready, sends the check-in", async () => {
-    await mock.waitFor(() => output.includes("شغّال"));
+    await mock.waitFor(() => output.includes("online"));
     assert.ok(mock.requests.some((r) => r.method === "PUT" && r.path.endsWith("/commands") && r.body.length >= 12 && r.body.some((c: any) => c.name === "language")), "slash commands registered (incl. /language)");
     assert.equal(mock.requests.filter((r) => r.method === "POST" && r.path.endsWith("/emojis")).length, 11, "11 custom emojis uploaded");
     const identify = mock.gatewayIn.find((p) => p.op === 2);
     assert.equal(identify.d.token, "e2e-token");
     assert.equal(identify.d.intents, 1 << 12);
-    assert.equal(identify.d.presence.activities[0].state, "كيف كان يومك؟ 🌈");
+    assert.equal(identify.d.presence.activities[0].state, "🌈 How was your day?");
 
     const checkin = await mock.waitFor(() => mock.requests.find((r) => r.method === "POST" && r.path === "/channels/511111111111111111/messages"));
     assert.match(checkin.body.embeds[0].description, /كيف كان يومك/);
@@ -75,7 +75,7 @@ describe("end-to-end: real bot process against a mock Discord", () => {
     proc.kill("SIGTERM");
     const code = await new Promise<number | null>((r) => proc.on("exit", (c) => r(c)));
     assert.equal(code, 0);
-    assert.match(output, /إيقاف البوت/);
+    assert.match(output, /stopping/);
     assert.doesNotMatch(output, /ERROR/);
   });
 });

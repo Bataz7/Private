@@ -10,6 +10,7 @@ import { ACCENT, mood, tagById } from "../moods.ts";
 import { questionById, questionText } from "../questions.ts";
 import type { Entry } from "../store/types.ts";
 import { addDays, formatMinutes, localDate, zoned } from "../time.ts";
+import { memory, mb } from "../system.ts";
 import { button, progressBar, row } from "../ui.ts";
 import { sendCheckin } from "./checkin.ts";
 import { periodStats } from "./reports.ts";
@@ -132,7 +133,7 @@ export async function onAdminCommand(app: MoodApp, i: APIInteraction) {
       color: ACCENT,
       title: t.adminTitle,
       description: lines.join("\n\n") || t.adminEmpty,
-      footer: { text: t.adminFooter(Math.floor(up / 60), up % 60, app.ai.label, app.db.kind, app.emojis.count) },
+      footer: { text: t.adminFooter(Math.floor(up / 60), up % 60, app.ai.label, app.db.kind, app.emojis.count, mb(memory().rss)) },
     }],
     components: app.config.targetIds.slice(0, 5).map((uid) => row(
       button(`rp:${uid}:7`, t.weekReport, { emoji: app.emojis.c("mood_report") }),

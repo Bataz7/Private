@@ -155,7 +155,7 @@ export class Gateway extends EventEmitter {
       this.sessionId = r.session_id;
       this.resumeUrl = r.resume_gateway_url;
       this.attempts = 0;
-      this.log.info("gateway ready");
+      this.log.debug("gateway ready");
     } else if (t === "RESUMED") {
       this.attempts = 0;
       this.log.info("gateway resumed");

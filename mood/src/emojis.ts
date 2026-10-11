@@ -29,18 +29,19 @@ export class EmojiStore {
       const existing = await discord.listAppEmojis();
       for (const e of existing) if (e.id && e.name) this.ids.set(e.name, e.id);
       const files = readdirSync(dir).filter((f) => f.endsWith(".png"));
+      let uploaded = 0;
       for (const f of files) {
         const name = f.slice(0, -4);
         if (this.ids.has(name)) continue;
         try {
           const created = await discord.createAppEmoji(name, readFileSync(dir + f));
           if (created.id) this.ids.set(name, created.id);
-          log.info(`uploaded emoji ${name}`);
+          uploaded++;
         } catch (e) {
           log.warn(`could not upload emoji ${name}:`, (e as Error).message);
         }
       }
-      log.info(`emojis ready (${this.ids.size} custom)`);
+      log.info(`\x1b[32m✓\x1b[0m emojis    ${this.ids.size} ready${uploaded ? ` (${uploaded} uploaded now)` : ""}`);
     } catch (e) {
       log.warn("emoji sync failed, using standard emojis:", (e as Error).message);
     }

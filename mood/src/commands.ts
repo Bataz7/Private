@@ -97,10 +97,10 @@ export const COMMANDS = [
 export async function registerCommands(app: MoodApp, force = false): Promise<void> {
   const hash = createHash("sha256").update(app.discord.applicationId + JSON.stringify(COMMANDS)).digest("hex").slice(0, 16);
   if (!force && (await app.db.getMeta("commands_hash")) === hash) {
-    app.log.debug("commands unchanged");
+    app.log.info(`\x1b[32m✓\x1b[0m commands  ${COMMANDS.length} up to date`);
     return;
   }
   await app.discord.setGlobalCommands(COMMANDS);
   await app.db.setMeta("commands_hash", hash);
-  app.log.info(`registered ${COMMANDS.length} slash commands`);
+  app.log.info(`\x1b[32m✓\x1b[0m commands  ${COMMANDS.length} slash commands registered`);
 }

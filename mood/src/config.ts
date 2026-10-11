@@ -33,7 +33,10 @@ export interface Config {
   logLevel: string;
   /** رسالة الأمان المخصصة (لو فاضية نستخدم الافتراضية حسب اللغة) */
   safetyMessage: string;
+  /** حالة ثابتة (لو فاضية تتبدل الحالات الإنجليزية تلقائياً) */
   statusText: string;
+  statusRotateMinutes: number;
+  statsMinutes: number;
   /** للاختبارات فقط: سيرفر ديسكورد وهمي */
   apiUrl?: string;
   gatewayUrl?: string;
@@ -113,7 +116,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, { requireToken 
     backupKeep: num(env.BACKUP_KEEP, 14, "BACKUP_KEEP", 0, 365),
     logLevel: env.LOG_LEVEL || "info",
     safetyMessage: env.SAFETY_MESSAGE?.replace(/\\n/g, "\n") ?? "",
-    statusText: env.STATUS_TEXT || "كيف كان يومك؟ 🌈",
+    statusText: (env.STATUS_TEXT ?? "").trim(),
+    statusRotateMinutes: num(env.STATUS_ROTATE_MINUTES, 5, "STATUS_ROTATE_MINUTES", 1, 1440),
+    statsMinutes: num(env.STATS_MINUTES, 30, "STATS_MINUTES", 0, 1440),
     apiUrl: env.DISCORD_API_URL || undefined,
     gatewayUrl: env.DISCORD_GATEWAY_URL || undefined,
   };
