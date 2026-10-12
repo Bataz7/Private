@@ -1,6 +1,7 @@
 /** ثوابت Discord API v10 — معرّفة هنا بدل أي مكتبة عشان البوت يشتغل بدون اعتماديات. */
-export const API_BASE = "https://discord.com/api/v10";
-export const GATEWAY_URL = "wss://gateway.discord.gg/?v=10&encoding=json";
+// يمكن تغييرها للاختبار ضد سيرفر وهمي (scripts/mock-discord.ts)
+export const API_BASE = process.env.DISCORD_API_BASE || "https://discord.com/api/v10";
+export const GATEWAY_URL = process.env.DISCORD_GATEWAY_URL || "wss://gateway.discord.gg/?v=10&encoding=json";
 export const CDN = "https://cdn.discordapp.com";
 
 export const Intents = {

@@ -7,6 +7,7 @@ import { config, tokenProblem } from "./core/config.ts";
 import { closeAll } from "./core/db.ts";
 import { syncEmojis } from "./core/emojis.ts";
 import { startJobs } from "./core/jobs.ts";
+import { startTrimming } from "./core/trim.ts";
 import { log, memoryMB } from "./core/log.ts";
 import { Bot } from "./discord/client.ts";
 import { Intents } from "./discord/constants.ts";
@@ -54,8 +55,9 @@ bot.on("ready", async () => {
   if (config.AUTO_EMOJIS) syncEmojis(bot).then((s) => log.ok("emojis", s)).catch((e) => log.warn("emojis", e.message));
 });
 
-// الذاكرة: جمع القمامة دوري يرجّع الذاكرة للنظام ويثبّت الاستهلاك تحت 20 ميقا
+// الذاكرة: جمع القمامة دوري + إرجاع صفحات كود Bun غير المستخدمة للنظام (core/trim.ts) = تحت 20 ميقا
 setInterval(() => Bun.gc(true), 60_000).unref();
+startTrimming(60_000);
 
 function shutdown(sig: string) {
   log.info("shutdown", sig);

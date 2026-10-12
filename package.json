@@ -4,6 +4,10 @@
   "description": "ريفايف — بوت ديسكورد عربي (TypeScript على Bun) + لوحة تحكم TSX",
   "type": "module",
   "private": true,
+  "imports": {
+    "#jsx/jsx-runtime": "./dashboard/jsx/jsx-runtime.ts",
+    "#jsx/jsx-dev-runtime": "./dashboard/jsx/jsx-runtime.ts"
+  },
   "scripts": {
     "start": "bun --smol src/index.ts",
     "dev": "bun --smol --watch src/index.ts",
