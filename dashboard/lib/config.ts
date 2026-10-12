@@ -55,7 +55,8 @@ export const cfg = {
   SESSION_SECRET: sessionSecret(),
   /** عمر الجلسة بالثواني (يوم، مثل النسخة القديمة). */
   SESSION_MAX_AGE: 86400,
-  API: "https://discord.com/api/v10",
+  /** للاختبار فقط (خادم وهمي)؛ الافتراضي واجهة ديسكورد الرسمية. */
+  API: env("DISCORD_API_BASE", "https://discord.com/api/v10").replace(/\/+$/, ""),
 };
 
 export const hasEmojiDir = () => existsSync(cfg.EMOJI_DIR);

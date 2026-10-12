@@ -1,4 +1,4 @@
-/* أدوات مشتركة | Shared helpers — النصوص تأتي من الباكند (/assets/i18n.js) والصفحات يبنيها Python.
+/* أدوات مشتركة | Shared helpers — النصوص تأتي من الباكند (/assets/i18n.js) والصفحات يبنيها السيرفر (TSX).
    هنا فقط: ترجمة الرسائل الديناميكية، API، التنبيهات، الثيمات، تبديل اللغة. */
 (function () {
   const LS = {
@@ -37,7 +37,9 @@
   });
 
   async function api(u, o = {}) {
+    const csrf = document.querySelector('meta[name=csrf-token]');
     o.headers = { ...(o.headers || {}), 'X-Lang': lang };
+    if (csrf && o.method && o.method !== 'GET') o.headers['X-CSRF-Token'] = csrf.content;
     let r;
     try { r = await fetch(u, o); } catch { throw new Error(t('c.netError')); }
     if (r.status === 401 && !o.quiet) {

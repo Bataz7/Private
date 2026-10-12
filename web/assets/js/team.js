@@ -1,4 +1,4 @@
-/* صفحة الفريق | Team page: filters, count-up, copy (الصفحة نفسها يبنيها Python) */
+/* صفحة الفريق | Team page: filters, count-up, copy (الصفحة نفسها يبنيها السيرفر) */
 (function () {
   const { $, $$, t, toast, countUp } = Revive;
   let filter = 'all';
