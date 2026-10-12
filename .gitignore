@@ -153,3 +153,9 @@ data/
 emojis/ids.json
 *.sqlite3
 *.zip
+
+# Bun / TypeScript
+node_modules/
+revive
+revive-dashboard
+data/

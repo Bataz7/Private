@@ -1,0 +1,21 @@
+{
+  "name": "revive",
+  "version": "3.0.0",
+  "description": "ريفايف — بوت ديسكورد عربي (TypeScript على Bun) + لوحة تحكم TSX",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun --smol src/index.ts",
+    "dev": "bun --smol --watch src/index.ts",
+    "dashboard": "bun --smol dashboard/server.tsx",
+    "build": "bun build --compile --minify --sourcemap=none src/index.ts --outfile revive",
+    "build:dashboard": "bun build --compile --minify --sourcemap=none dashboard/server.tsx --outfile revive-dashboard",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "check": "tsc --noEmit && bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.3",
+    "typescript": "7.0.2"
+  }
+}
