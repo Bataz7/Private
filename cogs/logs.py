@@ -1,6 +1,6 @@
 """اللوقات الاحترافية | Professional server logs.
 
-- الأوامر: /logs set · /logs all · /logs off · /logs status · /logs test  (عربي/English)
+- الأوامر: /اللوقات تحديد · /اللوقات الكل · /اللوقات ايقاف · /اللوقات الحالة · /اللوقات تجربة
 - يعتمد على حدث audit-log الواحد بدل استدعاء سجل التدقيق مع كل حدث → أخف على المعالج والـ API.
 - لا يخزّن شيئاً في الذاكرة غير كاش إعدادات صغير مدته 30 ثانية.
 - إعدادات الرومات في logs_settings.db (نفس القاعدة التي تعدّلها لوحة التحكم).
@@ -44,7 +44,7 @@ add("logs", {
     "status_t": ("حالة اللوقات", "Log status"),
     "status_d2": ("{on} من {total} مفعّلة", "{on} of {total} enabled"),
     "test_t": ("اختبار اللوقات", "Log test"), "test_d2": ("هذه رسالة تجريبية للوق **{type}** ✅", "This is a test for the **{type}** log ✅"),
-    "test_n": ("تم إرسال {n} رسالة تجريبية.", "Sent {n} test messages."), "test_none": ("ما فيه لوقات مفعّلة. استخدم `/logs set` أولاً.", "No logs are enabled. Use `/logs set` first."),
+    "test_n": ("تم إرسال {n} رسالة تجريبية.", "Sent {n} test messages."), "test_none": ("ما فيه لوقات مفعّلة. استخدم `/اللوقات تحديد` أولاً.", "No logs are enabled. Use `/logs set` first."),
     "off_label": ("غير مفعّل", "Not set"),
     # ---- أسماء الأنواع ----
     "t_members_join_remove": ("دخول وخروج الأعضاء", "Members joining & leaving"), "t_member_bans": ("الباند وفك الباند", "Bans & unbans"),
@@ -75,6 +75,8 @@ add("logs", {
     "f_count_msgs": ("عدد الرسائل", "Messages"), "f_emoji": ("التفاعل", "Reaction"), "f_msg": ("الرسالة", "Message"), "f_jump": ("اذهب للرسالة", "Jump to message"),
     "f_name": ("الاسم", "Name"), "f_type": ("النوع", "Type"), "f_changes": ("التغييرات", "Changes"), "f_added": ("أُضيفت", "Added"), "f_removed": ("أُزيلت", "Removed"),
     "f_code": ("الكود", "Code"), "f_inviter": ("صاحب الدعوة", "Inviter"), "f_uses": ("الاستخدامات", "Max uses"), "f_age": ("المدة", "Duration"), "f_unlimited": ("غير محدود", "Unlimited"),
+    "f_link": ("رابط", "link"), "f_hours": ("ساعة", "h"),
+    "wh_create": ("إنشاء ويب هوك", "Webhook created"), "wh_delete": ("حذف ويب هوك", "Webhook deleted"), "wh_update": ("تعديل ويب هوك", "Webhook updated"),
     "f_from": ("من", "From"), "f_to": ("إلى", "To"), "f_perms": ("الصلاحيات", "Permissions"), "f_unknown": ("غير معروف", "Unknown"), "f_none": ("—", "—"),
 })
 
@@ -161,7 +163,7 @@ class LogsCog(commands.Cog):
         if isinstance(v, discord.Colour):
             return f"`#{v.value:06X}`"
         if isinstance(v, discord.Asset):
-            return f"[link]({v.url})"
+            return f"[{self.t(guild, 'f_link')}]({v.url})"
         if isinstance(v, discord.Permissions):
             return f"`{v.value}`"
         if hasattr(v, "name") and not isinstance(v, str):
@@ -291,7 +293,7 @@ class LogsCog(commands.Cog):
 
         if a in (A.webhook_create, A.webhook_delete, A.webhook_update):
             e = self.head(guild, "server", "log_server", "webhook", actor=entry.user)
-            e.description = f"**{a.name.replace('_', ' ')}**\n{self.mod_line(guild, entry)}"
+            e.description = f"**{t(guild, {A.webhook_create: 'wh_create', A.webhook_delete: 'wh_delete'}.get(a, 'wh_update'))}**\n{self.mod_line(guild, entry)}"
             return await self.send(guild, "server_updates", e)
 
     # ------------------------------------------------------------------ دخول وخروج (بدون سجل تدقيق)
@@ -453,7 +455,7 @@ class LogsCog(commands.Cog):
         t = self.t
         e = self.head(g, "invite", "log_invite", "inv_new", actor=inv.inviter)
         e.description = (f"{E.log_invite} **{t(g, 'f_code')}:** `{inv.code}`\n{E.message} **{t(g, 'f_channel')}:** {inv.channel.mention if inv.channel else '—'}\n"
-                         f"**{t(g, 'f_uses')}:** `{inv.max_uses or t(g, 'f_unlimited')}`\n**{t(g, 'f_age')}:** `{(str(inv.max_age // 3600) + 'h') if inv.max_age else t(g, 'f_unlimited')}`")
+                         f"**{t(g, 'f_uses')}:** `{inv.max_uses or t(g, 'f_unlimited')}`\n**{t(g, 'f_age')}:** `{(str(inv.max_age // 3600) + ' ' + t(g, 'f_hours')) if inv.max_age else t(g, 'f_unlimited')}`")
         await self.send(g, "invites", e)
 
     @commands.Cog.listener()
@@ -465,8 +467,8 @@ class LogsCog(commands.Cog):
         e.description = f"{E.log_invite} **{self.t(g, 'f_code')}:** `{inv.code}`"
         await self.send(g, "invites", e)
 
-    # ------------------------------------------------------------------ أوامر السلاش /logs
-    logs = app_commands.Group(name="logs", description="إدارة لوقات السيرفر", guild_only=True, default_permissions=discord.Permissions(manage_guild=True))
+    # ------------------------------------------------------------------ أوامر السلاش /اللوقات
+    logs = app_commands.Group(name="اللوقات", description="إدارة لوقات السيرفر", guild_only=True, default_permissions=discord.Permissions(manage_guild=True))
 
     @staticmethod
     def type_choices():
@@ -482,7 +484,8 @@ class LogsCog(commands.Cog):
         p = ch.permissions_for(it.guild.me)
         return p.send_messages and p.embed_links and p.view_channel
 
-    @logs.command(name="set", description="تحديد روم لنوع معيّن من اللوقات")
+    @logs.command(name="تحديد", description="تحديد روم لنوع معيّن من اللوقات")
+    @app_commands.rename(type="النوع", channel="الروم")
     @app_commands.describe(type="نوع اللوق", channel="روم اللوق")
     @app_commands.choices(type=[app_commands.Choice(name=i18n.both("logs.t_" + k)[0], value=k) for k in TYPES])
     async def logs_set(self, it: discord.Interaction, type: app_commands.Choice[str], channel: discord.TextChannel):
@@ -498,7 +501,8 @@ class LogsCog(commands.Cog):
             e.add_field(name="​", value=i18n.tr(it, "logs.audit_warn"), inline=False)
         await it.response.send_message(embed=e, ephemeral=True)
 
-    @logs.command(name="all", description="تحديد روم واحد لكل أنواع اللوقات")
+    @logs.command(name="الكل", description="تحديد روم واحد لكل أنواع اللوقات")
+    @app_commands.rename(channel="الروم")
     @app_commands.describe(channel="روم اللوق")
     async def logs_all(self, it: discord.Interaction, channel: discord.TextChannel):
         if not await self._need_manage(it):
@@ -513,7 +517,8 @@ class LogsCog(commands.Cog):
             e.add_field(name="​", value=i18n.tr(it, "logs.audit_warn"), inline=False)
         await it.response.send_message(embed=e, ephemeral=True)
 
-    @logs.command(name="off", description="إيقاف نوع من اللوقات أو كلها")
+    @logs.command(name="ايقاف", description="إيقاف نوع من اللوقات أو كلها")
+    @app_commands.rename(type="النوع")
     @app_commands.describe(type="نوع اللوق (اتركه فاضي لإيقاف الكل)")
     @app_commands.choices(type=[app_commands.Choice(name=i18n.both("logs.t_" + k)[0], value=k) for k in TYPES])
     async def logs_off(self, it: discord.Interaction, type: app_commands.Choice[str] | None = None):
@@ -525,7 +530,7 @@ class LogsCog(commands.Cog):
         msg = i18n.tr(it, "logs.off_ok", type=i18n.tr(it, "logs.t_" + type.value)) if type else i18n.tr(it, "logs.off_all")
         await it.response.send_message(embed=mk_embed(None, "warn", f"{E.off} {i18n.tr(it, 'logs.status_t')}", msg), ephemeral=True)
 
-    @logs.command(name="status", description="عرض حالة كل اللوقات والرومات المرتبطة")
+    @logs.command(name="الحالة", description="عرض حالة كل اللوقات والرومات المرتبطة")
     async def logs_status(self, it: discord.Interaction):
         cfg = self.cfg(it.guild_id)
         lines = []
@@ -539,7 +544,7 @@ class LogsCog(commands.Cog):
             e.add_field(name="​", value=i18n.tr(it, "logs.audit_warn"), inline=False)
         await it.response.send_message(embed=e, ephemeral=True)
 
-    @logs.command(name="test", description="إرسال رسالة تجريبية لكل روم لوق")
+    @logs.command(name="تجربة", description="إرسال رسالة تجريبية لكل روم لوق")
     async def logs_test(self, it: discord.Interaction):
         if not await self._need_manage(it):
             return

@@ -62,7 +62,10 @@ def token_problem(t: str) -> str:
 
 
 TOKEN = clean_token(env("DISCORD_TOKEN"))
-DEFAULT_LANG = env("DEFAULT_LANG", "ar") if env("DEFAULT_LANG", "ar") in ("ar", "en") else "ar"
+# البوت عربي بالكامل افتراضياً. ARABIC_ONLY=0 يرجّع خيار English لكل سيرفر (/language)
+ARABIC_ONLY = env("ARABIC_ONLY", "1").lower() not in ("0", "false", "no", "off")
+_lang = env("DEFAULT_LANG", "ar")
+DEFAULT_LANG = "ar" if ARABIC_ONLY or _lang not in ("ar", "en") else _lang
 OWNER_IDS = {int(x) for x in env("OWNER_IDS").replace(" ", "").split(",") if x.isdigit()}
 # سيرفر المالك: يستقبل إشعارات دخول البوت لسيرفرات جديدة + الإحصائيات (اختياري)
 OWNER_GUILD_ID = env_int("OWNER_GUILD_ID")

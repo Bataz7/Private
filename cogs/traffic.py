@@ -321,7 +321,7 @@ class RemoveViolationSelect(discord.ui.Select):
         self.guild = guild
         self.cog = cog
         options = []
-        for v in violations_list:
+        for v in violations_list[:25]:  # ديسكورد يقبل 25 خياراً كحد أقصى
             v_id = v['id']
             user_id = v['user_id']
             member = guild.get_member(user_id)
@@ -398,7 +398,7 @@ class RemoveViolationUserSelect(discord.ui.Select):
         self.guild = guild
         self.cog = cog
         options = []
-        for u in users_with_violations:
+        for u in users_with_violations[:25]:  # ديسكورد يقبل 25 خياراً كحد أقصى
             user_id = u['user_id']
             member = guild.get_member(user_id)
             name = member.display_name if member else f"مستخدم ({user_id})"
@@ -475,7 +475,7 @@ class UserViolationsSelect(discord.ui.Select):
     def __init__(self, violations, guild: discord.Guild, cog):
         self.cog = cog
         options = []
-        for v in violations:
+        for v in violations[:25]:  # ديسكورد يقبل 25 خياراً كحد أقصى
             user_id = v['user_id']
             member = guild.get_member(user_id)
             member_name = member.display_name if member else f"مستخدم ({user_id})"
@@ -529,7 +529,7 @@ class PayViolationSelect(discord.ui.Select):
     def __init__(self, violations, cog):
         self.cog = cog
         options = []
-        for v in violations:
+        for v in violations[:25]:  # ديسكورد يقبل 25 خياراً كحد أقصى
             v_id = v['id']
             options.append(
                 discord.SelectOption(
@@ -937,13 +937,14 @@ class Traffic(commands.Cog):
     # =========================================================
     # الأوامر (Commands)
     # =========================================================
-    @app_commands.command(name="traffic-setup", description="إعداد رتب ورومات نظام المرور")
+    @app_commands.command(name="اعداد-المرور", description="إعداد رتب ورومات نظام المرور")
     @app_commands.default_permissions(administrator=True)
+    @app_commands.rename(police_role="رتبة_العساكر", control_channel="روم_التحكم", citizen_channel="روم_المواطنين", log_channel="روم_اللوق")
     @app_commands.describe(
         police_role="رتبة العساكر",
         control_channel="روم تحكم العساكر",
         citizen_channel="روم بانل المواطنين",
-        log_channel="روم السجلات (اللُّوق)",
+        log_channel="روم السجلات (اللوق)",
     )
     async def traffic_setup(
         self,
@@ -988,12 +989,12 @@ class Traffic(commands.Cog):
         except Exception as e:
             await interaction.response.send_message(f"❌ حدث خطأ أثناء الحفظ: `{e}`", ephemeral=True)
 
-    @app_commands.command(name="traffic-control-panel", description="إرسال بانل تحكم العساكر")
+    @app_commands.command(name="لوحة-العساكر-المرور", description="إرسال بانل تحكم العساكر")
     @app_commands.default_permissions(administrator=True)
     async def traffic_control_panel(self, interaction: discord.Interaction):
         settings = self.get_traffic_settings(interaction.guild.id)
         if not settings or not settings["control_channel"]:
-            return await interaction.response.send_message("❌ يرجى تحديد روم تحكم العساكر أولاً عبر أمر traffic-setup", ephemeral=True)
+            return await interaction.response.send_message("❌ يرجى تحديد روم تحكم العساكر أولاً عبر أمر `/اعداد-المرور`", ephemeral=True)
 
         channel = interaction.guild.get_channel(settings["control_channel"])
         if not channel:
@@ -1012,12 +1013,12 @@ class Traffic(commands.Cog):
         await channel.send(embed=embed, view=TrafficControlView(self))
         await interaction.response.send_message(f"✅ تم إرسال بانل العساكر بنجاح في روم {channel.mention}", ephemeral=True)
 
-    @app_commands.command(name="traffic-citizen-panel", description="إرسال بانل خدمات المواطنين")
+    @app_commands.command(name="لوحة-المواطنين-المرور", description="إرسال بانل خدمات المواطنين")
     @app_commands.default_permissions(administrator=True)
     async def traffic_citizen_panel(self, interaction: discord.Interaction):
         settings = self.get_traffic_settings(interaction.guild.id)
         if not settings or not settings["citizen_channel"]:
-            return await interaction.response.send_message("❌ يرجى تحديد روم بانل المواطنين أولاً عبر أمر traffic-setup", ephemeral=True)
+            return await interaction.response.send_message("❌ يرجى تحديد روم بانل المواطنين أولاً عبر أمر `/اعداد-المرور`", ephemeral=True)
 
         channel = interaction.guild.get_channel(settings["citizen_channel"])
         if not channel:

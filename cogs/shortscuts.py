@@ -95,7 +95,7 @@ class ShortcutsCog(commands.Cog):
         if action == "unban":
             raw = str(args[0]).strip() if args else ""
             if not raw.isdigit():
-                return "❌ لفك الباند اكتب ID العضو بعد الاختصار."
+                return "❌ لفك الباند اكتب آيدي العضو بعد الاختصار."
             try:
                 user = await self.bot.fetch_user(int(raw))
                 await guild.unban(user, reason=reason)
@@ -172,7 +172,7 @@ class ShortcutsCog(commands.Cog):
                             break
 
             if not role:
-                return "❌ اكتب منشن الرتبة أو ائتنا بـ ID الرتبة بشكل صحيح، مثال: `رتب @الرتبة` أو `رتب 123456789`"
+                return "❌ اكتب منشن الرتبة أو اكتب آيدي الرتبة بشكل صحيح، مثال: `رتب @الرتبة` أو `رتب 123456789`"
 
             reason = "اختصار إعطاء/سحب رتبة"
             if role >= guild.me.top_role:
@@ -208,8 +208,10 @@ class ShortcutsCog(commands.Cog):
         except Exception:
             pass
 
-    @app_commands.command(name="shortcut-add", description="إضافة اختصار إداري جديد")
+    @app_commands.command(name="اضافة-اختصار", description="إضافة اختصار إداري جديد")
     @app_commands.describe(shortcut="اسم الاختصار", target="نوع الأمر")
+    @app_commands.rename(shortcut="الاختصار", target="نوع_الامر")
+    @app_commands.choices(target=[app_commands.Choice(name=label, value=key) for key, label in ACTIONS.items()])
     @app_commands.checks.has_permissions(manage_guild=True)
     async def shortcut_add(self, interaction: discord.Interaction, shortcut: str, target: str):
         clean_shortcut = shortcut.strip().lower().lstrip("!/.#")
@@ -222,8 +224,9 @@ class ShortcutsCog(commands.Cog):
         self.db.commit()
         await interaction.response.send_message(f"✅ تم حفظ `{clean_shortcut}` → {ACTIONS[clean_target]}", ephemeral=True)
 
-    @app_commands.command(name="shortcut-remove", description="حذف اختصار موجود")
+    @app_commands.command(name="حذف-اختصار", description="حذف اختصار موجود")
     @app_commands.describe(shortcut="اسم الاختصار المراد حذفه")
+    @app_commands.rename(shortcut="الاختصار")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def shortcut_remove(self, interaction: discord.Interaction, shortcut: str):
         clean = shortcut.strip().lower().lstrip("!/.#")
@@ -231,7 +234,7 @@ class ShortcutsCog(commands.Cog):
         self.db.commit()
         await interaction.response.send_message(f"🗑️ تم حذف `{clean}`.", ephemeral=True)
 
-    @app_commands.command(name="shortcut-list", description="عرض اختصارات السيرفر")
+    @app_commands.command(name="الاختصارات", description="عرض اختصارات السيرفر")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def shortcut_list(self, interaction: discord.Interaction):
         rows = self.cursor.execute("SELECT shortcut_name,target_command,status FROM server_shortcuts WHERE guild_id=? ORDER BY shortcut_name", (interaction.guild.id,)).fetchall()

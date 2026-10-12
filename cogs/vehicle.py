@@ -233,7 +233,7 @@ class AdminRevokeInsuranceSelect(discord.ui.Select):
 
       display_name = member.display_name if member else f"مواطن ({u_id})"
       label = f"{display_name} - {v.get('company')} {v.get('name')}"[:100]
-      desc = f"اللوحة: {v.get('plate')} | ID: {u_id}"[:100]
+      desc = f"اللوحة: {v.get('plate')} | الآيدي: {u_id}"[:100]
       value = f"{u_id}_{v_idx}"
 
       options.append(
@@ -516,12 +516,17 @@ class VehicleSystem(commands.Cog):
     await self.bot.wait_until_ready()
 
   @app_commands.command(
-      name="setup_vehicle",
+      name="اعداد-المركبات",
       description="إعداد نظام المركبات واللوحات وتحديد الرومات",
+  )
+  @app_commands.rename(
+      panel_channel="روم_البانل",
+      log_channel="روم_اللوق",
+      insured_channel="روم_المركبات_المؤمنة",
   )
   @app_commands.describe(
       panel_channel="روم بانل تسجيل المركبات والتأمين",
-      log_channel="روم لوقز العمليات",
+      log_channel="روم لوق العمليات",
       insured_channel="روم المركبات المؤمنة الجديدة",
   )
   @app_commands.checks.has_permissions(administrator=True)
@@ -565,11 +570,12 @@ class VehicleSystem(commands.Cog):
 
   # ------------------ أمر الإدارة: حذف مركبة مواطن ------------------
   @app_commands.command(
-      name="admin_remove_vehicle",
+      name="حذف-مركبة",
       description=(
           "[إدارة] حذف مركبة معينة لمواطن باستخدام رقم اللوحة"
       ),
   )
+  @app_commands.rename(member="العضو", plate="اللوحة")
   @app_commands.describe(
       member="العضو صاحب المركبة", plate="رقم اللوحة المراد حذفها"
   )

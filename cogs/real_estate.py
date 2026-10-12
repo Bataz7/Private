@@ -95,15 +95,22 @@ class RealEstateCog(commands.Cog):
     await self.bot.wait_until_ready()
 
   @app_commands.command(
-      name="setup_real_estate",
+      name="اعداد-العقارات",
       description="تسطيب النظام وتحديد رومات المواطنين، الإدارة، الطلبات، سوق البيع، والسجلات",
+  )
+  @app_commands.rename(
+      citizen_channel="روم_المواطنين",
+      admin_channel="روم_الادارة",
+      requests_channel="روم_الطلبات",
+      market_channel="روم_السوق",
+      logs_channel="روم_اللوق",
   )
   @app_commands.describe(
       citizen_channel="روم عرض العقارات للمواطنين",
       admin_channel="روم لوحة تحكم المسؤولين",
       requests_channel="روم استقبال طلبات شراء العقارات من النظام",
       market_channel="روم سوق عقارات المواطنين (لبيع العقارات)",
-      logs_channel="روم سجلات العمليات (Logs)",
+      logs_channel="روم سجلات العمليات (اللوق)",
   )
   @app_commands.checks.has_permissions(administrator=True)
   async def setup_real_estate(
@@ -152,7 +159,7 @@ class RealEstateCog(commands.Cog):
     await citizen_channel.send(embed=citizen_embed, view=CitizenPanelView())
 
     await interaction.response.send_message(
-        f"✅ تم تسطيب النظام بنجاح!\n- روم المواطنين: {citizen_channel.mention}\n- روم الإدارة: {admin_channel.mention}\n- روم طلبات النظام: {requests_channel.mention}\n- روم سوق المواطنين: {market_channel.mention}\n- روم السجلات (Logs): {logs_channel.mention}",
+        f"✅ تم تسطيب النظام بنجاح!\n- روم المواطنين: {citizen_channel.mention}\n- روم الإدارة: {admin_channel.mention}\n- روم طلبات النظام: {requests_channel.mention}\n- روم سوق المواطنين: {market_channel.mention}\n- روم السجلات (اللوق): {logs_channel.mention}",
         ephemeral=True,
     )
 
@@ -216,7 +223,7 @@ class AdminCategoryModal(discord.ui.Modal, title="إضافة عقار أو مح�
       )
     except sqlite3.IntegrityError:
       await interaction.response.send_message(
-          "❌ معرف العقار (ID) مستخدم مسبقاً.", ephemeral=True
+          "❌ معرف العقار مستخدم مسبقاً.", ephemeral=True
       )
     finally:
       conn.close()
@@ -287,7 +294,7 @@ class AdminSelect(discord.ui.Select):
       embed = discord.Embed(
           title="🏠 جميع العقارات والمحلات المسجلة", color=discord.Color.blue()
       )
-      for p in props:
+      for p in props[:25]:  # حد ديسكورد 25 حقلاً
         profit_text = f"\n💵 الأرباح الدورية: {p[4]:,} ريال" if p[2] == "محلات" else ""
         embed.add_field(
             name=f"{p[1]} ({p[2]})",
@@ -480,7 +487,7 @@ class CitizenSelect(discord.ui.Select):
       embed = discord.Embed(
           title=f"🏡 عقارات قسم: {val}", color=discord.Color.green()
       )
-      for p in props:
+      for p in props[:25]:  # حد ديسكورد 25 حقلاً
         profit_text = f"\n💵 الأرباح الدورية: {p[5]:,} ريال" if p[2] == "محلات" else ""
         embed.add_field(
             name=f"{p[1]}",
@@ -515,7 +522,7 @@ class CitizenSelect(discord.ui.Select):
       embed = discord.Embed(
           title="🏡 ممتلكاتك الخاصة", color=discord.Color.blue()
       )
-      for p in props:
+      for p in props[:25]:  # حد ديسكورد 25 حقلاً
         profit_text = f"\n💵 الأرباح الدورية: {p[5]:,} ريال" if p[2] == "محلات" else ""
         embed.add_field(
             name=f"{p[1]} ({p[2]})",
@@ -676,7 +683,7 @@ class BrowseBuySelect(discord.ui.Select):
 class CitizenSellSelect(discord.ui.Select):
 
   def __init__(self, props):
-    options = [discord.SelectOption(label=p[1], value=p[0]) for p in props]
+    options = [discord.SelectOption(label=p[1], value=p[0]) for p in props[:25]]  # حد ديسكورد 25 خياراً
     super().__init__(
         placeholder="🏷️ اختر العقار لبيعه...",
         min_values=1,
@@ -777,7 +784,7 @@ class EditPropertyModal(discord.ui.Modal):
 class EditPropertySelect(discord.ui.Select):
 
   def __init__(self, props):
-    options = [discord.SelectOption(label=p[1], value=p[0]) for p in props]
+    options = [discord.SelectOption(label=p[1], value=p[0]) for p in props[:25]]  # حد ديسكورد 25 خياراً
     super().__init__(
         placeholder="اختر العقار أو المحل لتعديله...",
         min_values=1,
@@ -806,7 +813,7 @@ class EditPropertySelect(discord.ui.Select):
 class DeletePropertySelect(discord.ui.Select):
 
   def __init__(self, props):
-    options = [discord.SelectOption(label=p[1], value=p[0]) for p in props]
+    options = [discord.SelectOption(label=p[1], value=p[0]) for p in props[:25]]  # حد ديسكورد 25 خياراً
     super().__init__(
         placeholder="اختر العقار أو المحل لحذفه...",
         min_values=1,
@@ -842,7 +849,7 @@ class DeletePropertySelect(discord.ui.Select):
 class TransferPropertySelect(discord.ui.Select):
 
   def __init__(self, props):
-    options = [discord.SelectOption(label=p[1], value=p[0]) for p in props]
+    options = [discord.SelectOption(label=p[1], value=p[0]) for p in props[:25]]  # حد ديسكورد 25 خياراً
     super().__init__(
         placeholder="اختر العقار لنقل ملكيته...",
         min_values=1,
@@ -936,7 +943,7 @@ class BuyRequestModal(discord.ui.Modal):
 
     if not settings or not settings[0]:
       await interaction.response.send_message(
-          "❌ لم يتم تحديد روم الطلبات من قبل الإدارة عبر أمر التسطيب!",
+          "❌ لم يتم تحديد روم الطلبات من قبل الإدارة عبر أمر `/اعداد-العقارات`!",
           ephemeral=True,
       )
       return
@@ -1178,7 +1185,7 @@ class SellPropertyModal(discord.ui.Modal):
 
     if not settings or not settings[0]:
       await interaction.response.send_message(
-          "❌ لم يتم تحديد روم سوق المواطنين من قبل الإدارة عبر أمر التسطيب!",
+          "❌ لم يتم تحديد روم سوق المواطنين من قبل الإدارة عبر أمر `/اعداد-العقارات`!",
           ephemeral=True,
       )
       return

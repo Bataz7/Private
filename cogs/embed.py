@@ -82,11 +82,12 @@ class EmbedMakerCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="send-embed", description="إرسال ايمبد نصي مخصص لأي روم تحدده")
+    @app_commands.command(name="ارسال-ايمبد", description="إرسال ايمبد نصي مخصص لأي روم تحدده")
     @app_commands.describe(
         channel="روم إرسال الإيمبد",
         color="اختر لون الايمبد"
     )
+    @app_commands.rename(channel="الروم", color="اللون")
     @app_commands.choices(color=[
         app_commands.Choice(name="أزرق", value="أزرق"),
         app_commands.Choice(name="أخضر", value="أخضر"),

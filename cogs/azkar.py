@@ -85,16 +85,17 @@ class AzkarCog(commands.Cog):
         self.db.commit()
 
     # ---------------- الأمر ----------------
-    @app_commands.command(name="set-azkar", description="تحديد روم الأذكار، المدة الزمنية، وتفعيل النظام")
+    @app_commands.command(name="اعداد-الاذكار", description="تحديد روم الأذكار، المدة الزمنية، وتفعيل النظام")
     @app_commands.describe(
         status="حالة الأذكار تفعيل أو تعطيل",
         channel="روم إرسال الأذكار",
         interval="المدة الزمنية بين كل ذكر والآخر",
     )
+    @app_commands.rename(status="الحالة", channel="الروم", interval="المدة")
     @app_commands.choices(
         status=[
-            app_commands.Choice(name="🟢 تفعيل (TRUE)", value="TRUE"),
-            app_commands.Choice(name="🔴 تعطيل (FALSE)", value="FALSE"),
+            app_commands.Choice(name="🟢 تفعيل", value="TRUE"),
+            app_commands.Choice(name="🔴 تعطيل", value="FALSE"),
         ],
         interval=[
             app_commands.Choice(name="5 دقائق", value=5),
@@ -148,7 +149,7 @@ class AzkarCog(commands.Cog):
         embed = discord.Embed(
             title="📿 إعدادات نظام الأذكار",
             description=(
-                f"**الحالة:** `{status}`\n"
+                f"**الحالة:** `{'مفعّل' if status == 'TRUE' else 'معطّل'}`\n"
                 f"**الروم:** {f'<#{ch_id}>' if ch_id else 'غير محدد'}\n"
                 f"**المدة:** كل `{inte}` دقائق"
             ),

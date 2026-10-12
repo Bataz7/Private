@@ -12,7 +12,7 @@ import sys
 
 from core import config, console, migrate
 
-VERSION = "v2.0"
+VERSION = "v2.1"
 console.setup_logging()
 console.banner(VERSION)
 moved = migrate.run()
@@ -38,8 +38,8 @@ except Exception:
     FAST_LOOP = "asyncio"
 
 # الأنظمة الجديدة أولاً ثم الكوجات الأصلية
-EXTENSIONS = [
-    "cogs.language", "cogs.logs", "cogs.welcome", "cogs.tickets", "cogs.owner",
+EXTENSIONS = ([] if config.ARABIC_ONLY else ["cogs.language"]) + [
+    "cogs.logs", "cogs.welcome", "cogs.tickets", "cogs.owner",
     "cogs.apply", "cogs.setup_apply", "cogs.id", "cogs.role", "cogs.auto_role", "cogs.reply", "cogs.shorts", "cogs.shortscuts",
     "cogs.embed", "cogs.security", "cogs.badwords", "cogs.azkar", "cogs.levels",
     "cogs.bank", "cogs.traffic", "cogs.vehicle", "cogs.real_estate", "cogs.point_police",
@@ -88,8 +88,9 @@ class ReviveBot(commands.Bot):
         self.emoji_state = ("…", "")
 
     async def setup_hook(self):
-        hooks.install(self)
-        await self.tree.set_translator(hooks.ReviveTranslator())
+        if not config.ARABIC_ONLY:  # طبقة الترجمة للإنجليزي تشتغل بس لو ARABIC_ONLY=0
+            hooks.install(self)
+            await self.tree.set_translator(hooks.ReviveTranslator())
 
         console.section("Storage")
         good, bad, kb = check_databases()
@@ -176,7 +177,7 @@ class ReviveBot(commands.Bot):
                 ("Databases", f"connected · {len(list(config.DATA_DIR.glob('*.db')))} files"),
                 ("Emojis", detail or state),
                 ("Dashboard", self.dash),
-                ("Default language", "العربية" if config.DEFAULT_LANG == "ar" else "English"),
+                ("Language", "Arabic only" if config.ARABIC_ONLY else ("Arabic" if config.DEFAULT_LANG == "ar" else "English")),
                 ("Memory", f"{console.memory_mb():.0f} MB"),
                 ("Runtime", f"Python {platform.python_version()} · discord.py {discord.__version__} · {FAST_LOOP}"),
                 ("Started in", console.uptime()),

@@ -974,7 +974,7 @@ def w_au(g, s, d):
     except sqlite3.Error:
         raise HTTPException(500, "قاعدة بيانات الرتبة التلقائية غير جاهزة")
 
-# إرسال ايمبد نصي (نفس أمر /send-embed): يرسل مباشرة ولا يحفظ إلا آخر قيم للتسهيل
+# إرسال ايمبد نصي (نفس أمر /ارسال-ايمبد): يرسل مباشرة ولا يحفظ إلا آخر قيم للتسهيل
 EMB_COLORS = {"أزرق": discord.Color.blue, "أخضر": discord.Color.green, "أحمر": discord.Color.red,
               "أصفر": discord.Color.gold, "بنفسجي": discord.Color.purple, "برتقالي": discord.Color.orange,
               "أبيض": discord.Color.light_embed, "أسود": discord.Color.dark_theme}

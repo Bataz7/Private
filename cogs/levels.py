@@ -57,11 +57,12 @@ class LevelsCog(commands.Cog):
         self.db.commit()
 
     # --- أمر تحديد روم و رسالة المستويات ---
-    @app_commands.command(name="set-level-channel", description="تحديد روم إرسال إشعارات صعود المستويات")
+    @app_commands.command(name="روم-المستويات", description="تحديد روم إرسال إشعارات صعود المستويات")
     @app_commands.describe(
         channel="روم المستويات",
         message="رسالة التلفل المخصصة (استخدم المتغيرات: {user}, {level}, {next-level}, {xp})"
     )
+    @app_commands.rename(channel="الروم", message="الرسالة")
     @app_commands.checks.has_permissions(administrator=True)
     async def set_level_channel(self, interaction: discord.Interaction, channel: discord.TextChannel, message: str = None):
         guild_id = interaction.guild.id
@@ -75,8 +76,9 @@ class LevelsCog(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # --- أمر عرض الرتبة (Rank) ---
-    @app_commands.command(name="rank", description="عرض مستواك الحالي وعدد نقاط الخبرة (XP)")
+    @app_commands.command(name="المستوى", description="عرض مستواك الحالي وعدد نقاط الخبرة")
     @app_commands.describe(member="العضو المراد عرض مستواه (اختياري)")
+    @app_commands.rename(member="العضو")
     async def rank(self, interaction: discord.Interaction, member: discord.Member = None):
         target = member or interaction.user
         self.cursor.execute("SELECT xp, level FROM user_levels WHERE guild_id = ? AND user_id = ?", (interaction.guild.id, target.id))
@@ -88,7 +90,7 @@ class LevelsCog(commands.Cog):
 
         embed = discord.Embed(
             title=f"📊 بطاقة المستوى لـ {target.name}",
-            description=f"**المستوى:** `{level}`\n**النقاط الحالية:** `{xp} / {next_level_xp} XP`",
+            description=f"**المستوى:** `{level}`\n**النقاط الحالية:** `{xp} / {next_level_xp} خبرة`",
             color=discord.Color.blue()
         )
         if target.display_avatar:

@@ -35,8 +35,9 @@ class AutoRoleCog(commands.Cog):
                 except Exception:
                     pass
 
-    @app_commands.command(name="autorole-set", description="تحديد الرتبة التلقائية التي تُعطى للأعضاء عند انضمامهم")
+    @app_commands.command(name="تعيين-رتبة-تلقائية", description="تحديد الرتبة التلقائية التي تُعطى للأعضاء عند انضمامهم")
     @app_commands.describe(role="اختر الرتبة التلقائية")
+    @app_commands.rename(role="الرتبة")
     @app_commands.checks.has_permissions(administrator=True)
     async def autorole_set(self, interaction: discord.Interaction, role: discord.Role):
         guild_id = interaction.guild.id
@@ -54,7 +55,7 @@ class AutoRoleCog(commands.Cog):
 
         await interaction.response.send_message(f"✅ تم تحديد رتبة التلقائية بنجاح: **{role.name}**", ephemeral=True)
 
-    @app_commands.command(name="autorole-remove", description="إيقاف وإزالة الرتبة التلقائية للانضمام")
+    @app_commands.command(name="ازالة-رتبة-تلقائية", description="إيقاف وإزالة الرتبة التلقائية للانضمام")
     @app_commands.checks.has_permissions(administrator=True)
     async def autorole_remove(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id

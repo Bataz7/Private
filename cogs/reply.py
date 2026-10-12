@@ -62,16 +62,17 @@ class Reply(commands.Cog):
             self.legacy = {}
             self._save()
 
-    @app_commands.command(name="ar-add", description="إضافة رد تلقائي جديد")
+    @app_commands.command(name="اضافة-رد", description="إضافة رد تلقائي جديد")
     @app_commands.describe(keyword="الكلمة المفتاحية", response="الرد", match_type="نوع المطابقة", mention_user="منشن العضو")
+    @app_commands.rename(keyword="الكلمة", response="الرد", match_type="نوع_المطابقة", mention_user="منشن_العضو")
     @app_commands.choices(
         match_type=[
-            app_commands.Choice(name="تتضمن (Contains)", value="contains"),
-            app_commands.Choice(name="مطابقة تماماً (Exact)", value="exact")
+            app_commands.Choice(name="تتضمن", value="contains"),
+            app_commands.Choice(name="مطابقة تماماً", value="exact")
         ],
         mention_user=[
-            app_commands.Choice(name="نعم (True)", value="true"),
-            app_commands.Choice(name="لا (False)", value="false")
+            app_commands.Choice(name="نعم", value="true"),
+            app_commands.Choice(name="لا", value="false")
         ]
     )
     @app_commands.guild_only()
@@ -83,16 +84,17 @@ class Reply(commands.Cog):
         self._save()
         await interaction.response.send_message(f"✅ تم إضافة الرد للكلمة: `{keyword}` في هذا السيرفر بنجاح!", ephemeral=True)
 
-    @app_commands.command(name="ar-edit", description="تعديل رد تلقائي موجود")
+    @app_commands.command(name="تعديل-رد", description="تعديل رد تلقائي موجود")
     @app_commands.describe(keyword="الكلمة المفتاحية الموجودة", new_response="الرد الجديد", match_type="نوع المطابقة", mention_user="منشن العضو")
+    @app_commands.rename(keyword="الكلمة", new_response="الرد_الجديد", match_type="نوع_المطابقة", mention_user="منشن_العضو")
     @app_commands.choices(
         match_type=[
-            app_commands.Choice(name="تتضمن (Contains)", value="contains"),
-            app_commands.Choice(name="مطابقة تماماً (Exact)", value="exact")
+            app_commands.Choice(name="تتضمن", value="contains"),
+            app_commands.Choice(name="مطابقة تماماً", value="exact")
         ],
         mention_user=[
-            app_commands.Choice(name="نعم (True)", value="true"),
-            app_commands.Choice(name="لا (False)", value="false")
+            app_commands.Choice(name="نعم", value="true"),
+            app_commands.Choice(name="لا", value="false")
         ]
     )
     @app_commands.guild_only()
@@ -108,8 +110,9 @@ class Reply(commands.Cog):
         self._save()
         await interaction.response.send_message(f"✅ تم تعديل الرد للكلمة: `{keyword}` بنجاح!", ephemeral=True)
 
-    @app_commands.command(name="ar-delete", description="حذف رد تلقائي")
+    @app_commands.command(name="حذف-رد", description="حذف رد تلقائي")
     @app_commands.describe(keyword="الكلمة المراد حذفها")
+    @app_commands.rename(keyword="الكلمة")
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(administrator=True)
     async def ar_delete(self, interaction: discord.Interaction, keyword: str):

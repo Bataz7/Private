@@ -43,7 +43,7 @@ def build_panel_embed(guild):
     embed = discord.Embed(color=discord.Color.dark_embed())
     embed.set_author(name=f"{guild.name} 🎮", icon_url=guild.icon.url if guild.icon else None)
     embed.add_field(
-        name="ACTIVITIES ✅",
+        name="الأنشطة ✅",
         value=f"مرحباً بكم في مدينة `{guild.name}` نورتونا 🎮\n\nللبدء في التفعيل يرجى اختيار **التفعيل** من القائمة بالأسفل! ✅\n\nحياكم الله نورتونا وشرفتونا 👋",
         inline=False
     )
@@ -168,10 +168,10 @@ class ApplyDropdown(discord.ui.Select):
         self.staff_role_id = staff_role_id
         
         options = [
-            discord.SelectOption(label="التفعيل", description="ACTIVATION", value="start_apply_dm", emoji="✅"),
-            discord.SelectOption(label="إعادة التشغيل", description="Reset menu options", value="reset_menu", emoji="🔄")
+            discord.SelectOption(label="التفعيل", description="بدء طلب التفعيل", value="start_apply_dm", emoji="✅"),
+            discord.SelectOption(label="إعادة التشغيل", description="إعادة تعيين خيارات القائمة", value="reset_menu", emoji="🔄")
         ]
-        super().__init__(placeholder="Make a selection", min_values=1, max_values=1, options=options, custom_id="apply_dropdown_persistent_dm")
+        super().__init__(placeholder="اختر من القائمة", min_values=1, max_values=1, options=options, custom_id="apply_dropdown_persistent_dm")
 
     async def callback(self, interaction: discord.Interaction):
         if self.values[0] == "reset_menu":
@@ -203,7 +203,7 @@ class ApplyDropdown(discord.ui.Select):
                 await interaction.response.send_message("❌ عذراً، أنت مفعل مسبقاً أو لديك طلب تفعيل قيد المراجعة!", ephemeral=True)
                 return
 
-            await interaction.response.send_message("📩 تم إرسال أسئلة التفعيل في الخاص (DM), توجه هناك لو سمحت!", ephemeral=True)
+            await interaction.response.send_message("📩 تم إرسال أسئلة التفعيل في الخاص، توجه هناك لو سمحت!", ephemeral=True)
             
             questions = [
                 "١- ما هو اسمك الحقيقي؟",
@@ -239,7 +239,7 @@ class ApplyDropdown(discord.ui.Select):
             embed.add_field(name="٥- قوانين الرول بلاي", value=answers[4], inline=False)
             embed.add_field(name="٦- مدة التفاعل", value=answers[5], inline=False)
             embed.add_field(name="٧- التعهد بالالتزام", value=answers[6], inline=False)
-            embed.set_footer(text=f"ID: {interaction.user.id}")
+            embed.set_footer(text=f"الآيدي: {interaction.user.id}")
 
             staff_channel = interaction.guild.get_channel(staff_channel_id) if staff_channel_id else None
             if staff_channel:
@@ -268,12 +268,18 @@ class ApplyCog(commands.Cog):
         self.bot = bot
         self.bot.add_view(ApplyPanelView())
 
-    @app_commands.command(name="setup_apply", description="إرسال بانل التفعيل الخاص بالسيرفر")
+    @app_commands.command(name="لوحة-التفعيل", description="إرسال بانل التفعيل الخاص بالسيرفر")
     @app_commands.describe(
         staff_channel="روم استقبال طلبات الإدارة",
         add_role="رتبة العضو بعد القبول (اختياري)",
         remove_role="رتبة يتم إزالتها عند القبول (اختياري)",
         staff_role="رتبة الإدارة التي يتم عمل منشن لها (اختياري)"
+    )
+    @app_commands.rename(
+        staff_channel="روم_الادارة",
+        add_role="رتبة_القبول",
+        remove_role="رتبة_الازالة",
+        staff_role="رتبة_الادارة"
     )
     @app_commands.checks.has_permissions(administrator=True)
     async def setup_apply(

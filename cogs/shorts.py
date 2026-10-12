@@ -26,7 +26,7 @@ class ShortsCommands(commands.Cog):
     @toggle_role.error
     async def toggle_role_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            await ctx.send("❌ عذراً، أنت لا تملك صلاحية `Manage Roles` لاستخدام هذا الأمر!")
+            await ctx.send("❌ عذراً، أنت لا تملك صلاحية `إدارة الرتب` لاستخدام هذا الأمر!")
         elif isinstance(error, commands.BadArgument):
             await ctx.send("❌ الاستخدام الخاطئ للأمر! الصيغة الصحيحة: `!رتب @عضو @الرتبة`")
         else:
@@ -42,7 +42,7 @@ class ShortsCommands(commands.Cog):
     @lock_channel.error
     async def lock_channel_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            await ctx.send("❌ عذراً، لا تملك صلاحية `Manage Channels` لقفل الروم!")
+            await ctx.send("❌ عذراً، لا تملك صلاحية `إدارة الرومات` لقفل الروم!")
 
     # 3. أمر فتح الروم (!فتح)
     @commands.command(name="فتح")
@@ -54,7 +54,7 @@ class ShortsCommands(commands.Cog):
     @unlock_channel.error
     async def unlock_channel_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            await ctx.send("❌ عذراً، لا تملك صلاحية `Manage Channels` لفتح الروم!")
+            await ctx.send("❌ عذراً، لا تملك صلاحية `إدارة الرومات` لفتح الروم!")
 
     # 4. أمر حذف الرسائل (!حذف 50)
     @commands.command(name="حذف")
@@ -80,7 +80,7 @@ class ShortsCommands(commands.Cog):
     @clear_messages.error
     async def clear_messages_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            await ctx.send("❌ عذراً، لا تملك صلاحية `Manage Messages` لحذف الرسائل!")
+            await ctx.send("❌ عذراً، لا تملك صلاحية `إدارة الرسائل` لحذف الرسائل!")
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("❌ يرجى تحديد عدد الرسائل المراد حذفها! (مثال: `!حذف 50`)")
 
@@ -101,7 +101,7 @@ class ShortsCommands(commands.Cog):
     @ban_member.error
     async def ban_member_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            await ctx.send("❌ عذراً، لا تملك صلاحية `Ban Members` لتبنيد الأعضاء!")
+            await ctx.send("❌ عذراً، لا تملك صلاحية `حظر الأعضاء` لتبنيد الأعضاء!")
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("❌ يرجى منشن العضو المراد تبنيده! (مثال: `!باند @عضو السبب`)")
 
@@ -139,7 +139,7 @@ class ShortsCommands(commands.Cog):
     @timeout_member.error
     async def timeout_member_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            await ctx.send("❌ عذراً، لا تملك صلاحية `Moderate Members` لإعطاء التايم أوت!")
+            await ctx.send("❌ عذراً، لا تملك صلاحية `تقييد الأعضاء` لإعطاء التايم أوت!")
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("❌ الاستخدام الخاطئ! (مثال: `!تايم @عضو 1h`)")
 

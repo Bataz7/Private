@@ -72,7 +72,7 @@ CUSTOM = {"home": "home", "language": "globe", "themes": "palette", "emojis": "e
 NAV_TOP = ["home", "language", "themes", "emojis", "stats"]
 NAV_GROUPS = [
     ("rp", ["rolestatus", "identity", "weapons", "traffic", "bank", "realestate"]),
-    ("admin", ["botlang", "tickets", "apply", "activation", "welcome", "autorole", "replies", "shortcuts", "embed", "logs", "azkar", "levels"]),
+    ("admin", ["tickets", "apply", "activation", "welcome", "autorole", "replies", "shortcuts", "embed", "logs", "azkar", "levels"]),
     ("sec", ["security", "badwords"]),
 ]
 NAV_BOTTOM = ["rate"]

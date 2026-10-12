@@ -49,7 +49,7 @@ class AgreementView(ui.View):
             return
 
         embed = discord.Embed(title="📋 طلب هوية وطنية جديد", color=discord.Color.gold())
-        embed.set_author(name=f"العضو: {self.user} (ID: {self.user.id})", icon_url=self.user.display_avatar.url)
+        embed.set_author(name=f"العضو: {self.user} (الآيدي: {self.user.id})", icon_url=self.user.display_avatar.url)
         
         embed.add_field(name="١- الاسم بالرول", value=str(self.data_dict["name"])[:1024], inline=True)
         embed.add_field(name="٢- العمر", value=str(self.data_dict["age"])[:1024], inline=True)
@@ -195,7 +195,7 @@ class IDSelectMenu(ui.Select):
             await interaction.response.send_message("⚠️ لقد قمت بتقديم الهوية وتم قبولك مسبقاً، لا يمكنك التقديم مرة أخرى!", ephemeral=True)
             return
 
-        await interaction.response.send_message("📬 تم إرسال الأسئلة لك في **الخاص (DM)**، يرجى التوجه هناك لإكمال التقديم!", ephemeral=True)
+        await interaction.response.send_message("📬 تم إرسال الأسئلة لك في **الخاص**، يرجى التوجه هناك لإكمال التقديم!", ephemeral=True)
 
         try:
             dm_channel = await interaction.user.create_dm()
@@ -265,12 +265,18 @@ class IDSystemCog(commands.Cog):
         # تسجيل القائمة الرئيسية للـ ID لكي تبقى تعمل بنجاح بعد إعادة التشغيل
         self.bot.add_view(IDSelectView(bot))
 
-    @app_commands.command(name="setup-id", description="إرسال لوحة الهوية الوطنية وتحديد الإعدادات")
+    @app_commands.command(name="لوحة-الهوية", description="إرسال لوحة الهوية الوطنية وتحديد الإعدادات")
     @app_commands.describe(
         channel="روم الإدارة لاستقبال التقديمات",
         change_nickname="هل يتم تغيير اسم العضو بعد القبول تلقائياً؟",
         add_role="رتبة يتم إعطاؤها عند القبول (اختياري)",
         rem_role="رتبة يتم إزالتها عند القبول مثل رتبة مواطن جديد (اختياري)"
+    )
+    @app_commands.rename(
+        channel="روم_الادارة",
+        change_nickname="تغيير_الاسم",
+        add_role="رتبة_القبول",
+        rem_role="رتبة_الازالة"
     )
     @app_commands.checks.has_permissions(administrator=True)
     async def setup_id(

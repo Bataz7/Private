@@ -217,7 +217,7 @@ class UserApplyModal(Modal):
             q_text = q_list[i] if i < len(q_list) else f"السؤال {i + 1}"
             embed.add_field(name=f"{i + 1}) {q_text}"[:256], value=ans_val[:1024], inline=False)
 
-        embed.set_footer(text=f"ID: {interaction.user.id}")
+        embed.set_footer(text=f"الآيدي: {interaction.user.id}")
 
         admin_role = guild.get_role(self.apply_data.get("admin_role_id", 0))
         mention_str = admin_role.mention if admin_role else None
@@ -378,11 +378,11 @@ class PanelTypeChoiceView(View):
         self.embed = embed
         self.applies_dict = applies_dict
 
-    @discord.ui.button(label="أزرار (Buttons)", style=discord.ButtonStyle.primary, emoji="🔘")
+    @discord.ui.button(label="أزرار", style=discord.ButtonStyle.primary, emoji="🔘")
     async def buttons_mode(self, interaction: discord.Interaction, button: Button):
         await self.send_panel(interaction, "buttons")
 
-    @discord.ui.button(label="قائمة منسدلة (Dropdown)", style=discord.ButtonStyle.success, emoji="📜")
+    @discord.ui.button(label="قائمة منسدلة", style=discord.ButtonStyle.success, emoji="📜")
     async def dropdown_mode(self, interaction: discord.Interaction, button: Button):
         await self.send_panel(interaction, "dropdown")
 
@@ -449,7 +449,7 @@ class ChannelSelectDropdownForPanel(discord.ui.ChannelSelect):
         data = load_data()
 
         if guild_id not in data or not data[guild_id]:
-            await interaction.response.edit_message(content="❌ لا توجد أي تقديمات مسجلة! استخدم أمر `/setup-apply` أولاً.", view=None)
+            await interaction.response.edit_message(content="❌ لا توجد أي تقديمات مسجلة! استخدم أمر `/اعداد-تقديم` أولاً.", view=None)
             return
 
         view = PanelAppliesSelectionView(target_channel_id, data[guild_id])
@@ -507,7 +507,7 @@ class SetupApply(commands.Cog):
         save_json(PANELS_FILE, panels)
         return msg
 
-    @app_commands.command(name="setup-apply", description="إعداد تقديم جديد وتحديد الخيارات والأسئلة")
+    @app_commands.command(name="اعداد-تقديم", description="إعداد تقديم جديد وتحديد الخيارات والأسئلة")
     @app_commands.guild_only()
     @app_commands.default_permissions(administrator=True)
     @app_commands.checks.has_permissions(administrator=True)
@@ -521,6 +521,17 @@ class SetupApply(commands.Cog):
         given_role_1="رتبة معطاة أولى (اختياري)",
         given_role_2="رتبة معطاة ثانية (اختياري)",
         removed_role="رتبة تزال عند القبول (اختياري)",
+    )
+    @app_commands.rename(
+        apply_number="رقم_التقديم",
+        name="اسم_التقديم",
+        admin_role="رتبة_المسؤول",
+        review_channel="روم_المراجعة",
+        accept_msg="رسالة_القبول",
+        reject_msg="رسالة_الرفض",
+        given_role_1="رتبة_معطاة_1",
+        given_role_2="رتبة_معطاة_2",
+        removed_role="رتبة_تزال",
     )
     async def setup_apply(
         self,
@@ -554,7 +565,7 @@ class SetupApply(commands.Cog):
 
         await interaction.response.send_modal(SetupQuestionsModal(base_data))
 
-    @app_commands.command(name="panel-apply", description="إرسال بانل التقديمات الرئيسي للسيرفر")
+    @app_commands.command(name="لوحة-التقديمات", description="إرسال بانل التقديمات الرئيسي للسيرفر")
     @app_commands.guild_only()
     @app_commands.default_permissions(administrator=True)
     @app_commands.checks.has_permissions(administrator=True)

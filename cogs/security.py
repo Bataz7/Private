@@ -5,6 +5,20 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+FEATURE_LABELS = {
+    "bot_add": "دخول البوتات",
+    "admin_role": "إعطاء رتبة أدمن",
+    "mass_ban": "التبنيد السريع",
+    "mass_kick": "الطرد السريع",
+    "channel_delete": "حذف الرومات",
+    "role_delete": "حذف الرتب",
+    "role_create": "إنشاء الرتب",
+    "channel_create": "إنشاء الرومات",
+    "links": "الروابط",
+}
+PUNISHMENT_LABELS = {"ban": "باند", "kick": "طرد", "timeout": "تايم أوت", "strip_roles": "سحب كافة الرتب"}
+
+
 class ProtectionSettingsView(discord.ui.View):
     def __init__(self, cog, guild_id: int):
         super().__init__(timeout=180)
@@ -41,12 +55,12 @@ class ProtectionSettingsView(discord.ui.View):
         new_status = 0 if current_status == 1 else 1
         
         self.cog.update_setting(self.guild_id, feature, new_status)
-        status_text = "🟢 مفعل (TRUE)" if new_status == 1 else "🔴 معطل (FALSE)"
+        status_text = "🟢 مفعل" if new_status == 1 else "🔴 معطل"
         
-        await interaction.response.send_message(f"✅ تم تحديث حماية (`{feature}`) وأصبحت الآن: **{status_text}**", ephemeral=True)
+        await interaction.response.send_message(f"✅ تم تحديث حماية (`{FEATURE_LABELS.get(feature, feature)}`) وأصبحت الآن: **{status_text}**", ephemeral=True)
 
     async def punish_callback(self, interaction: discord.Interaction):
-        await interaction.response.send_message("اختر النظام لتحديد عقوبته عبر الأمر: `/set-punishment`", ephemeral=True)
+        await interaction.response.send_message("اختر النظام لتحديد عقوبته عبر الأمر: `/عقوبة-الحماية`", ephemeral=True)
 
 
 class SecurityCog(commands.Cog):
@@ -129,7 +143,7 @@ class SecurityCog(commands.Cog):
         except Exception as e:
             print(f"Error executing punishment: {e}")
 
-    @app_commands.command(name="security-panel", description="لوحة تحكم إعدادات الحماية في السيرفر")
+    @app_commands.command(name="لوحة-الحماية", description="لوحة تحكم إعدادات الحماية في السيرفر")
     @app_commands.checks.has_permissions(administrator=True)
     async def security_panel(self, interaction: discord.Interaction):
         view = ProtectionSettingsView(self, interaction.guild.id)
@@ -140,8 +154,9 @@ class SecurityCog(commands.Cog):
         )
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-    @app_commands.command(name="set-punishment", description="تحديد العقوبة لأي نظام حماية")
+    @app_commands.command(name="عقوبة-الحماية", description="تحديد العقوبة لأي نظام حماية")
     @app_commands.describe(feature="اختر نظام الحماية", punishment="اختر العقوبة")
+    @app_commands.rename(feature="النظام", punishment="العقوبة")
     @app_commands.choices(feature=[
         app_commands.Choice(name="🤖 دخول البوتات", value="bot_add"),
         app_commands.Choice(name="👑 إعطاء رتبة أدمـن", value="admin_role"),
@@ -154,15 +169,15 @@ class SecurityCog(commands.Cog):
         app_commands.Choice(name="🔗 الروابط", value="links")
     ])
     @app_commands.choices(punishment=[
-        app_commands.Choice(name="🔨 باند (Ban)", value="ban"),
-        app_commands.Choice(name="👢 طرد (Kick)", value="kick"),
-        app_commands.Choice(name="⏳ تايم أوت (Timeout)", value="timeout"),
+        app_commands.Choice(name="🔨 باند", value="ban"),
+        app_commands.Choice(name="👢 طرد", value="kick"),
+        app_commands.Choice(name="⏳ تايم أوت", value="timeout"),
         app_commands.Choice(name="🏷️ سحب كافة الرتب", value="strip_roles")
     ])
     @app_commands.checks.has_permissions(administrator=True)
     async def set_punishment(self, interaction: discord.Interaction, feature: str, punishment: str):
         self.update_punishment(interaction.guild.id, feature, punishment)
-        await interaction.response.send_message(f"✅ تم تحديث عقوبة النظام (`{feature}`) لتصبح: **{punishment}**", ephemeral=True)
+        await interaction.response.send_message(f"✅ تم تحديث عقوبة النظام (`{FEATURE_LABELS.get(feature, feature)}`) لتصبح: **{PUNISHMENT_LABELS.get(punishment, punishment)}**", ephemeral=True)
 
     # --- الأحداث ---
 

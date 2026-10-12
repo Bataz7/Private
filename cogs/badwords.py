@@ -80,8 +80,9 @@ class BadWordsCog(commands.Cog):
 
     # --- الأوامر ---
 
-    @app_commands.command(name="add-word", description="إضافة كلمة جديدة إلى قائمة الكلمات المحظورة")
+    @app_commands.command(name="اضافة-كلمة", description="إضافة كلمة جديدة إلى قائمة الكلمات المحظورة")
     @app_commands.describe(word="الكلمة المراد حظرها")
+    @app_commands.rename(word="الكلمة")
     @app_commands.checks.has_permissions(administrator=True)
     async def add_word(self, interaction: discord.Interaction, word: str):
         word_clean = word.strip().lower()
@@ -92,8 +93,9 @@ class BadWordsCog(commands.Cog):
         except sqlite3.IntegrityError:
             await interaction.response.send_message(f"⚠️️ الكلمة (`{word_clean}`) موجودة مسبقاً في القائمة.", ephemeral=True)
 
-    @app_commands.command(name="remove-word", description="إزالة كلمة من قائمة الكلمات المحظورة")
+    @app_commands.command(name="حذف-كلمة", description="إزالة كلمة من قائمة الكلمات المحظورة")
     @app_commands.describe(word="الكلمة المراد إزالتها")
+    @app_commands.rename(word="الكلمة")
     @app_commands.checks.has_permissions(administrator=True)
     async def remove_word(self, interaction: discord.Interaction, word: str):
         word_clean = word.strip().lower()
@@ -101,7 +103,7 @@ class BadWordsCog(commands.Cog):
         self.db.commit()
         await interaction.response.send_message(f"🗑️ تمت إزالة الكلمة (`{word_clean}`) من القائمة.", ephemeral=True)
 
-    @app_commands.command(name="list-words", description="عرض جميع الكلمات المحظورة في السيرفر")
+    @app_commands.command(name="الكلمات-المحظورة", description="عرض جميع الكلمات المحظورة في السيرفر")
     @app_commands.checks.has_permissions(administrator=True)
     async def list_words(self, interaction: discord.Interaction):
         words = self.get_words(interaction.guild.id)
@@ -117,18 +119,20 @@ class BadWordsCog(commands.Cog):
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name="set-word-punishment", description="تحديد العقوبة عند كتابة كلمة محظورة")
+    @app_commands.command(name="عقوبة-الكلمات", description="تحديد العقوبة عند كتابة كلمة محظورة")
     @app_commands.describe(punishment="اختر العقوبة التي ستطبق على المخالف")
+    @app_commands.rename(punishment="العقوبة")
     @app_commands.choices(punishment=[
-        app_commands.Choice(name="🔨 باند (Ban)", value="ban"),
-        app_commands.Choice(name="👢 طرد (Kick)", value="kick"),
-        app_commands.Choice(name="⏳ تايم أوت (Timeout)", value="timeout"),
+        app_commands.Choice(name="🔨 باند", value="ban"),
+        app_commands.Choice(name="👢 طرد", value="kick"),
+        app_commands.Choice(name="⏳ تايم أوت", value="timeout"),
         app_commands.Choice(name="🏷️ سحب كافة الرتب", value="strip_roles")
     ])
     @app_commands.checks.has_permissions(administrator=True)
     async def set_word_punishment(self, interaction: discord.Interaction, punishment: str):
         self.set_punishment(interaction.guild.id, punishment)
-        await interaction.response.send_message(f"✅ تم تحديث عقوبة الكلمات المحظورة لتصبح: **{punishment}**", ephemeral=True)
+        labels = {"ban": "باند", "kick": "طرد", "timeout": "تايم أوت", "strip_roles": "سحب كافة الرتب"}
+        await interaction.response.send_message(f"✅ تم تحديث عقوبة الكلمات المحظورة لتصبح: **{labels.get(punishment, punishment)}**", ephemeral=True)
 
     # --- الحدث لمراقبة الرسائل وحذفها مع العقوبة ---
 

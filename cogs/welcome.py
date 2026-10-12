@@ -1,7 +1,7 @@
 """الترحيب والمغادرة بالكانفاس | Welcome & goodbye with a custom image card.
 
-- /welcome setup  → استوديو تفاعلي: اختر التصميم واللون والنص والخلفية وشوف المعاينة مباشرة ثم احفظ.
-- /welcome test · /welcome off · /welcome info
+- /الترحيب اعداد  → استوديو تفاعلي: اختر التصميم واللون والنص والخلفية وشوف المعاينة مباشرة ثم احفظ.
+- /الترحيب تجربة · /الترحيب ايقاف · /الترحيب معلومات
 - نفس جدول welcome_settings الذي تعدّله لوحة التحكم (أُضيفت أعمدة للكانفاس تلقائياً).
 - الصورة تُرسم في خيط منفصل وبحد أقصى 2 بالتوازي، وتُتخطى أثناء الغارات الكبيرة لحماية المعالج.
 """
@@ -16,7 +16,7 @@ from discord.ext import commands
 
 from core import card, i18n
 from core.brand import embed as mk_embed
-from core.strings import add
+from core.strings import S, add
 from emojis import E
 
 KINDS = ("welcome", "goodbye")
@@ -49,7 +49,7 @@ add("wl", {
     "saved": ("✅ تم حفظ إعدادات **{kind}** وهي الآن **{state}** في {channel}.", "✅ **{kind}** settings saved — now **{state}** in {channel}."),
     "need_channel": ("اختر روم الرسالة أولاً من القائمة.", "Pick the message channel first."),
     "tested": ("📨 أُرسلت رسالة تجريبية إلى {channel}.", "📨 A test message was sent to {channel}."),
-    "no_cfg": ("ما فيه إعدادات بعد. استخدم `/welcome setup`.", "Nothing is set up yet. Use `/welcome setup`."),
+    "no_cfg": ("ما فيه إعدادات بعد. استخدم `/الترحيب اعداد`.", "Nothing is set up yet. Use `/welcome setup`."),
     "cancelled": ("تم إلغاء الاستوديو.", "Studio closed."), "off_ok": ("تم إيقاف رسالة **{kind}**.", "**{kind}** message turned off."),
     "not_yours": ("هذا الاستوديو لصاحب الأمر فقط.", "This studio belongs to whoever opened it."),
     "perm_chan": ("البوت يحتاج صلاحية **إرسال الرسائل + إرفاق الملفات** في {channel}.", "I need **Send Messages + Attach Files** in {channel}."),
@@ -193,7 +193,7 @@ class WelcomeCog(commands.Cog):
         await self.handle(member, "goodbye")
 
     # ------------------------------------------------------------------ الأوامر
-    wl = app_commands.Group(name="welcome", description="إعداد الترحيب والمغادرة", guild_only=True, default_permissions=discord.Permissions(manage_guild=True))
+    wl = app_commands.Group(name="الترحيب", description="إعداد الترحيب والمغادرة", guild_only=True, default_permissions=discord.Permissions(manage_guild=True))
     KIND_CHOICES = [app_commands.Choice(name="ترحيب", value="welcome"), app_commands.Choice(name="مغادرة", value="goodbye")]
 
     async def _admin(self, it: discord.Interaction) -> bool:
@@ -202,7 +202,8 @@ class WelcomeCog(commands.Cog):
         await it.response.send_message(i18n.tr(it, "c.no_perm"), ephemeral=True)
         return False
 
-    @wl.command(name="setup", description="افتح استوديو تصميم رسالة الترحيب أو المغادرة")
+    @wl.command(name="اعداد", description="افتح استوديو تصميم رسالة الترحيب أو المغادرة")
+    @app_commands.rename(type="النوع")
     @app_commands.describe(type="النوع")
     @app_commands.choices(type=KIND_CHOICES)
     async def setup_cmd(self, it: discord.Interaction, type: app_commands.Choice[str] | None = None):
@@ -215,7 +216,8 @@ class WelcomeCog(commands.Cog):
         await it.response.defer(ephemeral=True)
         await studio.refresh(it, first=True)
 
-    @wl.command(name="test", description="أرسل رسالة تجريبية في روم الترحيب")
+    @wl.command(name="تجربة", description="أرسل رسالة تجريبية في روم الترحيب")
+    @app_commands.rename(type="النوع")
     @app_commands.describe(type="النوع")
     @app_commands.choices(type=KIND_CHOICES)
     async def test_cmd(self, it: discord.Interaction, type: app_commands.Choice[str] | None = None):
@@ -231,7 +233,8 @@ class WelcomeCog(commands.Cog):
         await ch.send(content=content, embed=emb, **({"file": file} if file else {}))
         await it.followup.send(i18n.tr(it, "wl.tested", channel=ch.mention), ephemeral=True)
 
-    @wl.command(name="off", description="إيقاف رسالة الترحيب أو المغادرة")
+    @wl.command(name="ايقاف", description="إيقاف رسالة الترحيب أو المغادرة")
+    @app_commands.rename(type="النوع")
     @app_commands.describe(type="النوع")
     @app_commands.choices(type=KIND_CHOICES)
     async def off_cmd(self, it: discord.Interaction, type: app_commands.Choice[str] | None = None):
@@ -242,7 +245,7 @@ class WelcomeCog(commands.Cog):
         self.db.commit()
         await it.response.send_message(i18n.tr(it, "wl.off_ok", kind=i18n.tr(it, "wl.k_" + kind)), ephemeral=True)
 
-    @wl.command(name="info", description="عرض الإعدادات الحالية")
+    @wl.command(name="معلومات", description="عرض الإعدادات الحالية")
     async def info_cmd(self, it: discord.Interaction):
         e = mk_embed(None, "brand", f"{E.welcome} {i18n.tr(it, 'wl.info_t')}")
         for kind in KINDS:
@@ -251,8 +254,10 @@ class WelcomeCog(commands.Cog):
             if not c:
                 val = f"`{i18n.tr(it, 'wl.no_cfg')}`"
             else:
+                style = c.get('card_style') or 'royal'
+                style = i18n.tr(it, 'wl.s_' + style) if 'wl.s_' + style in S else style
                 val = (f"**{i18n.tr(it, 'wl.i_channel')}:** {ch.mention if ch else '—'}\n**{i18n.tr(it, 'wl.i_card')}:** {'✅' if c.get('card') else '❌'} · "
-                       f"`{c.get('card_style') or 'royal'}`\n**{i18n.tr(it, 'wl.b_status')}:** {i18n.tr(it, 'wl.b_on') if c.get('status') != 0 else i18n.tr(it, 'wl.b_off')}")
+                       f"`{style}`\n**{i18n.tr(it, 'wl.b_status')}:** {i18n.tr(it, 'wl.b_on') if c.get('status') != 0 else i18n.tr(it, 'wl.b_off')}")
             e.add_field(name=i18n.tr(it, "wl.k_" + kind), value=val, inline=True)
         await it.response.send_message(embed=e, ephemeral=True)
 

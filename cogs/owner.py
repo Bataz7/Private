@@ -34,7 +34,7 @@ class StatsView(discord.ui.View):
     def __init__(self, cog):
         super().__init__(timeout=None)
         self.cog = cog
-        b = discord.ui.Button(label="Refresh", custom_id="revive_stats_refresh", style=discord.ButtonStyle.primary, emoji=E.pe("loading"))
+        b = discord.ui.Button(label="تحديث", custom_id="revive_stats_refresh", style=discord.ButtonStyle.primary, emoji=E.pe("loading"))
         b.callback = self.refresh
         self.add_item(b)
 
@@ -51,7 +51,7 @@ class OwnerCog(commands.Cog):
         self._stats_msg: int | None = None
         bot.add_view(StatsView(self))
 
-    bc = app_commands.Group(name="bot-control", description="أوامر التحكم بالبوت", guild_ids=[config.OWNER_GUILD_ID or 1], default_permissions=discord.Permissions(administrator=True))
+    bc = app_commands.Group(name="التحكم-بالبوت", description="أوامر التحكم بالبوت", guild_ids=[config.OWNER_GUILD_ID or 1], default_permissions=discord.Permissions(administrator=True))
 
     async def cog_load(self):
         if config.OWNER_GUILD_ID and config.OWNER_STATS_CHANNEL_ID:
@@ -112,7 +112,7 @@ class OwnerCog(commands.Cog):
         e = mk_embed(None, "brand", f"{E.chart} {T('stats_t', bot=self.bot.user.name)}", T("stats_d"))
         e.add_field(name=f"{E.globe} {T('servers')}", value=f"`{len(self.bot.guilds):,}`", inline=True)
         e.add_field(name=f"{E.users} {T('total')}", value=f"`{total:,}`", inline=True)
-        e.add_field(name=f"{E.bolt} {T('latency')}", value=f"`{round(self.bot.latency * 1000)}ms`", inline=True)
+        e.add_field(name=f"{E.bolt} {T('latency')}", value=f"`{round(self.bot.latency * 1000)} مللي ثانية`", inline=True)
         e.set_thumbnail(url=self.bot.user.display_avatar.url)
         e.set_footer(text=T("stats_f"))
         return e
@@ -146,13 +146,14 @@ class OwnerCog(commands.Cog):
         await it.response.send_message(i18n.tr(it, "owner.no"), ephemeral=True)
         return False
 
-    @bc.command(name="stats-panel", description="إرسال بانل الإحصائيات في هذا الروم")
+    @bc.command(name="لوحة-الاحصائيات", description="إرسال بانل الإحصائيات في هذا الروم")
     async def c_panel(self, it: discord.Interaction):
         if await self._guard(it):
             await it.channel.send(embed=self.stats_embed(i18n.lang_of(it)), view=StatsView(self))
             await it.response.send_message(i18n.tr(it, "owner.panel_ok"), ephemeral=True)
 
-    @bc.command(name="ban-guild", description="حظر سيرفر وإخراج البوت منه")
+    @bc.command(name="حظر-سيرفر", description="حظر سيرفر وإخراج البوت منه")
+    @app_commands.rename(guild_id="ايدي_السيرفر")
     @app_commands.describe(guild_id="آيدي السيرفر")
     async def c_ban(self, it: discord.Interaction, guild_id: str):
         if not await self._guard(it):
@@ -166,7 +167,8 @@ class OwnerCog(commands.Cog):
             await g.leave()
         await it.response.send_message(i18n.tr(it, "owner.banned", id=guild_id), ephemeral=True)
 
-    @bc.command(name="unban-guild", description="فك حظر سيرفر")
+    @bc.command(name="فك-حظر-سيرفر", description="فك حظر سيرفر")
+    @app_commands.rename(guild_id="ايدي_السيرفر")
     @app_commands.describe(guild_id="آيدي السيرفر")
     async def c_unban(self, it: discord.Interaction, guild_id: str):
         if not await self._guard(it):
@@ -177,14 +179,15 @@ class OwnerCog(commands.Cog):
         self.db.commit()
         await it.response.send_message(i18n.tr(it, "owner.unbanned", id=guild_id), ephemeral=True)
 
-    @bc.command(name="servers", description="عرض أكبر السيرفرات")
+    @bc.command(name="السيرفرات", description="عرض أكبر السيرفرات")
     async def c_list(self, it: discord.Interaction):
         if await self._guard(it):
             top = sorted(self.bot.guilds, key=lambda g: g.member_count or 0, reverse=True)[:15]
             e = mk_embed(None, "brand", f"{E.globe} {i18n.tr(it, 'owner.list_t')}", "\n".join(f"`{i + 1:>2}.` **{g.name}** — `{g.member_count:,}` · `{g.id}`" for i, g in enumerate(top)))
             await it.response.send_message(embed=e, ephemeral=True)
 
-    @bc.command(name="send-message", description="إرسال رسالة نصية في روم")
+    @bc.command(name="ارسال-رسالة", description="إرسال رسالة نصية في روم")
+    @app_commands.rename(channel="الروم", message="الرسالة")
     @app_commands.describe(channel="الروم", message="الرسالة")
     async def c_send(self, it: discord.Interaction, channel: discord.TextChannel, message: str):
         if await self._guard(it):

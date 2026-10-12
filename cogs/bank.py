@@ -80,7 +80,7 @@ try:
 except sqlite3.OperationalError:
     pass
 
-# رومات البانلات (كل بانل لها روم) — يكتبها الموقع وأمر bank_setup
+# رومات البانلات (كل بانل لها روم) — يكتبها الموقع وأمر /اعداد-البنك
 for _col in ("account_panel_channel_id", "citizens_panel_channel_id", "staff_panel_channel_id"):
     try:
         cursor.execute(f"ALTER TABLE guild_settings ADD COLUMN {_col} INTEGER")
@@ -817,12 +817,18 @@ class Bank(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="bank_setup", description="إعداد بانلات نظام البنك، روم القروض، روم اللوق، ورتبة مسؤولي البنك")
+    @app_commands.command(name="اعداد-البنك", description="إعداد بانلات نظام البنك، روم القروض، روم اللوق، ورتبة مسؤولي البنك")
     @app_commands.describe(
         panel="اختر البانل المراد إرساله",
         loan_channel="روم استقبال طلبات القروض (اختياري)",
         log_channel="روم العمليات واللوق البنكي (اختياري)",
         bank_role="رتبة مسؤولي البنك (اختياري، مقتصرة على الأدمن إن لم تحدد)"
+    )
+    @app_commands.rename(
+        panel="البانل",
+        loan_channel="روم_القروض",
+        log_channel="روم_اللوق",
+        bank_role="رتبة_البنك"
     )
     @app_commands.choices(
         panel=[

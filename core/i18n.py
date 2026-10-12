@@ -33,6 +33,8 @@ def _con() -> sqlite3.Connection:
 
 
 def guild_lang(guild_id: int | None) -> str:
+    if config.ARABIC_ONLY:  # البوت عربي بالكامل
+        return "ar"
     if not guild_id:
         return config.DEFAULT_LANG
     _con()
@@ -50,6 +52,8 @@ def set_guild_lang(guild_id: int, lang: str) -> None:
 
 def lang_of(x) -> str:
     """يقبل: 'ar'/'en' · رقم سيرفر · Guild · Interaction · Member · None."""
+    if config.ARABIC_ONLY:
+        return "ar"
     if isinstance(x, str) and x in LANGS:
         return x
     if x is None:
@@ -61,7 +65,7 @@ def lang_of(x) -> str:
 
 
 def set_context_lang(lang: str | None):
-    return _ctx.set(lang)
+    return _ctx.set("ar" if config.ARABIC_ONLY else lang)
 
 
 def current_lang() -> str | None:

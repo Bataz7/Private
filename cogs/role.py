@@ -39,7 +39,7 @@ class RPSelect(ui.Select):
         guild_data = data.get(guild_id)
 
         if not guild_data:
-            await interaction.followup.send("❌ لم يتم إعداد نظام الرول في هذا السيرفر بعد عبر `/setup-role-play`!", ephemeral=True)
+            await interaction.followup.send("❌ لم يتم إعداد نظام الرول في هذا السيرفر بعد عبر `/اعداد-الرول`!", ephemeral=True)
             return
 
         # التحقق من رتبة مسؤول الرولات إن وجدت
@@ -92,7 +92,6 @@ class RPSelect(ui.Select):
             try:
                 sent_message = await target_channel.send(content=ping_content, embed=embed)
                 guild_data["last_status_msg_id"] = sent_message.id
-                save_data(guild_data)
             except discord.Forbidden:
                 await interaction.followup.send("❌ البوت لا يمتلك صلاحية الكتابة أو إرسال الرسائل في روم الرول المختار!", ephemeral=True)
                 return
@@ -111,7 +110,7 @@ class RolePlaySystem(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="setup-role-play", description="إعداد نظام الرول بلاي والرسائل الخاصة به")
+    @app_commands.command(name="اعداد-الرول", description="إعداد نظام الرول بلاي والرسائل الخاصة به")
     @app_commands.describe(
         channel="روم بدء الرول (اختر القناة أو اكتب منشن لها)",
         start_message="رسالة بدء الرول (اختياري)",
@@ -119,6 +118,14 @@ class RolePlaySystem(commands.Cog):
         vote_message="رسالة تصويت الرول (اختياري)",
         ping_role="رتبة المنشن عند تحديث الحالة (اختياري)",
         manager_role="رتبة مسؤول الرولات للتحكم بالقائمة (اختياري)"
+    )
+    @app_commands.rename(
+        channel="الروم",
+        start_message="رسالة_البدء",
+        end_message="رسالة_الانتهاء",
+        vote_message="رسالة_التصويت",
+        ping_role="رتبة_المنشن",
+        manager_role="رتبة_المسؤول"
     )
     async def setup_role_play(
         self,
@@ -148,13 +155,13 @@ class RolePlaySystem(commands.Cog):
 
         await interaction.response.send_message(f"✅ تم حفظ إعدادات الرول بنجاح!\n📌 روم الرول: {channel.mention}", ephemeral=True)
 
-    @app_commands.command(name="panel-role-play", description="إرسال لوحة التحكم (البانل) الخاصة بالرول بلاي مع القائمة المنسدلة")
+    @app_commands.command(name="لوحة-الرول", description="إرسال لوحة التحكم (البانل) الخاصة بالرول بلاي مع القائمة المنسدلة")
     async def panel_role_play(self, interaction: discord.Interaction):
         guild_id = str(interaction.guild.id)
         data = load_data()
 
         if guild_id not in data:
-            await interaction.response.send_message("❌ يرجى استخدام أمر التسطيب `/setup-role-play` أولاً!", ephemeral=True)
+            await interaction.response.send_message("❌ يرجى استخدام أمر التسطيب `/اعداد-الرول` أولاً!", ephemeral=True)
             return
 
         permissions = interaction.channel.permissions_for(interaction.guild.me)

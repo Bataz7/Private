@@ -4,7 +4,7 @@
 - أسئلة قبل فتح التذكرة (12 قالب جاهز أو أسئلة مخصصة من لوحة التحكم) تظهر إجاباتها داخل التذكرة.
 - حالة التذاكر في tickets.db فتبقى الأزرار تعمل بعد إعادة التشغيل (بدون بيانات داخل الأزرار).
 - استلام/إلغاء استلام، أولوية، إضافة/إزالة عضو، نسخة المحادثة HTML، تقييم بالخاص، لوق مفصّل.
-- /ticket setup · panel · close · claim · add · remove · rename · priority · transcript · info
+- /تذكرة اعداد · لوحة · اغلاق · استلام · اضافة · ازالة · تسمية · الاولوية · نسخة · معلومات
 - نفس custom_id القديمة، فالبانلات المرسلة سابقاً تستمر بالعمل.
 """
 import asyncio
@@ -84,7 +84,7 @@ add("tk", {
     "p_rating": ("روم التقييم", "Rating channel"), "p_image": ("رابط صورة (اختياري)", "Image URL (optional)"), "p_reason": ("سبب الإغلاق", "Closing reason"),
     "setup_ok": ("تم حفظ التذكرة رقم **{n}** باسم **{name}**.", "Ticket type **#{n}** saved as **{name}**."),
     "bad_num": ("❌ الرقم لازم يكون من 1 إلى 10.", "❌ The number must be between 1 and 10."),
-    "panel_none": ("❌ ما فيه أنواع تذاكر محفوظة. استخدم `/ticket setup` أو لوحة التحكم أولاً.", "❌ No ticket types saved yet. Use `/ticket setup` or the dashboard first."),
+    "panel_none": ("❌ ما فيه أنواع تذاكر محفوظة. استخدم `/تذكرة اعداد` أو لوحة التحكم أولاً.", "❌ No ticket types saved yet. Use `/ticket setup` or the dashboard first."),
     "panel_t": ("إرسال بانل التذاكر", "Send the ticket panel"), "panel_edit": ("العنوان والوصف", "Title & description"),
     "panel_channel_ph": ("📍 اختر روم البانل", "📍 Pick the panel channel"), "panel_items_ph": ("🎫 اختر أنواع التذاكر", "🎫 Pick ticket types"),
     "panel_style_ph": ("🔘 طريقة العرض", "🔘 Display style"), "panel_buttons": ("أزرار", "Buttons"), "panel_dropdown": ("قائمة منسدلة", "Dropdown"),
@@ -93,7 +93,9 @@ add("tk", {
     "panel_default_t": ("مركز الدعم", "Support center"), "panel_default_d": ("اختر نوع التذكرة المناسب وسنكون معك بأسرع وقت.", "Choose the right ticket type and we'll be with you shortly."),
     "panel_ph": ("🎫 اختر نوع التذكرة…", "🎫 Choose a ticket type…"),
     "info_t": ("معلومات التذكرة", "Ticket info"), "preset": ("قالب الأسئلة", "Question preset"),
-    "stats_none": ("—", "—"),
+    "stats_none": ("—", "—"), "open_n": ("مفتوحة", "open"), "fallback_t": ("تذكرة", "Ticket"),
+    "audit_open": ("تذكرة بواسطة {user}", "Ticket by {user}"), "audit_close": ("تم إغلاق التذكرة بواسطة {user}", "Ticket closed by {user}"),
+    "p_member": ("العضو", "Member"), "p_new_name": ("الاسم الجديد", "New name"), "p_level": ("مستوى الأولوية", "Priority level"),
 })
 for k, p in PRESETS.items():
     i18n.register(p["ar"], p["en"])
@@ -313,8 +315,8 @@ class Ticket(commands.Cog):  # الاسم Ticket مطلوب للوحة التح�
                 ow[role] = discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True, attach_files=True, manage_messages=(k == "ticket_mod_role_id"))
         no = self.db.next_no(g.id)
         try:
-            ch = await g.create_text_channel(name=f"ticket-{no:04d}-{slug(user.name)}-{num}"[:100], category=category, overwrites=ow,
-                                             topic=f"ticket:{user.id}:{num}", reason=f"Ticket by {user}")
+            ch = await g.create_text_channel(name=f"تذكرة-{no:04d}-{slug(user.name)}-{num}"[:100], category=category, overwrites=ow,
+                                             topic=f"ticket:{user.id}:{num}", reason=self.T(g, "audit_open", user=user))
         except discord.Forbidden:
             return await it.followup.send(self.T(it, "no_perm_bot"), ephemeral=True)
         row = dict(channel_id=ch.id, user_id=user.id, category=cfg.get("preset") or "custom", guild_id=g.id, type_num=num, name=cfg.get("name"), ticket_no=no,
@@ -400,7 +402,7 @@ class Ticket(commands.Cog):  # الاسم Ticket مطلوب للوحة التح�
         self.db.update(ch.id, status="closed", closed_at=utcnow_iso(), closed_by=it.user.id, reason=reason)
         row.update(status="closed", closed_by=it.user.id, closed_at=utcnow_iso(), reason=reason)
         transcript, count = await build_transcript(ch, g)
-        file = lambda: discord.File(io.BytesIO(transcript), filename=f"transcript-{row.get('ticket_no') or ch.id}.html")
+        file = lambda: discord.File(io.BytesIO(transcript), filename=f"نسخة-تذكرة-{row.get('ticket_no') or ch.id}.html")
         owner = g.get_member(row["user_id"])
         lang = self.lang(g)
         T = lambda k, **kw: i18n.tr(lang, "tk." + k, **kw)
@@ -437,7 +439,7 @@ class Ticket(commands.Cog):  # الاسم Ticket مطلوب للوحة التح�
                 pass
         await asyncio.sleep(5)
         try:
-            await ch.delete(reason=f"Ticket closed by {it.user}")
+            await ch.delete(reason=T("audit_close", user=it.user))
         except discord.HTTPException:
             pass
 
@@ -516,9 +518,11 @@ class Ticket(commands.Cog):  # الاسم Ticket مطلوب للوحة التح�
         return msg
 
     # -------------------------------------------------- أوامر السلاش
-    tk = app_commands.Group(name="ticket", description="إدارة التذاكر", guild_only=True)
+    tk = app_commands.Group(name="تذكرة", description="إدارة التذاكر", guild_only=True)
 
-    @tk.command(name="setup", description="إعداد نوع تذكرة جديد (1 إلى 10)")
+    @tk.command(name="اعداد", description="إعداد نوع تذكرة جديد (1 إلى 10)")
+    @app_commands.rename(number="الرقم", name="الاسم", category="الكاتيجوري", support_role="رتبة_الدعم", mod_role="رتبة_المشرف",
+                         log_channel="روم_اللوق", preset="قالب_الاسئلة", welcome_msg="رسالة_الترحيب", rating_channel="روم_التقييم", image_url="رابط_الصورة")
     @app_commands.describe(number="رقم التذكرة 1-10", name="اسم التذكرة", category="كاتيجوري التذاكر", support_role="رتبة الدعم", mod_role="رتبة مشرف التذاكر",
                            log_channel="روم اللوق", preset="قالب الأسئلة", welcome_msg="رسالة الترحيب", rating_channel="روم التقييم", image_url="رابط صورة (اختياري)")
     @app_commands.choices(preset=[app_commands.Choice(name=p["ar"], value=k) for k, p in PRESETS.items()])
@@ -539,7 +543,7 @@ class Ticket(commands.Cog):  # الاسم Ticket مطلوب للوحة التح�
         e.add_field(name=self.T(it, "preset"), value=(PRESETS[preset.value][self.lang(it)] if preset else "—"), inline=True)
         await it.response.send_message(embed=e, ephemeral=True)
 
-    @tk.command(name="panel", description="إرسال بانل التذاكر في روم")
+    @tk.command(name="لوحة", description="إرسال بانل التذاكر في روم")
     @app_commands.default_permissions(administrator=True)
     async def panel_cmd(self, it: discord.Interaction):
         if not it.user.guild_permissions.administrator:
@@ -549,23 +553,28 @@ class Ticket(commands.Cog):  # الاسم Ticket مطلوب للوحة التح�
             return await it.response.send_message(self.T(it, "panel_none"), ephemeral=True)
         await it.response.send_message(embed=mk_embed(None, "brand", f"{E.ticket_panel} {self.T(it, 'panel_t')}"), view=PanelStudio(self, it), ephemeral=True)
 
-    @tk.command(name="close", description="إغلاق التذكرة الحالية")
+    @tk.command(name="اغلاق", description="إغلاق التذكرة الحالية")
+    @app_commands.rename(reason="السبب")
     @app_commands.describe(reason="سبب الإغلاق")
     async def close_cmd(self, it: discord.Interaction, reason: str | None = None):
         await self.do_close(it, reason)
 
-    @tk.command(name="claim", description="استلام التذكرة الحالية")
+    @tk.command(name="استلام", description="استلام التذكرة الحالية")
     async def claim_cmd(self, it: discord.Interaction):
         await self.do_claim(it)
 
-    @tk.command(name="add", description="إضافة عضو للتذكرة")
+    @tk.command(name="اضافة", description="إضافة عضو للتذكرة")
+    @app_commands.rename(member="العضو")
+    @app_commands.describe(member="العضو")
     async def add_cmd(self, it: discord.Interaction, member: discord.Member):
         c = await self.ctx(it, staff=True)
         if c:
             await it.channel.set_permissions(member, view_channel=True, send_messages=True, read_message_history=True, attach_files=True)
             await it.response.send_message(self.T(it, "added", user=member.mention))
 
-    @tk.command(name="remove", description="إزالة عضو من التذكرة")
+    @tk.command(name="ازالة", description="إزالة عضو من التذكرة")
+    @app_commands.rename(member="العضو")
+    @app_commands.describe(member="العضو")
     async def remove_cmd(self, it: discord.Interaction, member: discord.Member):
         c = await self.ctx(it, staff=True)
         if c:
@@ -574,14 +583,18 @@ class Ticket(commands.Cog):  # الاسم Ticket مطلوب للوحة التح�
             await it.channel.set_permissions(member, overwrite=None)
             await it.response.send_message(self.T(it, "removed", user=member.mention))
 
-    @tk.command(name="rename", description="تغيير اسم التذكرة")
+    @tk.command(name="تسمية", description="تغيير اسم التذكرة")
+    @app_commands.rename(name="الاسم_الجديد")
+    @app_commands.describe(name="الاسم الجديد")
     async def rename_cmd(self, it: discord.Interaction, name: str):
         c = await self.ctx(it, staff=True)
         if c:
-            await it.channel.edit(name=slug(name)[:90] or "ticket")
+            await it.channel.edit(name=slug(name)[:90] or "تذكرة")
             await it.response.send_message(self.T(it, "renamed", name=name), ephemeral=True)
 
-    @tk.command(name="priority", description="تغيير أولوية التذكرة")
+    @tk.command(name="الاولوية", description="تغيير أولوية التذكرة")
+    @app_commands.rename(level="المستوى")
+    @app_commands.describe(level="مستوى الأولوية")
     @app_commands.choices(level=[app_commands.Choice(name="عادية", value="normal"), app_commands.Choice(name="عالية", value="high"), app_commands.Choice(name="عاجلة", value="urgent")])
     async def priority_cmd(self, it: discord.Interaction, level: app_commands.Choice[str]):
         c = await self.ctx(it, staff=True)
@@ -597,15 +610,15 @@ class Ticket(commands.Cog):  # الاسم Ticket مطلوب للوحة التح�
         else:
             await it.response.send_message(self.T(it, "prio_set", p=self.prio_label(it, level)), ephemeral=True)
 
-    @tk.command(name="transcript", description="إرسال نسخة المحادثة")
+    @tk.command(name="نسخة", description="إرسال نسخة المحادثة")
     async def transcript_cmd(self, it: discord.Interaction):
         c = await self.ctx(it, staff=True, allow_owner=True)
         if c:
             await it.response.defer(ephemeral=True)
             data, n = await build_transcript(it.channel, it.guild)
-            await it.followup.send(self.T(it, "transcript_sent"), file=discord.File(io.BytesIO(data), filename=f"transcript-{c[0].get('ticket_no') or it.channel.id}.html"), ephemeral=True)
+            await it.followup.send(self.T(it, "transcript_sent"), file=discord.File(io.BytesIO(data), filename=f"نسخة-تذكرة-{c[0].get('ticket_no') or it.channel.id}.html"), ephemeral=True)
 
-    @tk.command(name="info", description="معلومات التذكرة الحالية / إحصائيات السيرفر")
+    @tk.command(name="معلومات", description="معلومات التذكرة الحالية / إحصائيات السيرفر")
     async def info_cmd(self, it: discord.Interaction):
         row = self.resolve(it.channel) if isinstance(it.channel, discord.TextChannel) else None
         total, opened, avg = self.db.stats(it.guild_id)
@@ -614,7 +627,7 @@ class Ticket(commands.Cog):  # الاسم Ticket مطلوب للوحة التح�
             owner = it.guild.get_member(row["user_id"])
             e.add_field(name=self.T(it, "owner"), value=owner.mention if owner else "—", inline=True)
             e.add_field(name=self.T(it, "priority"), value=self.prio_label(it, row.get("priority") or "normal"), inline=True)
-        e.add_field(name=f"{E.chart} #", value=f"`{total}` · `{opened}` open · ⭐ `{avg:.1f}`" if avg else f"`{total}` · `{opened}` open", inline=False)
+        e.add_field(name=f"{E.chart} #", value=f"`{total}` · `{opened}` {self.T(it, 'open_n')} · ⭐ `{avg:.1f}`" if avg else f"`{total}` · `{opened}` {self.T(it, 'open_n')}", inline=False)
         await it.response.send_message(embed=e, ephemeral=True)
 
 
@@ -631,7 +644,7 @@ def manage_select(lang: str) -> ui.Select:
 
 class QuestionsModal(ui.Modal):
     def __init__(self, cog: Ticket, num: int, cfg: dict, qs: list[dict], lang: str):
-        super().__init__(title=(cfg.get("name") or "Ticket")[:45], timeout=900)
+        super().__init__(title=(cfg.get("name") or i18n.tr(lang, "tk.fallback_t"))[:45], timeout=900)
         self.cog, self.num, self.cfg, self.qs = cog, num, cfg, qs
         self.inputs = []
         for q in qs:
@@ -655,7 +668,7 @@ class RenameModal(ui.Modal):
         self.add_item(self.n)
 
     async def on_submit(self, it: discord.Interaction):
-        await self.channel.edit(name=slug(self.n.value)[:90] or "ticket")
+        await self.channel.edit(name=slug(self.n.value)[:90] or "تذكرة")
         await it.response.send_message(self.cog.T(it, "renamed", name=self.n.value), ephemeral=True)
 
 
@@ -724,7 +737,7 @@ class PanelPersistent(ui.View):
         super().__init__(timeout=None)
         self.cog = cog
         for n in range(1, 11):
-            b = ui.Button(label=f"Ticket {n}", custom_id=f"persistent_open_ticket_{n}")
+            b = ui.Button(label=f"تذكرة {n}", custom_id=f"persistent_open_ticket_{n}")
             b.callback = self._open(n)
             self.add_item(b)
         s = ui.Select(custom_id="persistent_panel_ticket_dropdown", options=[discord.SelectOption(label="…", value="1")])
@@ -875,11 +888,11 @@ async def build_transcript(channel: discord.TextChannel, guild: discord.Guild, l
             for a in m.attachments:
                 extra += f"<div class='f'><a href='{html.escape(a.url)}'>📎 {html.escape(a.filename)}</a></div>"
             if getattr(m, "components", None) and not m.content and not m.embeds:
-                extra += "<div class='c'><small>[components]</small></div>"
+                extra += "<div class='c'><small>[مكونات]</small></div>"
             out.write(f"<div class='m'><img class='a' src='{av}' width='40' height='40'><div><span class='n'>{html.escape(m.author.display_name)}</span>"
-                      f"{'<span class=b>BOT</span>' if m.author.bot else ''}<span class='t'>{m.created_at:%Y-%m-%d %H:%M}</span><div class='c'>{body}</div>{extra}</div></div>")
+                      f"{'<span class=b>بوت</span>' if m.author.bot else ''}<span class='t'>{m.created_at:%Y-%m-%d %H:%M}</span><div class='c'>{body}</div>{extra}</div></div>")
             if out.tell() > 1_800_000:
-                out.write("<p style='padding:16px 28px'><small>… truncated</small></p>")
+                out.write("<p style='padding:16px 28px'><small>… تم اختصار النسخة</small></p>")
                 break
     except discord.HTTPException:
         pass
