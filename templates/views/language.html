@@ -1,6 +1,0 @@
-{% from "views/_macros.html" import header with context %}
-<div id="view" data-kind="language">
-  {{ header('globe', t('lang.title'), t('lang.sub')) }}
-  <div class="card block" style="text-align:center"><h2 style="margin:0 0 18px">{{ t('lang.heading') }}</h2>
-    <div class="lang-pick"><button type="button" data-setlang="ar" class="{{ 'on' if lang == 'ar' }}"><b>AR</b>{{ t('lang.ar') }}</button><button type="button" data-setlang="en" class="{{ 'on' if lang == 'en' }}"><b>EN</b>{{ t('lang.en') }}</button></div></div>
-</div>

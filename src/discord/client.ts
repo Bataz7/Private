@@ -235,7 +235,7 @@ export class Bot {
       }
       case "MESSAGE_UPDATE": {
         const before = c.messages.get(d.id);
-        if (before && typeof d.content === "string") c.messages.set(d.id, { ...before, content: d.content.slice(0, 1500) });
+        if (before && typeof d.content === "string") c.messages.set(d.id, { ...before, content: d.content.slice(0, 1000) });
         this.emit(t, d, { before });
         return;
       }
@@ -269,7 +269,7 @@ export class Bot {
   private toMessage(d: any): CMessage {
     return {
       id: d.id, channelId: d.channel_id, guildId: d.guild_id ?? null, authorId: d.author?.id, authorName: d.author?.global_name ?? d.author?.username ?? "",
-      authorAvatar: d.author?.avatar ?? null, bot: !!d.author?.bot, content: String(d.content ?? "").slice(0, 1500),
+      authorAvatar: d.author?.avatar ?? null, bot: !!d.author?.bot, content: String(d.content ?? "").slice(0, 1000),
       attachments: (d.attachments ?? []).slice(0, 5).map((a: any) => a.url), createdAt: Date.now(),
     };
   }

@@ -64,7 +64,7 @@ export class LRU<K, V> extends Map<K, V> {
 export class Cache {
   readonly guilds = new Map<string, CGuild>();
   readonly members = new LRU<string, CMember>(config.MEMBER_CACHE); // key: guildId:userId
-  readonly users = new LRU<string, CUser>(2000);
+  readonly users = new LRU<string, CUser>(1000);
   readonly messages = new LRU<string, CMessage>(config.MESSAGE_CACHE);
   /** رومات الخاص المفتوحة: userId → channelId */
   readonly dms = new LRU<string, string>(500);

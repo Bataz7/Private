@@ -9,14 +9,17 @@
     "#jsx/jsx-dev-runtime": "./dashboard/jsx/jsx-runtime.ts"
   },
   "scripts": {
-    "start": "bun --smol src/index.ts",
+    "start": "bash start.sh",
+    "start:bun": "BUN_JSC_useDFGJIT=0 BUN_JSC_useFTLJIT=0 bun --smol src/index.ts",
+    "start:tjs": "runtime/tjs run dist/revive.js",
     "dev": "bun --smol --watch src/index.ts",
-    "dashboard": "bun --smol dashboard/server.tsx",
-    "build": "bun build --compile --minify --sourcemap=none src/index.ts --outfile revive",
-    "build:dashboard": "bun build --compile --minify --sourcemap=none dashboard/server.tsx --outfile revive-dashboard",
+    "build": "bun scripts/build.ts",
+    "build:runtime": "bash runtime/txiki/build.sh",
+    "dashboard": "BUN_JSC_useDFGJIT=0 BUN_JSC_useFTLJIT=0 bun --smol dashboard/server.tsx",
     "typecheck": "tsc --noEmit",
-    "test": "bun test",
-    "check": "tsc --noEmit && bun test"
+    "test": "for f in tests/*.test.ts; do bun test \"$f\" || exit 1; done",
+    "check": "tsc --noEmit && bun run test",
+    "memtest": "bash scripts/memtest.sh"
   },
   "devDependencies": {
     "@types/bun": "1.4.3",

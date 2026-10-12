@@ -159,3 +159,6 @@ node_modules/
 revive
 revive-dashboard
 data/
+dist/
+runtime/tjs*
+!runtime/txiki/

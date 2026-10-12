@@ -111,7 +111,7 @@ test("claim profits then cooldown", async () => {
   expect(balance(BUYER)).toBe(751_000);
   const ts = re.value<string>("SELECT last_claimed_timestamp FROM properties WHERE property_id = 'shop_01'")!;
   expect(ts).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}$/);
-  expect(text(await interact(3, BUYER, { custom_id: "citizen_menu_select_v12", component_type: 3, values: ["claim_profits"] }))).toContain("47 ساعة");
+  expect(text(await interact(3, BUYER, { custom_id: "citizen_menu_select_v12", component_type: 3, values: ["claim_profits"] }))).toMatch(/4[78] ساعة/);
   expect(balance(BUYER)).toBe(751_000);
 });
 

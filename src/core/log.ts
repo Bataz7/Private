@@ -17,7 +17,7 @@ export const log = {
   /** خطأ مع الـ stack */
   err: (scope: string, e: unknown) => out("ERRO", "31", scope, (e as Error)?.stack ?? String(e)),
   banner(version: string) {
-    console.log(c("34", "\n  ╦═╗╔═╗╦  ╦╦╦  ╦╔═╗\n  ╠╦╝║╣ ╚╗╔╝║╚╗╔╝║╣ \n  ╩╚═╚═╝ ╚╝ ╩ ╚╝ ╚═╝") + c("90", `  ${version} · TypeScript · Bun\n`));
+    console.log(c("34", "\n  ╦═╗╔═╗╦  ╦╦╦  ╦╔═╗\n  ╠╦╝║╣ ╚╗╔╝║╚╗╔╝║╣ \n  ╩╚═╚═╝ ╚╝ ╩ ╚╝ ╚═╝") + c("90", `  ${version} · TypeScript · ${typeof (globalThis as any).tjs === "object" ? "txiki.js" : "Bun"}\n`));
   },
   panel(rows: [string, string][]) {
     const w = Math.max(...rows.map(([k]) => k.length));

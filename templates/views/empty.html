@@ -1,7 +1,0 @@
-{% from "views/_macros.html" import header with context %}
-<div id="view" data-kind="empty">
-  {% if title %}{{ header(icon_name, title, '') }}{% endif %}
-  <div class="card block empty-state">{{ icon(icon_name or 'server') }}<p>{{ message }}</p>
-    {% if invite %}<a class="btn" href="/invite" target="_blank" rel="noopener">{{ icon('bot') }}<span>{{ t('ui.addBot') }}</span></a>{% endif %}
-    {% if retry %}<button class="btn" type="button" data-act="retry">{{ icon('activity') }}<span>{{ t('c.retry') }}</span></button>{% endif %}</div>
-</div>

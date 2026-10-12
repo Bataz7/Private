@@ -4,7 +4,9 @@ import { dirname, join, resolve } from "node:path";
 
 /** مجلد المشروع: جنب الملف التنفيذي لو مبني (compile)، وإلا مجلد المشروع. */
 function findRoot(): string {
-  const candidates = [process.cwd(), dirname(process.execPath), resolve(import.meta.dir, "../..")];
+  const here = (import.meta as { dir?: string }).dir;
+  const script = process.argv[1] && process.argv[1].endsWith(".js") ? dirname(resolve(process.argv[1])) : "";
+  const candidates = [process.cwd(), dirname(process.execPath), here ? resolve(here, "../..") : "", script, script && dirname(script)].filter(Boolean);
   return candidates.find((d) => existsSync(join(d, "emojis")) || existsSync(join(d, ".env"))) ?? process.cwd();
 }
 
@@ -56,9 +58,9 @@ export const config = {
   OWNER_STATS_CHANNEL_ID: env("OWNER_STATS_CHANNEL_ID"),
   AUTO_EMOJIS: flag("AUTO_EMOJIS", true),
   /** حجم كاش الرسائل (للوق الحذف والتعديل). */
-  MESSAGE_CACHE: envInt("MESSAGE_CACHE", 400),
+  MESSAGE_CACHE: envInt("MESSAGE_CACHE", 300),
   /** حجم كاش الأعضاء. */
-  MEMBER_CACHE: envInt("MEMBER_CACHE", 3000),
+  MEMBER_CACHE: envInt("MEMBER_CACHE", 1500),
 };
 
 mkdirSync(config.DATA_DIR, { recursive: true });

@@ -391,6 +391,7 @@ export default function setup(bot: Bot): void {
       for (const s of active.values()) sql.run("UPDATE active_shifts SET last_seen_ts = ? WHERE guild_id = ? AND user_id = ?", s.last_seen_ts, s.guild_id, s.user_id);
     });
   }
+  _test.tick = tick;
   let ticking = false;
   setInterval(() => {
     if (ticking) return;
@@ -921,4 +922,7 @@ export default function setup(bot: Bot): void {
 }
 
 /** للاختبارات: الوصول للحالة الداخلية. */
-export const _test = { active, blocked, sql, settings, setSettings, shiftChannels, channelsCache, settingsCache };
+export const _test = {
+  active, blocked, sql, settings, setSettings, shiftChannels, channelsCache, settingsCache,
+  tick: null as null | (() => Promise<void>),
+};

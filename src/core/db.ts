@@ -64,11 +64,24 @@ export function db(file: string): Sql {
   let d = open.get(file);
   if (!d) {
     const raw = new Database(join(config.DATA_DIR, file), { create: true, safeIntegers: true });
-    raw.exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA temp_store=MEMORY; PRAGMA cache_size=-256; PRAGMA busy_timeout=5000;");
+    raw.exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA temp_store=MEMORY; PRAGMA cache_size=-128; PRAGMA busy_timeout=5000;");
+    // حد أعلى لذاكرة SQLite لكل البرنامج (كل القواعد مع بعض) — يحافظ على البوت تحت 20 ميقا
+    if (!open.size) raw.exec(`PRAGMA soft_heap_limit=${SQLITE_HEAP_LIMIT}`);
     d = new Sql(raw);
     open.set(file, d);
   }
   return d;
+}
+
+const SQLITE_HEAP_LIMIT = 1_500_000;
+
+/** يرجّع ذاكرة كاش SQLite غير الضرورية (يُستدعى مع جمع القمامة الدوري). */
+export function shrinkAll(): void {
+  for (const d of open.values()) {
+    try {
+      d.raw.exec("PRAGMA shrink_memory");
+    } catch {}
+  }
 }
 
 export function closeAll(): void {

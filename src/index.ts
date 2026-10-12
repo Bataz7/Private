@@ -4,7 +4,7 @@
  *   bun run build        ← ملف تشغيل واحد ./revive بدون أي مكتبات
  */
 import { config, tokenProblem } from "./core/config.ts";
-import { closeAll } from "./core/db.ts";
+import { closeAll, shrinkAll } from "./core/db.ts";
 import { syncEmojis } from "./core/emojis.ts";
 import { startJobs } from "./core/jobs.ts";
 import { startTrimming } from "./core/trim.ts";
@@ -48,7 +48,7 @@ bot.on("ready", async () => {
     ["Slash commands", String(bot.commands.size)],
     ["Data folder", config.DATA_DIR],
     ["Memory", `${memoryMB().toFixed(1)} MB`],
-    ["Runtime", `Bun ${Bun.version}`],
+    ["Runtime", Bun.version.startsWith("txiki") ? Bun.version : `Bun ${Bun.version}`],
     ["Started in", `${((Date.now() - bot.startedAt) / 1000).toFixed(1)}s`],
   ]);
   startJobs();
@@ -56,7 +56,11 @@ bot.on("ready", async () => {
 });
 
 // الذاكرة: جمع القمامة دوري + إرجاع صفحات كود Bun غير المستخدمة للنظام (core/trim.ts) = تحت 20 ميقا
-setInterval(() => Bun.gc(true), 60_000).unref();
+setInterval(() => {
+  shrinkAll();
+  Bun.gc(true);
+  { const m = process.memoryUsage(); log.debug("memory", `rss ${memoryMB().toFixed(1)} MB · heap ${(m.heapTotal / 1048576).toFixed(1)} MB`); }
+}, Number(process.env.GC_INTERVAL_MS) || 30_000).unref();
 startTrimming(60_000);
 
 function shutdown(sig: string) {
