@@ -93,7 +93,7 @@ export function addStaffDialog(onDone: () => void) {
 }
 
 // ───── مزامنة / مسح الكل ─────
-type SyncResult = { mode: 'sync' | 'wipe'; withRole?: number; added?: number; reactivated?: number; deactivated?: number; wiped?: number };
+type SyncResult = { mode: 'sync' | 'wipe'; withRole?: number; added?: number; reactivated?: number; deactivated?: number; wiped?: number; skippedDismissed?: number };
 
 function syncSummary(result: SyncResult, message?: string) {
   const items: Array<[string, number | undefined, string, Tone]> = [
@@ -102,6 +102,7 @@ function syncSummary(result: SyncResult, message?: string) {
     ['رجعوا نشطين', result.reactivated, 'refresh-circle', 'info'],
     ['صاروا غير نشطين', result.deactivated, 'user-remove', 'warning'],
     ['انمسحت سجلاتهم', result.wiped, 'trash', 'danger'],
+    ['مفصولين تم تخطيهم', result.skippedDismissed, 'user-remove', 'muted'],
   ];
   openModal({
     title: result.mode === 'wipe' ? 'تم المسح وإعادة التسجيل' : 'تمت مزامنة الستاف',
