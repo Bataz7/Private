@@ -1,0 +1,25 @@
+{
+  "name": "rift-staff-bot",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Rift — بوت إدارة الستاف (TypeScript بدون مكتبات تشغيل، أقل من 20 ميقا) + لوحة تحكم TSX. Supabase.",
+  "type": "module",
+  "imports": {
+    "#jsx/jsx-runtime": "./src/web/jsx/jsx-runtime.ts",
+    "#jsx/jsx-dev-runtime": "./src/web/jsx/jsx-runtime.ts"
+  },
+  "scripts": {
+    "start": "bash start.sh",
+    "start:bun": "bun --smol src/index.ts",
+    "dev": "bun --smol --watch src/index.ts",
+    "dashboard": "bun --smol src/dashboard/server.ts",
+    "register": "bun scripts/register-commands.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "for f in tests/*.test.ts; do bun test \"$f\" || exit 1; done",
+    "check": "tsc --noEmit && bun run test"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.3",
+    "typescript": "7.0.2"
+  }
+}

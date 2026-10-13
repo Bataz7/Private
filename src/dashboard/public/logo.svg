@@ -1,0 +1,40 @@
+<svg width="512" height="512" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rf-bg" x1="8" y1="4" x2="120" y2="124" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2a1a52"/>
+      <stop offset=".55" stop-color="#150d2b"/>
+      <stop offset="1" stop-color="#0b0716"/>
+    </linearGradient>
+    <radialGradient id="rf-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(66 62) rotate(90) scale(72)">
+      <stop stop-color="#8e6bff" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#8e6bff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rf-r" x1="26" y1="22" x2="104" y2="108" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#efe8ff"/>
+      <stop offset=".42" stop-color="#b19cff"/>
+      <stop offset="1" stop-color="#6a45e8"/>
+    </linearGradient>
+    <linearGradient id="rf-crack" x1="84" y1="6" x2="44" y2="122" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".25" stop-color="#fff"/>
+      <stop offset=".75" stop-color="#d9ccff"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="rf-left"><path d="M0 0H85L45 128H0Z"/></clipPath>
+    <clipPath id="rf-right"><path d="M85 0H128V128H45Z"/></clipPath>
+    <clipPath id="rf-tile"><rect x="4" y="4" width="120" height="120" rx="30"/></clipPath>
+    <filter id="rf-blur" filterUnits="userSpaceOnUse" x="0" y="-10" width="128" height="150"><feGaussianBlur stdDeviation="3"/></filter>
+    <path id="rf-letter" fill-rule="evenodd" d="M29 102V26h35c22 0 37 12 37 31 0 12-6 21-17 26l21 19H83L62 84H49v18H29Zm20-57v22h13c11 0 18-4 18-11s-7-11-18-11H49Z"/>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="30" fill="url(#rf-bg)"/>
+  <g clip-path="url(#rf-tile)">
+    <rect width="128" height="128" fill="url(#rf-glow)"/>
+    <path d="M-10 92 138 20" stroke="#8e6bff" stroke-opacity=".08" stroke-width="18"/>
+  </g>
+  <rect x="5" y="5" width="118" height="118" rx="29" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width="2"/>
+  <g clip-path="url(#rf-left)"><use href="#rf-letter" fill="url(#rf-r)"/></g>
+  <g clip-path="url(#rf-right)"><use href="#rf-letter" fill="url(#rf-r)" transform="translate(5 -4)"/></g>
+  <path d="M85 4 45 124" stroke="#a78bfa" stroke-width="9" stroke-linecap="round" filter="url(#rf-blur)" opacity=".9"/>
+  <path d="M85 4 45 124" stroke="url(#rf-crack)" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M97 14 99.4 20.6 106 23 99.4 25.4 97 32 94.6 25.4 88 23 94.6 20.6Z" fill="#fff"/>
+</svg>

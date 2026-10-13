@@ -1,0 +1,669 @@
+[
+ {
+  "name": "rf_check",
+  "chars": [
+   "✅",
+   "✔️",
+   "☑️",
+   "✔"
+  ],
+  "file": "check.png",
+  "hash": "1360390460"
+ },
+ {
+  "name": "rf_cross",
+  "chars": [
+   "❌",
+   "✖️",
+   "✖",
+   "❎"
+  ],
+  "file": "cross.png",
+  "hash": "d5113def04"
+ },
+ {
+  "name": "rf_warn",
+  "chars": [
+   "⚠️",
+   "⚠"
+  ],
+  "file": "warn.png",
+  "hash": "71d5e7fbcb"
+ },
+ {
+  "name": "rf_blocked",
+  "chars": [
+   "⛔",
+   "🚫"
+  ],
+  "file": "blocked.png",
+  "hash": "1253c28fb7"
+ },
+ {
+  "name": "rf_edit",
+  "chars": [
+   "📝",
+   "✏️",
+   "✍️"
+  ],
+  "file": "edit.png",
+  "hash": "b2f1ea06b9"
+ },
+ {
+  "name": "rf_list",
+  "chars": [
+   "📋",
+   "📜",
+   "🧾"
+  ],
+  "file": "list.png",
+  "hash": "79e913a1c6"
+ },
+ {
+  "name": "rf_exit",
+  "chars": [
+   "🚪",
+   "👋"
+  ],
+  "file": "exit.png",
+  "hash": "c8dba8019c"
+ },
+ {
+  "name": "rf_leave",
+  "chars": [
+   "🏖️",
+   "🌴",
+   "✈️"
+  ],
+  "file": "leave.png",
+  "hash": "2ad24746ff"
+ },
+ {
+  "name": "rf_online",
+  "chars": [
+   "🟢"
+  ],
+  "file": "online.png",
+  "hash": "748252d5f2"
+ },
+ {
+  "name": "rf_busy",
+  "chars": [
+   "🔴"
+  ],
+  "file": "busy.png",
+  "hash": "7c4e4a03e9"
+ },
+ {
+  "name": "rf_away",
+  "chars": [
+   "🟡",
+   "🟠"
+  ],
+  "file": "away.png",
+  "hash": "cee9429593"
+ },
+ {
+  "name": "rf_play",
+  "chars": [
+   "▶️"
+  ],
+  "file": "play.png",
+  "hash": "593c96a83c"
+ },
+ {
+  "name": "rf_stop",
+  "chars": [
+   "⏹️"
+  ],
+  "file": "stop.png",
+  "hash": "a0a7a93f43"
+ },
+ {
+  "name": "rf_pause",
+  "chars": [
+   "⏸️",
+   "💤"
+  ],
+  "file": "pause.png",
+  "hash": "39ee88add3"
+ },
+ {
+  "name": "rf_down",
+  "chars": [
+   "👇",
+   "⬇️"
+  ],
+  "file": "down.png",
+  "hash": "4e510ce960"
+ },
+ {
+  "name": "rf_up",
+  "chars": [
+   "👆",
+   "⬆️"
+  ],
+  "file": "up.png",
+  "hash": "04795bf8c3"
+ },
+ {
+  "name": "rf_shield",
+  "chars": [
+   "🛡️",
+   "👮"
+  ],
+  "file": "shield.png",
+  "hash": "e5b207a18f"
+ },
+ {
+  "name": "rf_timer",
+  "chars": [
+   "⏱️",
+   "⏳",
+   "⌛",
+   "⏰"
+  ],
+  "file": "timer.png",
+  "hash": "2cccfc4f09"
+ },
+ {
+  "name": "rf_clock",
+  "chars": [
+   "🕒",
+   "🕐",
+   "🕑",
+   "🕓",
+   "🕔",
+   "🕕"
+  ],
+  "file": "clock.png",
+  "hash": "b09932910c"
+ },
+ {
+  "name": "rf_chart",
+  "chars": [
+   "📊"
+  ],
+  "file": "chart.png",
+  "hash": "8ad54377f3"
+ },
+ {
+  "name": "rf_trend",
+  "chars": [
+   "📈"
+  ],
+  "file": "trend.png",
+  "hash": "0cae5512a4"
+ },
+ {
+  "name": "rf_trenddown",
+  "chars": [
+   "📉"
+  ],
+  "file": "trenddown.png",
+  "hash": "8bee7b8c0f"
+ },
+ {
+  "name": "rf_star",
+  "chars": [
+   "⭐",
+   "🌟"
+  ],
+  "file": "star.png",
+  "hash": "7fe9a8fde1"
+ },
+ {
+  "name": "rf_chat",
+  "chars": [
+   "💬",
+   "🗨️"
+  ],
+  "file": "chat.png",
+  "hash": "52c3b69e2a"
+ },
+ {
+  "name": "rf_help",
+  "chars": [
+   "🤝"
+  ],
+  "file": "help.png",
+  "hash": "26d7e49de8"
+ },
+ {
+  "name": "rf_mail",
+  "chars": [
+   "📨",
+   "📩",
+   "📬",
+   "📥",
+   "✉️",
+   "📧"
+  ],
+  "file": "mail.png",
+  "hash": "9838fe9fd2"
+ },
+ {
+  "name": "rf_ban",
+  "chars": [
+   "🔨"
+  ],
+  "file": "ban.png",
+  "hash": "39827d26d2"
+ },
+ {
+  "name": "rf_kick",
+  "chars": [
+   "👢"
+  ],
+  "file": "kick.png",
+  "hash": "238002b92f"
+ },
+ {
+  "name": "rf_mute",
+  "chars": [
+   "🔇"
+  ],
+  "file": "mute.png",
+  "hash": "7ad26c8091"
+ },
+ {
+  "name": "rf_idea",
+  "chars": [
+   "💡"
+  ],
+  "file": "idea.png",
+  "hash": "9276ead3fd"
+ },
+ {
+  "name": "rf_trophy",
+  "chars": [
+   "🏆"
+  ],
+  "file": "trophy.png",
+  "hash": "55bb10db20"
+ },
+ {
+  "name": "rf_globe",
+  "chars": [
+   "🌐",
+   "🌍"
+  ],
+  "file": "globe.png",
+  "hash": "849a158505"
+ },
+ {
+  "name": "rf_party",
+  "chars": [
+   "🎉",
+   "✨",
+   "🥳"
+  ],
+  "file": "party.png",
+  "hash": "b73863a1f3"
+ },
+ {
+  "name": "rf_people",
+  "chars": [
+   "👥"
+  ],
+  "file": "people.png",
+  "hash": "d66a4ceb23"
+ },
+ {
+  "name": "rf_user",
+  "chars": [
+   "👤"
+  ],
+  "file": "user.png",
+  "hash": "968e925381"
+ },
+ {
+  "name": "rf_like",
+  "chars": [
+   "👍"
+  ],
+  "file": "like.png",
+  "hash": "da704834ff"
+ },
+ {
+  "name": "rf_dislike",
+  "chars": [
+   "👎"
+  ],
+  "file": "dislike.png",
+  "hash": "5bb999492f"
+ },
+ {
+  "name": "rf_announce",
+  "chars": [
+   "📢",
+   "📣",
+   "🔔"
+  ],
+  "file": "announce.png",
+  "hash": "dabf051eab"
+ },
+ {
+  "name": "rf_calendar",
+  "chars": [
+   "📅",
+   "📆",
+   "🗓️"
+  ],
+  "file": "calendar.png",
+  "hash": "e576b3fa72"
+ },
+ {
+  "name": "rf_first",
+  "chars": [
+   "🥇"
+  ],
+  "file": "first.png",
+  "hash": "a3019ae180"
+ },
+ {
+  "name": "rf_second",
+  "chars": [
+   "🥈"
+  ],
+  "file": "second.png",
+  "hash": "040c59678b"
+ },
+ {
+  "name": "rf_third",
+  "chars": [
+   "🥉"
+  ],
+  "file": "third.png",
+  "hash": "483c55d1e3"
+ },
+ {
+  "name": "rf_undo",
+  "chars": [
+   "↩️"
+  ],
+  "file": "undo.png",
+  "hash": "f5a1ff6d96"
+ },
+ {
+  "name": "rf_redo",
+  "chars": [
+   "↪️"
+  ],
+  "file": "redo.png",
+  "hash": "d6d3c2d058"
+ },
+ {
+  "name": "rf_info",
+  "chars": [
+   "ℹ️"
+  ],
+  "file": "info.png",
+  "hash": "4a6bc63d79"
+ },
+ {
+  "name": "rf_fire",
+  "chars": [
+   "🔥",
+   "⚡"
+  ],
+  "file": "fire.png",
+  "hash": "21c8924063"
+ },
+ {
+  "name": "rf_points",
+  "chars": [
+   "💎",
+   "💙"
+  ],
+  "file": "points.png",
+  "hash": "6ed1e8a039"
+ },
+ {
+  "name": "rf_mic",
+  "chars": [
+   "🎙️",
+   "🎤"
+  ],
+  "file": "mic.png",
+  "hash": "3880b55413"
+ },
+ {
+  "name": "rf_role",
+  "chars": [
+   "🎭"
+  ],
+  "file": "role.png",
+  "hash": "dfb36b9dab"
+ },
+ {
+  "name": "rf_unlock",
+  "chars": [
+   "🔓"
+  ],
+  "file": "unlock.png",
+  "hash": "a0ddff689f"
+ },
+ {
+  "name": "rf_lock",
+  "chars": [
+   "🔒",
+   "🔐"
+  ],
+  "file": "lock.png",
+  "hash": "d84a591ef5"
+ },
+ {
+  "name": "rf_search",
+  "chars": [
+   "🔍",
+   "🔎"
+  ],
+  "file": "search.png",
+  "hash": "6bac65f5fe"
+ },
+ {
+  "name": "rf_next",
+  "chars": [
+   "⏭️"
+  ],
+  "file": "next.png",
+  "hash": "162163599b"
+ },
+ {
+  "name": "rf_folder",
+  "chars": [
+   "📂",
+   "📁"
+  ],
+  "file": "folder.png",
+  "hash": "78ecc8dae1"
+ },
+ {
+  "name": "rf_rocket",
+  "chars": [
+   "🚀"
+  ],
+  "file": "rocket.png",
+  "hash": "92e6eeca88"
+ },
+ {
+  "name": "rf_pin",
+  "chars": [
+   "📌",
+   "📍"
+  ],
+  "file": "pin.png",
+  "hash": "c574afed75"
+ },
+ {
+  "name": "rf_settings",
+  "chars": [
+   "⚙️",
+   "🛠️",
+   "🔧"
+  ],
+  "file": "settings.png",
+  "hash": "e5973eeb28"
+ },
+ {
+  "name": "rf_radar",
+  "chars": [
+   "📡"
+  ],
+  "file": "radar.png",
+  "hash": "5ac6910ab3"
+ },
+ {
+  "name": "rf_crown",
+  "chars": [
+   "👑"
+  ],
+  "file": "crown.png",
+  "hash": "18a572c522"
+ },
+ {
+  "name": "rf_link",
+  "chars": [
+   "🔗"
+  ],
+  "file": "link.png",
+  "hash": "0039ea401e"
+ },
+ {
+  "name": "rf_gift",
+  "chars": [
+   "🎁"
+  ],
+  "file": "gift.png",
+  "hash": "187a001088"
+ },
+ {
+  "name": "rf_document",
+  "chars": [
+   "📄",
+   "📃"
+  ],
+  "file": "document.png",
+  "hash": "e9f9602855"
+ },
+ {
+  "name": "rf_tag",
+  "chars": [
+   "🏷️"
+  ],
+  "file": "tag.png",
+  "hash": "b6bf13ca00"
+ },
+ {
+  "name": "rf_trash",
+  "chars": [
+   "🗑️"
+  ],
+  "file": "trash.png",
+  "hash": "853ace4d66"
+ },
+ {
+  "name": "rf_eye",
+  "chars": [
+   "👀",
+   "👁️"
+  ],
+  "file": "eye.png",
+  "hash": "5c0e339f76"
+ },
+ {
+  "name": "rf_voice",
+  "chars": [
+   "🎧",
+   "🔊"
+  ],
+  "file": "voice.png",
+  "hash": "84474583c2"
+ },
+ {
+  "name": "rf_activity",
+  "chars": [
+   "💓"
+  ],
+  "file": "activity.png",
+  "hash": "a598b581eb"
+ },
+ {
+  "name": "rf_moon",
+  "chars": [
+   "🌙",
+   "😴"
+  ],
+  "file": "moon.png",
+  "hash": "b3a7e791cd"
+ },
+ {
+  "name": "rf_engage",
+  "chars": [
+   "📶"
+  ],
+  "file": "engage.png",
+  "hash": "097d79d514"
+ },
+ {
+  "name": "rf_hourglass",
+  "chars": [
+   "🕰️"
+  ],
+  "file": "hourglass.png",
+  "hash": "b14080beb9"
+ },
+ {
+  "name": "rf_shiftstart",
+  "chars": [
+   "🟩"
+  ],
+  "file": "shiftstart.png",
+  "hash": "80d500bbdc"
+ },
+ {
+  "name": "rf_shiftend",
+  "chars": [
+   "🟦"
+  ],
+  "file": "shiftend.png",
+  "hash": "ba25f89083"
+ },
+ {
+  "name": "rf_bar_l1",
+  "chars": [],
+  "file": "bar_l1.png",
+  "hash": "e9c703a6cc"
+ },
+ {
+  "name": "rf_bar_l0",
+  "chars": [],
+  "file": "bar_l0.png",
+  "hash": "8fc43c48b9"
+ },
+ {
+  "name": "rf_bar_m1",
+  "chars": [],
+  "file": "bar_m1.png",
+  "hash": "9af2892529"
+ },
+ {
+  "name": "rf_bar_m0",
+  "chars": [],
+  "file": "bar_m0.png",
+  "hash": "01306f599d"
+ },
+ {
+  "name": "rf_bar_r1",
+  "chars": [],
+  "file": "bar_r1.png",
+  "hash": "5c443f12bb"
+ },
+ {
+  "name": "rf_bar_r0",
+  "chars": [],
+  "file": "bar_r0.png",
+  "hash": "eed34964a5"
+ }
+]

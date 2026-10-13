@@ -1,0 +1,9 @@
+<svg width="600" height="160" viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg">
+	<rect width="600" height="160" fill="#1b1035"/>
+	<path d="M0 118 150 42l104 52 117-67 229 75v58H0Z" fill="#2c1a54"/>
+	<path d="m151 42 103 52 117-67 86 28-124 75-116-49-95 49-72-12Z" fill="#43277c"/>
+	<path d="m371 27 86 28-124 75-79-36Z" fill="#6c43ba"/>
+	<path d="M0 135h600v25H0z" fill="#130a28"/>
+	<text x="34" y="48" fill="#d9c7ff" font-family="Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="5">RIFT</text>
+	<text x="34" y="70" fill="#9f8bc6" font-family="Arial, sans-serif" font-size="10" letter-spacing="2">STAFF REPORT</text>
+</svg>

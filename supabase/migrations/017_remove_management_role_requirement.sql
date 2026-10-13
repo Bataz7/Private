@@ -1,0 +1,1 @@
+alter table guild_settings alter column management_role_id drop not null;

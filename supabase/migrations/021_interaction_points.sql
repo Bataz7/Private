@@ -1,0 +1,1 @@
+alter table shifts add column if not exists interaction_points_awarded integer not null default 0;
