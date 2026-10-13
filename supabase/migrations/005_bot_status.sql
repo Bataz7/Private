@@ -1,0 +1,1 @@
+alter table guild_settings add column bot_status text not null default 'idle' check (bot_status in ('online', 'idle', 'dnd', 'invisible'));

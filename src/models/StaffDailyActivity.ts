@@ -1,0 +1,3 @@
+import { SupabaseModel } from '../supabase/model.js';
+export type StaffDailyActivityDoc = { id:number; guildId:string; userId:string; activityDate:Date; activeMinutes:number; messageCount:number; voiceMinutes:number; lastMessageAt:Date|null };
+export const StaffDailyActivity = new SupabaseModel<StaffDailyActivityDoc>({ table:'staff_daily_activity', columns:{id:'id',guildId:'guild_id',userId:'user_id',activityDate:'activity_date',activeMinutes:'active_minutes',messageCount:'message_count',voiceMinutes:'voice_minutes',lastMessageAt:'last_message_at'}, dates:['activityDate','lastMessageAt'], defaults:{activeMinutes:0,messageCount:0,voiceMinutes:0,lastMessageAt:null} });

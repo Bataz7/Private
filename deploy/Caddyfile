@@ -1,4 +1,0 @@
-# Caddy يجلب شهادة https تلقائياً (Let's Encrypt) ويرسل X-Forwarded-Proto
-dashboard.example.com {
-    reverse_proxy 127.0.0.1:25591
-}

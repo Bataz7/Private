@@ -1,102 +1,125 @@
-# ريفايف | Revive
+# Staff Management Bot
 
-بوت ديسكورد عربي بالكامل، مكتوب بـ **TypeScript بدون أي مكتبات تشغيل**، ومعه **لوحة تحكم TSX** منفصلة.
+Independent Discord Staff Management Bot.
 
-| | |
-|---|---|
-| البوت | `src/` · TypeScript · اتصال Discord مكتوب من الصفر (Gateway + REST) |
-| لوحة التحكم | `dashboard/` · TSX (عرض من السيرفر) · برنامج منفصل عن البوت |
-| البيانات | `data/` · نفس قواعد SQLite وملفات JSON القديمة — تنتقل كما هي بدون تحويل |
-| الذاكرة | ~14 ميقا تحت استخدام عادي على txiki.js (انظر «الذاكرة» تحت) |
+## Current scope
 
-## التشغيل
+- Staff shifts
+- Start / end shift
+- Break / resume
+- On Shift role
+- Shift history and statistics
+- Leave requests
+- Leave approval / rejection
+- Leave role + restoration of previous staff roles
+- Came Back button
+- Resignation requests
+- Resignation approval / rejection
+- Staff role removal
+- Staff logs
+- Report submission (DM + announcement channel)
+- Report review by management
+- Discord-only configuration
+- Supabase persistence
+- No dashboard
+- No ticket system
+- No connection to another bot
+
+## Requirements
+
+- Node.js 20+ (Node 24 recommended)
+- Supabase project with the migration in `supabase/migrations/001_initial.sql` applied
+- A Discord application/bot
+- Bot invited with the required permissions
+
+## Setup
+
+1. Copy `.env.example` to `.env`.
+2. Fill in `DISCORD_TOKEN`, `CLIENT_ID`, `GUILD_ID`, `SUPABASE_URL`, and `SUPABASE_KEY`.
+3. Install dependencies:
+
 ```bash
-cp .env.example .env          # حط DISCORD_TOKEN وباقي القيم
-bun install                    # أدوات التطوير فقط (TypeScript) — البوت نفسه بدون مكتبات
-bash start.sh                  # يشغّل البوت
-bun run dashboard              # لوحة التحكم (برنامج ثاني)
-```
-- في Developer Portal فعّل **SERVER MEMBERS INTENT** و **MESSAGE CONTENT INTENT**.
-- أول تشغيل يرفع أوامر السلاش العربية (تختفي الأوامر الإنجليزية القديمة تلقائياً).
-- لو عندك بيانات من النسخة القديمة (Python) انقل ملفات `*.db` و`*.json` لمجلد `data/` — نفس الجداول ونفس الأعمدة.
-
-## الذاكرة
-البوت يشتغل على محركين بنفس الكود:
-
-| المحرك | الذاكرة (RSS) | ملاحظات |
-|---|---|---|
-| **txiki.js** (QuickJS) | ~14 ميقا استخدام عادي · ~20 ميقا تحت ضغط شديد (40 رسالة/ثانية) | ملف تشغيل ثابت ~4 ميقا، يُبنى بـ `bash runtime/txiki/build.sh` ثم `bun run build` |
-| **Bun** | ~40–50 ميقا | أسهل تثبيت (`curl -fsSL https://bun.sh/install \| bash`)، أغلب الذاكرة كود Bun نفسه |
-
-`start.sh` يختار txiki تلقائياً لو `runtime/tjs` موجود، وإلا Bun.
-
-قياس الذاكرة بنفسك (سيرفر Discord وهمي تحت ضغط، بدون توكن): `bash scripts/memtest.sh 90 "runtime/tjs run dist/revive.js"`.
-
-ليش أقل: كاش صغير محدود (أعضاء/رسائل)، ما نخزن كل الأعضاء، SQLite بحد ذاكرة كلي 1.5 ميقا،
-جمع قمامة دوري، وعلى txiki: بدون mimalloc وبدون حفظ نص الدوال في الذاكرة (`runtime/txiki/*.patch`).
-
-## وزارة الداخلية (النقاط · الشفت التلقائي · الإنذارات · الفصل)
-**الإعداد:**
-1. `/الداخلية اعداد` — رتبة المسؤول، رتبة العسكر، روم اللوق، رتبة المفصول (اختياري)
-2. `/الداخلية رومات-الشفت` ← اضافة — الرومات الصوتية اللي ينحسب فيها الشفت
-3. `/الداخلية نظام-الشفت` — (اختياري) النقاط، كل كم دقيقة، أقل مدة، وقت التحقق، مهلة الرد، حد الإنذارات
-4. `/الداخلية لوحة-الادارة` و `/الداخلية لوحة-الخدمات`
-
-**الشفت التلقائي:** العسكري يدخل روم الشفت ← يبدأ شفته. يطلع ← ينتهي ويأخذ نقاطه (افتراضياً كل 10 دقائق = نقطة، أقل شفت 15 دقيقة).
-بعد ساعة يرسل له البوت **«هل انت موجود؟»** بالخاص (أو في شات الروم الصوتي لو خاصه مقفل). يضغط الزر أو يرد أو يتفاعل ← يكمل.
-ما رد خلال **نص ساعة** ← يوقف الشفت **بصمت** (بدون أي رسالة له، وتنحذف رسالة التحقق)، يُحسب له الوقت حتى لحظة التحقق،
-وما يبدأ له شفت جديد إلا إذا طلع من الروم ورجع. كل شي يوصل روم اللوق، والشفتات محفوظة حتى لو انطفى البوت.
-
-**البطاقة:** `/نقاطي` و `/نقاط` تعرض بطاقة (Components V2): صورة العسكري، رتبته، النقاط مع شريط، الترتيب، ساعات الشفت، عدد الشفتات، الإنذارات، آخر 7 أيام، وحالته الآن.
-
-| الأمر | لمين |
-|---|---|
-| `/نقاطي` · `/نقاط` · `/توب` · `/شفتي` · `/الشفتات` · `/سجل` | الكل |
-| `/اضافة-نقاط` · `/خصم-نقاط` · `/انذار` · `/ازالة-انذار` · `/فصل` · `/الغاء-فصل` · `/انهاء-شفت` | المسؤول |
-| `/الداخلية …` (اعداد، رومات-الشفت، رتب-الفصل، نظام-الشفت، الاعدادات، لوحة-الادارة، لوحة-الخدمات، تصفير) | الأدمن |
-
-## باقي الأنظمة
-| النظام | الأوامر |
-|---|---|
-| اللوقات | `/اللوقات` (تحديد، الكل، ايقاف، الحالة، تجربة) |
-| الترحيب | `/الترحيب` (اعداد، تجربة، ايقاف، معلومات) — بطاقة ترحيب Components V2 + استوديو معاينة |
-| التذاكر | `/تذكرة` (اعداد، لوحة، اغلاق، استلام، اضافة، ازالة، تسمية، الاولوية، نسخة، معلومات) |
-| المالك | `/التحكم-بالبوت` (لوحة-الاحصائيات، حظر-سيرفر، فك-حظر-سيرفر، السيرفرات، ارسال-رسالة) — يحتاج `OWNER_GUILD_ID` |
-| التفعيل والتقديم | `/لوحة-التفعيل` · `/اعداد-تقديم` · `/لوحة-التقديمات` |
-| الهوية والرول بلاي | `/لوحة-الهوية` · `/اعداد-الرول` · `/لوحة-الرول` |
-| البنك والمرور والمركبات والعقارات | `/اعداد-البنك` · `/اعداد-المرور` · `/لوحة-العساكر-المرور` · `/لوحة-المواطنين-المرور` · `/اعداد-المركبات` · `/حذف-مركبة` · `/اعداد-العقارات` |
-| الإدارة | `/تعيين-رتبة-تلقائية` · `/ازالة-رتبة-تلقائية` · `/اضافة-رد` · `/تعديل-رد` · `/حذف-رد` · `/اضافة-اختصار` · `/حذف-اختصار` · `/الاختصارات` · `/ارسال-ايمبد` |
-| الحماية | `/لوحة-الحماية` · `/عقوبة-الحماية` · `/اضافة-كلمة` · `/حذف-كلمة` · `/الكلمات-المحظورة` · `/عقوبة-الكلمات` |
-| أخرى | `/اعداد-الاذكار` · `/روم-المستويات` · `/المستوى` · أوامر الكتابة: `!رتب` `!قفل` `!فتح` `!حذف` `!باند` `!تايم` |
-
-## البنية
-```
-src/
-  index.ts              نقطة التشغيل
-  discord/              Gateway (WebSocket) · REST مع حدود السرعة · كاش صغير · Ctx للتفاعلات · Bot
-  core/                 الإعدادات · SQLite/JSON · بناء الرسائل والمكونات · الإيموجيات · طابور مهام اللوحة · الذاكرة
-  features/             الأنظمة (كل نظام ملف setup(bot))
-  platform/tjs/         بدائل Node/Bun لتشغيل نفس الكود على txiki.js
-dashboard/              لوحة التحكم TSX (server.tsx · jsx/ · lib/ · views/ · ui/)
-web/assets/             CSS/JS/صور اللوحة
-emojis/                 الإيموجيات الخاصة (تُرفع تلقائياً كإيموجيات للتطبيق)
-runtime/txiki/          تعديلات وبناء محرك txiki.js الخفيف
-scripts/                build.ts (حزمة txiki) · mock-discord.ts + memtest.sh (اختبار الذاكرة)
-tests/                  bun run test
-docs/PORTING.md         مرجع كتابة الأنظمة (واجهة Bot و Ctx)
+npm install
 ```
 
-## لوحة التحكم ↔ البوت
-اللوحة برنامج منفصل (ما تزيد ذاكرة البوت). تعدّل نفس ملفات `data/` مباشرة، والبوت يقرأ الإعدادات منها.
-لما تحتاج اللوحة البوت يسوي شي (إرسال بانل) تضيف مهمة في `data/dashboard_jobs.db` والبوت ينفذها خلال ثواني.
-النشر على دومين HTTPS: انظر `deploy/`. Redirect: `https://<دومينك>/callback`.
+4. Register slash commands:
 
-## التطوير
 ```bash
-bun run typecheck      # tsc صارم
-bun run test           # كل الاختبارات
-bun run memtest        # قياس الذاكرة ضد سيرفر Discord وهمي
+npm run register
 ```
 
-## أمان
-لا تضع التوكن أو الـ Client Secret في الكود أو في GitHub — كلها في `.env`. لو انكشف توكن **أعد توليده** من Developer Portal.
+5. Start:
+
+```bash
+npm run start
+```
+
+For development:
+
+```bash
+npm run dev
+```
+
+## Required Discord permissions
+
+The bot needs enough permissions to:
+- Manage Roles
+- Send Messages
+- Embed Links
+- Read Message History
+- Use Application Commands
+
+The bot's highest role must be above:
+- Staff role(s) managed by the bot
+- On Shift role
+- Leave role
+
+## Initial configuration
+
+Run `/staff setup` in the server. The command opens a Discord-only setup flow.
+
+Configure:
+- Staff role
+- On Shift role
+- Leave role
+- Management role
+- Shift channel
+- Leave request channel
+- Resignation channel
+- Logs channel
+- Report channel (optional)
+
+Then use:
+- `/shift panel`
+- `/leave panel`
+- `/resignation panel`
+- `/report panel`
+
+## Important behavior
+
+### Leave role restoration
+When leave is approved, the bot records the managed staff roles it removes. When the employee presses `Came Back`, those roles are restored.
+
+### Resignation
+When a resignation is accepted, the bot removes only the configured staff role, not every role the user owns.
+
+### Restart recovery
+Active shifts remain in Supabase. On startup, the bot attempts to restore the On Shift role for users whose shift is still active.
+
+### Reports
+Staff can submit reports (shift summaries, incidents, or general). Each report is:
+- Saved in Supabase
+- Sent to the submitter in DMs
+- Sent to the configured report channel (announcement channel)
+- Auditable in logs
+
+Management can review pending reports via `/report review`.
+
+## Notes for future AIs
+
+The project is intentionally modular. Before changing architecture, read:
+- `PROJECT.md`
+- `ARCHITECTURE.md`
+- `TODO.md`
+
+Do not add a dashboard, ticket system, or external bot integration unless the project requirements are explicitly changed.
