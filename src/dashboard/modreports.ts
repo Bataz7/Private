@@ -6,33 +6,36 @@ import {
   modSettings, publishModPanel, refreshModPanel, reopenModReport, saveModSettings, type ModReportDoc,
 } from '../services/mod-report.service.js';
 import { createLog } from '../services/log.service.js';
+import type { Mount } from '../web/server/router.js';
+import { publicMessage } from '../web/server/errors.js';
+import { rateLimit } from '../web/server/security.js';
 
 type Person = { displayName: string; avatar: string; username: string };
 
 export const modReportsDashboard: DashboardExtension = {
   name: 'modreports',
-  styles: ['modreports'],
-  mountApi(context) { registerModReportRoutes(context); },
+  mountApi(context, app) { registerModReportRoutes(context, app); },
 };
 
-function registerModReportRoutes({ app, discord, selectedGuildId, requireAdministrator, sessionUser }: DashboardContext) {
+function registerModReportRoutes({ discord, selectedGuildId, requireAdministrator, sessionUser, getGuild }: DashboardContext, app: Mount) {
+  const writeLimit = rateLimit('mod-reports-writes', 60_000, 30);
   const fail = (c: Context, status: number, error: string) => c.status(status).json({ error });
   // Every route is administrator-only; a missing database table is reported as a clear 503 instead of a crash.
-  const route = (handler: (req: Request, res: Response, guildId: string) => Promise<unknown>) => (c: Context) => {
+  const route = (handler: (c: Context, guildId: string) => Promise<unknown>) => (c: Context) =>
     (async () => {
       if (!await requireAdministrator(c)) return;
       await handler(c, selectedGuildId(c));
     })().catch(error => {
       if (c.sent) return;
       if (isSetupError(error)) return fail(c, 503, error.message);
-      console.error(`Mod reports API ${c.method} ${c.path}:`, error);
-      fail(c, 400, error instanceof Error ? error.message : 'Unexpected error.');
+      const message = publicMessage(error, '');
+      if (!message) console.error(`Mod reports API ${c.method} ${c.path}:`, error);
+      fail(c, 400, message || 'صار خطأ غير متوقع.');
     });
-  };
   const actor = (c: Context) => { const user = sessionUser(c); return { id: user?.id || '', name: user?.username || '' }; };
-  const own = async (req: Request, res: Response, guildId: string) => {
+  const own = async (c: Context, guildId: string) => {
     const report = await getModReport(String(c.params.id || ''));
-    if (!report || report.guildId !== guildId) { fail(c, 404, 'Report not found.'); return null; }
+    if (!report || report.guildId !== guildId) { fail(c, 404, 'التقرير مو موجود.'); return null; }
     return report;
   };
   // Names and avatars come from the guild cache first; a lookup is made once per person and request.
@@ -49,7 +52,7 @@ function registerModReportRoutes({ app, discord, selectedGuildId, requireAdminis
 
   // Channels and roles for the settings form.
   app.get('/api/mod-reports/options', route(async (c, guildId) => {
-    const guild = await discord.guilds.fetch(guildId);
+    const guild = await getGuild(guildId);
     const channels = (await guild.channels.fetch()).filter(channel => channel && channel.isTextBased() && !channel.isThread() && !channel.isVoiceBased()).map(channel => ({ id: channel!.id, name: channel!.name }));
     const roles = (await guild.roles.fetch()).filter(role => role.id !== guild.id && !role.managed).sort((a, b) => b.position - a.position).map(role => ({ id: role.id, name: role.name, color: role.hexColor }));
     c.json({ channels, roles });
@@ -67,7 +70,7 @@ function registerModReportRoutes({ app, discord, selectedGuildId, requireAdminis
 
   app.get('/api/mod-reports', route(async (c, guildId) => {
     const name = people(guildId);
-    const result = await listModReports(guildId, { status: String(c.query.get("status") || 'pending'), action: String(c.query.get("action") || ''), q: String(c.query.get("q") || ''), page: Number(c.query.get("page")) || 1 });
+    const result = await listModReports(guildId, { status: String(c.q('status') || 'pending'), action: String(c.q('action') || ''), q: String(c.q('q') || ''), page: Number(c.q('page')) || 1 });
     c.json({
       total: result.total, page: result.page, hasMore: result.hasMore,
       rows: await Promise.all(result.rows.map(async row => {
@@ -93,9 +96,9 @@ function registerModReportRoutes({ app, discord, selectedGuildId, requireAdminis
   app.post('/api/mod-reports/:id/decision', route(async (c, guildId) => {
     const report = await own(c, guildId); if (!report) return;
     const decision = c.body?.decision === 'approved' ? 'approved' : c.body?.decision === 'rejected' ? 'rejected' : null;
-    if (!decision) return fail(c, 400, 'Choose approve or reject.');
+    if (!decision) return fail(c, 400, 'اختر قبول أو رفض.');
     const user = sessionUser(c);
-    if (report.moderatorId === user?.id && !user?.isOwner) return fail(c, 403, 'You cannot review your own report.');
+    if (report.moderatorId === user?.id && !user?.isOwner) return fail(c, 403, 'ما تقدر تراجع تقريرك بنفسك.');
     const result = await decideModReport(discord, report.id, decision, actor(c), String(c.body?.note || ''));
     c.json({ ok: true, dmSent: result.dmSent });
   }));
@@ -140,7 +143,7 @@ function registerModReportRoutes({ app, discord, selectedGuildId, requireAdminis
 
   app.post('/api/mod-reports-panel', route(async (c, guildId) => {
     const channelId = String(c.body?.channelId || '');
-    if (!channelId) return fail(c, 400, 'Choose a channel first.');
+    if (!channelId) return fail(c, 400, 'اختر روم أول.');
     const lang = c.body?.lang === 'ar' ? 'ar' : 'en';
     c.json({ ok: true, lang, ...(await publishModPanel(discord, guildId, channelId, lang)) });
   }));

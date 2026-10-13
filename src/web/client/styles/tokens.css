@@ -1,0 +1,178 @@
+/* نظام التصميم: الخطوط والألوان والمسافات والظلال. فاتح افتراضيًا، داكن حسب الجهاز أو الاختيار اليدوي. */
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/a/s/fonts/geist-latin-wght-normal.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/a/s/fonts/geist-mono-latin-wght-normal.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cairo';
+  src: url('/a/s/fonts/cairo-arabic-wght-normal.woff2') format('woff2');
+  font-weight: 200 1000;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+
+:root {
+  --font: 'Geist', 'Cairo', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --brand: #7b6cf6;
+  --brand-strong: #5f4fe6;
+  --brand-ink: #4b3cd1;
+  --brand-soft: #efedff;
+  --brand-softer: #f6f5ff;
+  --on-brand: #ffffff;
+  --brand-grad: linear-gradient(135deg, #9a8cff 0%, #7b6cf6 45%, #5f4fe6 100%);
+
+  --bg: #f5f5fa;
+  --bg-2: #eeeef6;
+  --surface: #ffffff;
+  --surface-2: #f8f8fc;
+  --surface-3: #f1f1f8;
+  --elev: #ffffff;
+  --border: #e5e4ee;
+  --border-strong: #d4d2e2;
+  --text: #16151f;
+  --text-2: #4c4b5c;
+  --text-3: #7b7a8d;
+  --text-4: #a3a2b3;
+
+  --success: #138a5b;
+  --success-soft: #e3f6ec;
+  --warning: #a86a00;
+  --warning-soft: #fdf1da;
+  --danger: #cf3048;
+  --danger-soft: #fde8eb;
+  --info: #2a6fd6;
+  --info-soft: #e5effd;
+
+  --chart: #7b6cf6;
+  --chart-muted: #d9d5fb;
+  --grid: #ececf3;
+
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --pill: 999px;
+
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s8: 32px;
+  --s10: 40px;
+
+  --sh-1: 0 1px 2px rgb(22 18 50 / 0.05), 0 1px 1px rgb(22 18 50 / 0.03);
+  --sh-2: 0 1px 2px rgb(22 18 50 / 0.05), 0 8px 24px -10px rgb(22 18 50 / 0.16);
+  --sh-3: 0 2px 6px rgb(22 18 50 / 0.06), 0 24px 56px -16px rgb(22 18 50 / 0.28);
+  --ring: 0 0 0 3px rgb(123 108 246 / 0.35);
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-fast: 120ms;
+  --t: 200ms;
+
+  --sidebar: 268px;
+  --sidebar-collapsed: 76px;
+  --topbar: 64px;
+  --content: 1360px;
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --brand: #8d80ff;
+  --brand-strong: #a499ff;
+  --brand-ink: #c3bbff;
+  --brand-soft: rgb(141 128 255 / 0.16);
+  --brand-softer: rgb(141 128 255 / 0.08);
+  --on-brand: #ffffff;
+  --brand-grad: linear-gradient(135deg, #a79cff 0%, #8172f8 45%, #5f4fe6 100%);
+
+  --bg: #0c0b12;
+  --bg-2: #100f18;
+  --surface: #15141e;
+  --surface-2: #1a1925;
+  --surface-3: #21202e;
+  --elev: #1c1b28;
+  --border: #282737;
+  --border-strong: #353447;
+  --text: #ecebf6;
+  --text-2: #bdbcd0;
+  --text-3: #8b8aa0;
+  --text-4: #626176;
+
+  --success: #3fcf8e;
+  --success-soft: rgb(63 207 142 / 0.13);
+  --warning: #f0b44c;
+  --warning-soft: rgb(240 180 76 / 0.13);
+  --danger: #ff6b81;
+  --danger-soft: rgb(255 107 129 / 0.13);
+  --info: #6aa8ff;
+  --info-soft: rgb(106 168 255 / 0.13);
+
+  --chart: #8d80ff;
+  --chart-muted: #3a3560;
+  --grid: #24233a;
+
+  --sh-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --sh-2: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px -12px rgb(0 0 0 / 0.6);
+  --sh-3: 0 2px 8px rgb(0 0 0 / 0.5), 0 28px 64px -18px rgb(0 0 0 / 0.75);
+  --ring: 0 0 0 3px rgb(141 128 255 / 0.45);
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --brand: #8d80ff;
+    --brand-strong: #a499ff;
+    --brand-ink: #c3bbff;
+    --brand-soft: rgb(141 128 255 / 0.16);
+    --brand-softer: rgb(141 128 255 / 0.08);
+    --brand-grad: linear-gradient(135deg, #a79cff 0%, #8172f8 45%, #5f4fe6 100%);
+    --bg: #0c0b12;
+    --bg-2: #100f18;
+    --surface: #15141e;
+    --surface-2: #1a1925;
+    --surface-3: #21202e;
+    --elev: #1c1b28;
+    --border: #282737;
+    --border-strong: #353447;
+    --text: #ecebf6;
+    --text-2: #bdbcd0;
+    --text-3: #8b8aa0;
+    --text-4: #626176;
+    --success: #3fcf8e;
+    --success-soft: rgb(63 207 142 / 0.13);
+    --warning: #f0b44c;
+    --warning-soft: rgb(240 180 76 / 0.13);
+    --danger: #ff6b81;
+    --danger-soft: rgb(255 107 129 / 0.13);
+    --info: #6aa8ff;
+    --info-soft: rgb(106 168 255 / 0.13);
+    --chart: #8d80ff;
+    --chart-muted: #3a3560;
+    --grid: #24233a;
+    --sh-1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --sh-2: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px -12px rgb(0 0 0 / 0.6);
+    --sh-3: 0 2px 8px rgb(0 0 0 / 0.5), 0 28px 64px -18px rgb(0 0 0 / 0.75);
+    --ring: 0 0 0 3px rgb(141 128 255 / 0.45);
+    color-scheme: dark;
+  }
+}
