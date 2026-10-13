@@ -1,12 +1,17 @@
 import { GuildSettings } from '../models/GuildSettings.js';
 
+/** لغة البوت: عربي دائمًا، مهما كان المحفوظ في الإعدادات. */
+export const BOT_LANGUAGE = 'ar' as const;
+
 export async function getSettings(guildId: string) {
-  return GuildSettings.findOne({ guildId });
+  const settings = await GuildSettings.findOne({ guildId });
+  if (settings) settings.botLanguage = BOT_LANGUAGE;
+  return settings;
 }
 
 export async function requireSettings(guildId: string) {
   const settings = await getSettings(guildId);
-  if (!settings) throw new Error('Staff system is not configured. Use /staff setup first.');
+  if (!settings) throw new Error('نظام الستاف مو مضبوط في السيرفر. استخدم أمر الإعداد أو لوحة التحكم أول.');
   return settings;
 }
 

@@ -1,0 +1,257 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b13d0cd..6f8a22b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -136,6 +136,7 @@ add_library(tjs STATIC
+     src/utils.c
+     src/version.c
+     src/vm.c
++    src/mod_revive.c
+     src/worker.c
+     src/ws.c
+     src/httpclient.c
+diff --git a/src/mod_revive.c b/src/mod_revive.c
+new file mode 100644
+index 0000000..47ce8c6
+--- /dev/null
++++ b/src/mod_revive.c
+@@ -0,0 +1,194 @@
++/*
++ * Revive — دوال متزامنة صغيرة يحتاجها البوت فوق txiki.js (ملفات، ذاكرة، GC).
++ * تنضاف كـ globalThis.__revive عشان البوت (المكتوب بـ TypeScript) يقدر يقرأ/يكتب الملفات بشكل متزامن
++ * مثل Bun/Node، ويقيس ذاكرته، ويرجّع الذاكرة الفاضية للنظام.
++ */
++#include "private.h"
++#include "utils.h"
++
++#include <errno.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <sys/stat.h>
++#include <unistd.h>
++
++#ifdef TJS__HAS_MIMALLOC
++#include <mimalloc.h>
++#endif
++
++/* readFile(path, binary?) → string | Uint8Array | null */
++static JSValue r_read(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
++    const char *path = JS_ToCString(ctx, argv[0]);
++    if (!path) return JS_EXCEPTION;
++    FILE *f = fopen(path, "rb");
++    JS_FreeCString(ctx, path);
++    if (!f) return JS_NULL;
++    size_t cap = 65536, len = 0;
++    char *buf = malloc(cap);
++    if (!buf) { fclose(f); return JS_ThrowOutOfMemory(ctx); }
++    for (;;) {
++        if (len == cap) {
++            cap *= 2;
++            char *nb = realloc(buf, cap);
++            if (!nb) { free(buf); fclose(f); return JS_ThrowOutOfMemory(ctx); }
++            buf = nb;
++        }
++        size_t n = fread(buf + len, 1, cap - len, f);
++        len += n;
++        if (n == 0) break;
++    }
++    fclose(f);
++    JSValue out = (argc > 1 && JS_ToBool(ctx, argv[1])) ? JS_NewUint8ArrayCopy(ctx, (uint8_t *) buf, len)
++                                                        : JS_NewStringLen(ctx, buf, len);
++    free(buf);
++    return out;
++}
++
++/* writeFile(path, string | Uint8Array) → bool */
++static JSValue r_write(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
++    const char *path = JS_ToCString(ctx, argv[0]);
++    if (!path) return JS_EXCEPTION;
++    size_t len = 0;
++    const char *data = NULL;
++    int is_str = JS_IsString(argv[1]);
++    if (is_str) {
++        data = JS_ToCStringLen(ctx, &len, argv[1]);
++    } else {
++        data = (const char *) JS_GetUint8Array(ctx, &len, argv[1]);
++    }
++    if (!data) { JS_FreeCString(ctx, path); return JS_EXCEPTION; }
++    FILE *f = fopen(path, "wb");
++    int ok = 0;
++    if (f) {
++        ok = fwrite(data, 1, len, f) == len;
++        ok = (fclose(f) == 0) && ok;
++    }
++    if (is_str) JS_FreeCString(ctx, data);
++    JS_FreeCString(ctx, path);
++    return JS_NewBool(ctx, ok);
++}
++
++/* stat(path) → { mtimeMs, size, isDir } | null */
++static JSValue r_stat(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
++    const char *path = JS_ToCString(ctx, argv[0]);
++    if (!path) return JS_EXCEPTION;
++    struct stat st;
++    int r = stat(path, &st);
++    JS_FreeCString(ctx, path);
++    if (r != 0) return JS_NULL;
++    JSValue o = JS_NewObject(ctx);
++    double mtime = (double) st.st_mtim.tv_sec * 1000.0 + (double) st.st_mtim.tv_nsec / 1e6;
++    JS_SetPropertyStr(ctx, o, "mtimeMs", JS_NewFloat64(ctx, mtime));
++    JS_SetPropertyStr(ctx, o, "size", JS_NewFloat64(ctx, (double) st.st_size));
++    JS_SetPropertyStr(ctx, o, "isDir", JS_NewBool(ctx, S_ISDIR(st.st_mode)));
++    return o;
++}
++
++/* rename(from, to) → bool */
++static JSValue r_rename(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
++    const char *a = JS_ToCString(ctx, argv[0]);
++    const char *b = JS_ToCString(ctx, argv[1]);
++    int ok = a && b && rename(a, b) == 0;
++    if (a) JS_FreeCString(ctx, a);
++    if (b) JS_FreeCString(ctx, b);
++    return JS_NewBool(ctx, ok);
++}
++
++/* unlink(path) → bool */
++static JSValue r_unlink(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
++    const char *a = JS_ToCString(ctx, argv[0]);
++    int ok = a && unlink(a) == 0;
++    if (a) JS_FreeCString(ctx, a);
++    return JS_NewBool(ctx, ok);
++}
++
++/* mkdirp(path) → bool */
++static JSValue r_mkdirp(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
++    const char *p = JS_ToCString(ctx, argv[0]);
++    if (!p) return JS_EXCEPTION;
++    char tmp[4096];
++    snprintf(tmp, sizeof(tmp), "%s", p);
++    JS_FreeCString(ctx, p);
++    size_t n = strlen(tmp);
++    if (n && tmp[n - 1] == '/') tmp[n - 1] = 0;
++    for (char *s = tmp + 1; *s; s++) {
++        if (*s == '/') {
++            *s = 0;
++            mkdir(tmp, 0755);
++            *s = '/';
++        }
++    }
++    return JS_NewBool(ctx, mkdir(tmp, 0755) == 0 || errno == EEXIST);
++}
++
++/* readDir(path) → string[] | null */
++#include <dirent.h>
++static JSValue r_readdir(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
++    const char *p = JS_ToCString(ctx, argv[0]);
++    if (!p) return JS_EXCEPTION;
++    DIR *d = opendir(p);
++    JS_FreeCString(ctx, p);
++    if (!d) return JS_NULL;
++    JSValue arr = JS_NewArray(ctx);
++    uint32_t i = 0;
++    struct dirent *e;
++    while ((e = readdir(d))) {
++        if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")) continue;
++        JS_SetPropertyUint32(ctx, arr, i++, JS_NewString(ctx, e->d_name));
++    }
++    closedir(d);
++    return arr;
++}
++
++/* rss() → bytes resident */
++static JSValue r_rss(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
++    long pages = 0, resident = 0;
++    FILE *f = fopen("/proc/self/statm", "r");
++    if (f) {
++        if (fscanf(f, "%ld %ld", &pages, &resident) != 2) resident = 0;
++        fclose(f);
++    }
++    return JS_NewFloat64(ctx, (double) resident * (double) sysconf(_SC_PAGESIZE));
++}
++
++/* gc() — جمع القمامة + إرجاع الذاكرة الفاضية للنظام */
++static JSValue r_gc(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
++    JS_RunGC(JS_GetRuntime(ctx));
++#ifdef TJS__HAS_MIMALLOC
++    mi_collect(true);
++#endif
++    return JS_UNDEFINED;
++}
++
++/* memoryUsage() → إحصائيات محرك QuickJS */
++static JSValue r_mem(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
++    JSMemoryUsage s;
++    JS_ComputeMemoryUsage(JS_GetRuntime(ctx), &s);
++    JSValue o = JS_NewObject(ctx);
++    JS_SetPropertyStr(ctx, o, "mallocSize", JS_NewFloat64(ctx, (double) s.malloc_size));
++    JS_SetPropertyStr(ctx, o, "memoryUsed", JS_NewFloat64(ctx, (double) s.memory_used_size));
++    JS_SetPropertyStr(ctx, o, "objects", JS_NewFloat64(ctx, (double) s.obj_count));
++    return o;
++}
++
++static const JSCFunctionListEntry revive_funcs[] = {
++    TJS_CFUNC_DEF("readFile", 2, r_read),
++    TJS_CFUNC_DEF("writeFile", 2, r_write),
++    TJS_CFUNC_DEF("stat", 1, r_stat),
++    TJS_CFUNC_DEF("rename", 2, r_rename),
++    TJS_CFUNC_DEF("unlink", 1, r_unlink),
++    TJS_CFUNC_DEF("mkdirp", 1, r_mkdirp),
++    TJS_CFUNC_DEF("readDir", 1, r_readdir),
++    TJS_CFUNC_DEF("rss", 0, r_rss),
++    TJS_CFUNC_DEF("gc", 0, r_gc),
++    TJS_CFUNC_DEF("memoryUsage", 0, r_mem),
++};
++
++void tjs__mod_revive_init(JSContext *ctx, JSValue ns) {
++    JSValue obj = JS_NewObjectProto(ctx, JS_NULL);
++    JS_SetPropertyFunctionList(ctx, obj, revive_funcs, countof(revive_funcs));
++    JSValue global = JS_GetGlobalObject(ctx);
++    JS_DefinePropertyValueStr(ctx, global, "__revive", obj, JS_PROP_CONFIGURABLE);
++    JS_FreeValue(ctx, global);
++}
+diff --git a/src/mod_sqlite3.c b/src/mod_sqlite3.c
+index fb81015..7574eae 100644
+--- a/src/mod_sqlite3.c
++++ b/src/mod_sqlite3.c
+@@ -345,7 +345,15 @@ static JSValue tjs__stmt2obj(JSContext *ctx, TJSSqlite3Stmt *h) {
+ 
+         switch (sqlite3_column_type(h->stmt, i)) {
+             case SQLITE_INTEGER: {
+-                value = JS_NewInt64(ctx, sqlite3_column_int64(h->stmt, i));
++                /* Revive: أرقام أكبر من 2^53 (آيديات ديسكورد) ترجع نص بدل ما تفقد دقتها */
++                sqlite3_int64 iv = sqlite3_column_int64(h->stmt, i);
++                if (iv > 9007199254740991LL || iv < -9007199254740991LL) {
++                    char nb[24];
++                    snprintf(nb, sizeof(nb), "%lld", (long long) iv);
++                    value = JS_NewString(ctx, nb);
++                } else {
++                    value = JS_NewInt64(ctx, iv);
++                }
+                 break;
+             }
+             case SQLITE_FLOAT: {
+diff --git a/src/private.h b/src/private.h
+index 518eec5..ab2955a 100644
+--- a/src/private.h
++++ b/src/private.h
+@@ -186,6 +186,7 @@ void tjs__mod_process_init(JSContext *ctx, JSValue ns);
+ void tjs__mod_signals_init(JSContext *ctx, JSValue ns);
+ #ifdef TJS_HAVE_SQLITE
+ void tjs__mod_sqlite3_init(JSContext *ctx, JSValue ns);
++void tjs__mod_revive_init(JSContext *ctx, JSValue ns);
+ #endif
+ void tjs__mod_streams_init(JSContext *ctx, JSValue ns);
+ void tjs__mod_tls_init(JSContext *ctx, JSValue ns);
+diff --git a/src/vm.c b/src/vm.c
+index 8c33bab..80f5357 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -273,6 +273,7 @@ static void tjs__bootstrap_core(JSContext *ctx, JSValue ns) {
+     tjs__mod_miniz_init(ctx, ns);
+     tjs__webcrypto_init(ctx, ns);
+     tjs__mod_ws_init(ctx, ns);
++    tjs__mod_revive_init(ctx, ns);
+     tjs__mod_httpserver_init(ctx, ns);
+ #ifndef _WIN32
+     tjs__mod_posix_socket_init(ctx, ns);

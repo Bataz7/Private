@@ -12,7 +12,7 @@ const LABELS = {
 const TEXT = {
   newTitle: { ar: 'تقييم جديد', en: 'New rating' },
   updatedTitle: { ar: 'تقييم محدّث', en: 'Updated rating' },
-  staff: { ar: 'عضو الفريق', en: 'Staff member' },
+  staff: { ar: 'الإداري', en: 'Staff member' },
   comment: { ar: 'التعليق', en: 'Comment' },
   noComment: { ar: 'بدون تعليق', en: 'No comment' },
   average: { ar: 'المعدل', en: 'Average' },
@@ -29,7 +29,7 @@ export const starsOf = (rating: number) => `${'★'.repeat(rating)}${'☆'.repea
 const bar = (average: number) => { const filled = Math.max(0, Math.min(5, Math.round(average))); return `${'▰'.repeat(filled)}${'▱'.repeat(5 - filled)}`; };
 
 export type RatingCardInput = {
-  rating: number; comment?: string; updated?: boolean; ar: boolean;
+  rating: number; comment?: string; updated?: boolean; ar?: boolean;
   staffId: string; staffAvatar?: string | null;
   reviewerName: string; reviewerAvatar?: string | null;
   average?: number; count?: number; pointsDelta?: number;
@@ -39,7 +39,7 @@ export type RatingCardInput = {
 export function buildRatingCard(input: RatingCardInput) {
   const rating = Math.max(1, Math.min(5, Math.round(input.rating))) as 1 | 2 | 3 | 4 | 5;
   const label = LABELS[rating];
-  const { ar } = input;
+  const ar = input.ar !== false;
   const comment = (input.comment || '').trim();
   const embed = new EmbedBuilder().setColor(label.color)
     .setAuthor({ name: clip(`${say(input.updated ? 'updatedTitle' : 'newTitle', ar)} · ${say('by', ar)} ${input.reviewerName}`, 256), iconURL: input.reviewerAvatar || undefined })

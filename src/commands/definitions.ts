@@ -1,3 +1,5 @@
+// قاموس الأسماء العربية لازم ينحمّل قبل تسجيل الأوامر وقبل وصول أي تفاعل.
+import '../i18n/commands.js';
 import { SlashCommandBuilder } from '../lib/djs/index.js';
 import { extensionCommands } from '../extensions/index.js';
 

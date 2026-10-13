@@ -18,14 +18,14 @@ export async function claim(table: RequestTable, id: number | string, expect: Re
   let query: any = supabase.from(table).update(toDbPatch(patch)).eq('id', id);
   for (const [key, value] of Object.entries(expect)) query = value === null ? query.is(snake(key), null) : query.eq(snake(key), unwrap(value));
   const { data, error } = await query.select('id');
-  if (error) throw new Error(`Supabase ${table} update failed: ${error.message}`);
+  if (error) throw new Error(`فشل تحديث ${table} في قاعدة البيانات: ${error.message}`);
   return Array.isArray(data) && data.length > 0;
 }
 
 /** Plain update by id (no condition). */
 export async function patchRow(table: RequestTable, id: number | string, patch: Record<string, unknown>) {
   const { error } = await supabase.from(table).update(toDbPatch(patch)).eq('id', id);
-  if (error) throw new Error(`Supabase ${table} update failed: ${error.message}`);
+  if (error) throw new Error(`فشل تحديث ${table} في قاعدة البيانات: ${error.message}`);
 }
 
 /** A numeric id from a button, route or command, or null when it cannot be one. */
@@ -43,7 +43,7 @@ const NEEDED: Array<[string, string]> = [
   ['request_panel_settings', 'guild_id,leave_panel_channel_id,resignation_panel_channel_id'],
 ];
 
-export const MIGRATION_HINT = 'The leave system needs the database update 029_leave_resignation_system.sql. Run it in the Supabase SQL editor, then restart.';
+export const MIGRATION_HINT = 'نظام الإجازات يحتاج تحديث قاعدة البيانات 029_leave_resignation_system.sql. شغّله في محرر SQL في Supabase وبعدين أعد تشغيل البوت.';
 
 /** Checks (at most once a minute while failing) that migration 029 has been applied. */
 export async function schemaReady(force = false) {

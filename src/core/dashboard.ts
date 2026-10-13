@@ -1,7 +1,10 @@
-import type { Request, Response } from 'express';
+import type { Context } from '../web/server/http.js';
 import type { Guild } from '../lib/djs/index.js';
 import { EmbedBuilder } from '../lib/djs/index.js';
 import type { DashboardContext, DashboardExtension } from '../dashboard/extensions.js';
+import type { Mount } from '../web/server/router.js';
+import { publicMessage } from '../web/server/errors.js';
+import { rateLimit } from '../web/server/security.js';
 import { supabase } from '../supabase/client.js';
 import { Staff } from '../models/Staff.js';
 import { Shift } from '../models/Shift.js';
@@ -10,35 +13,36 @@ import { StaffRating } from '../models/StaffRating.js';
 import { StaffNote } from '../models/StaffNote.js';
 import { StaffProfile, type ProfileConnection, type ProfileLink, type StaffProfileDoc } from '../models/StaffProfile.js';
 import { ProfileComment, ProfileRep, ProfileView } from '../models/ProfileSocial.js';
-import { PointsLedger } from '../models/PointsLedger.js';
 import { getSettings } from '../services/settings.service.js';
 import { createLog } from '../services/log.service.js';
 import { activeMs, isOnBreak } from '../services/shift.service.js';
-import { AdminOnlyError, assertAdministrator, isAdministrator } from '../utils/permissions.js';
+import { AdminOnlyError, assertAdministrator } from '../utils/permissions.js';
 import { cssSafeUrl } from '../utils/css-safe.js';
-import { adjustStaffPoints, clearLedger, pointRules, pointsBreakdown, recentPointChanges } from './points.js';
+import { adjustStaffPoints, pointRules, pointsBreakdown, recentPointChanges } from './points.js';
 import { listInbox, markRead, sendNotification, type NotificationDelivery, type NotificationLevel, type NotificationTarget } from './notifications.js';
 import { HEAT_DAYS, PRIVATE_ACTIONS, PUBLIC_ACTIONS, activeDaysIn, badgesOf, buildDays, modReportStats, ratingSpread, shiftStats, streakOf } from './profile-stats.js';
 import { logDbIssue, SetupMissingError } from './db.js';
+import { API_BASE } from '../lib/discord/constants.js';
 
 // The dashboard side of the staff core: points page, notifications, staff notes and the staff profile page.
-// Routes here are registered before the built-in ones in server.ts, so they replace the old in-memory versions.
+// Routes here are registered before the built-in ones in staff-routes.ts.
 const DAY = 86_400_000;
 const LEVEL_STEP = 100;
 const isId = (value: unknown): value is string => /^\d{15,22}$/.test(String(value ?? ''));
 const clean = (value: unknown, max: number) => String(value ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim().slice(0, max);
 
 type Info = { displayName: string; username: string; avatar: string; banner: string };
-type Handler = (req: Request, res: Response) => Promise<unknown>;
+type Handler = (c: Context) => Promise<unknown>;
 
 export const coreDashboard: DashboardExtension = {
   name: 'core',
-  styles: ['core'],
-  mountApi(ctx) { mountRoutes(ctx); },
+  mountApi(ctx, app) { mountRoutes(ctx, app); },
 };
 
-function mountRoutes(ctx: DashboardContext) {
-  const { app, discord, selectedGuildId } = ctx;
+function mountRoutes(ctx: DashboardContext, app: Mount) {
+  const { discord, selectedGuildId } = ctx;
+  const socialLimit = rateLimit('profile-social', 60_000, 20, 'تفاعلات كثيرة بوقت قصير. انتظر شوي.');
+  const writeLimit = rateLimit('core-writes', 60_000, 30);
 
   // ---- helpers ------------------------------------------------------------------------------------
   const infoCache = new Map<string, { at: number; info: Info | null }>();
@@ -59,36 +63,29 @@ function mountRoutes(ctx: DashboardContext) {
   }
 
   /** Live administrator check for reading private data (the session flags can be a few minutes old). */
-  async function liveAdmin(req: Request) {
-    const user = ctx.sessionUser(req);
-    if (!user) return false;
-    const guild = await ctx.getGuild(selectedGuildId(req)).catch(() => null);
-    const member = guild ? await guild.members.fetch(user.id).catch(() => null) : null;
-    return Boolean(member && isAdministrator(member));
-  }
+  const liveAdmin = (c: Context) => ctx.isAdmin(c).catch(() => false);
 
-  const route = (handler: Handler) => (req: Request, res: Response) => {
-    handler(req, res).catch(error => {
-      if (res.headersSent) return;
-      if (error instanceof AdminOnlyError) return res.status(403).json({ error: error.message });
-      if (error instanceof SetupMissingError) return res.status(503).json({ error: error.message });
-      console.error('[core] dashboard route failed:', error);
-      res.status(400).json({ error: error instanceof Error ? error.message : 'Something went wrong.' });
-    });
-  };
-  const signedIn = (req: Request, res: Response) => {
-    const user = ctx.sessionUser(req);
-    if (!user) res.status(401).json({ error: 'Unauthorized' });
+  const route = (handler: Handler) => (c: Context) => handler(c).catch(error => {
+    if (c.sent) return;
+    if (error instanceof AdminOnlyError) return c.status(403).json({ error: error.message });
+    if (error instanceof SetupMissingError) return c.status(503).json({ error: error.message });
+    const message = publicMessage(error, '');
+    if (!message) console.error('[core] dashboard route failed:', error);
+    c.status(400).json({ error: message || 'صار خطأ. حاول مرة ثانية.' });
+  });
+  const signedIn = (c: Context) => {
+    const user = ctx.sessionUser(c);
+    if (!user) c.status(401).json({ error: 'سجّل دخولك أول.' });
     return user;
   };
   const avatarUrl = (user: { id: string; avatar: string | null }) => (user.avatar ? (String(user.avatar).startsWith('http') ? user.avatar : `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`) : '');
 
   // ---- Points -------------------------------------------------------------------------------------
   // Everyone on the team sees the rules, the leaderboard and their own breakdown; only administrators see others' and adjust.
-  app.get('/api/points', route(async (req, res) => {
-    const guildId = selectedGuildId(req);
-    const viewer = signedIn(req, res); if (!viewer) return;
-    const admin = await liveAdmin(req);
+  app.get('/api/points', route(async (c: Context) => {
+    const guildId = selectedGuildId(c);
+    const viewer = signedIn(c); if (!viewer) return;
+    const admin = await liveAdmin(c);
     const guild = await ctx.getGuild(guildId);
     const rows = await Staff.find({ guildId, active: true }).sort({ points: -1 });
     const leaderboard = await Promise.all(rows.map(async (row, index) => {
@@ -98,33 +95,34 @@ function mountRoutes(ctx: DashboardContext) {
     const nameOf = (id: string | null) => (id ? leaderboard.find(item => item.userId === id)?.displayName || id : '');
     const settings = await getSettings(guildId).catch(() => null);
     const recent = admin ? (await recentPointChanges(guildId, { limit: 20 })).map(item => ({ userId: item.userId, name: nameOf(item.userId), by: item.actorId ? nameOf(item.actorId) : '', delta: item.delta, reason: item.reason, source: item.source, at: item.at })) : [];
-    res.json({ admin, lang: settings?.botLanguage === 'ar' ? 'ar' : 'en', rules: await pointRules(guildId), me: await pointsBreakdown(guildId, viewer.id), leaderboard, recent });
+    c.json({ admin, lang: settings?.botLanguage === 'ar' ? 'ar' : 'en', rules: await pointRules(guildId), me: await pointsBreakdown(guildId, viewer.id), leaderboard, recent });
   }));
 
-  app.get('/api/points/:userId', route(async (req, res) => {
-    if (!await ctx.requireAdministrator(req, res)) return;
-    const breakdown = await pointsBreakdown(selectedGuildId(req), String(req.params.userId));
-    if (!breakdown) return res.status(404).json({ error: 'This member is not on the staff list.' });
-    res.json({ breakdown });
+  app.get('/api/points/:userId', route(async (c: Context) => {
+    if (!await ctx.requireAdministrator(c)) return;
+    if (!isId(c.params.userId)) return c.status(400).json({ error: 'آيدي العضو غير صحيح.' });
+    const breakdown = await pointsBreakdown(selectedGuildId(c), String(c.params.userId));
+    if (!breakdown) return c.status(404).json({ error: 'هذا العضو مو في قائمة الستاف.' });
+    c.json({ breakdown });
   }));
 
-  app.post('/api/points/adjust', route(async (req, res) => {
-    if (!await ctx.requireAdministrator(req, res)) return;
-    const guildId = selectedGuildId(req);
-    const actor = signedIn(req, res); if (!actor) return;
-    const userId = String(req.body?.userId || '');
-    const delta = Math.trunc(Number(req.body?.delta));
-    const reason = clean(req.body?.reason, 300);
-    if (!isId(userId)) return res.status(400).json({ error: 'Choose a staff member.' });
-    if (!delta || Math.abs(delta) > 1000) return res.status(400).json({ error: 'Enter an amount between -1000 and 1000 (not 0).' });
-    if (reason.length < 3) return res.status(400).json({ error: 'Write a short reason. The staff member sees it.' });
+  app.post('/api/points/adjust', route(async (c: Context) => {
+    if (!await ctx.requireAdministrator(c)) return;
+    const guildId = selectedGuildId(c);
+    const actor = signedIn(c); if (!actor) return;
+    const userId = String(c.body?.userId || '');
+    const delta = Math.trunc(Number(c.body?.delta));
+    const reason = clean(c.body?.reason, 300);
+    if (!isId(userId)) return c.status(400).json({ error: 'اختر الستاف.' });
+    if (!delta || Math.abs(delta) > 1000) return c.status(400).json({ error: 'اكتب رقم بين -1000 و 1000 (مو صفر).' });
+    if (reason.length < 3) return c.status(400).json({ error: 'اكتب سبب قصير. الستاف بيشوفه.' });
     // adjustStaffPoints checks the administrator again (live) before it changes anything.
     const result = await adjustStaffPoints(discord, { guildId, userId, delta, actorId: actor.id, reason });
-    if (!result) return res.status(404).json({ error: 'This member is not on the staff list.' });
+    if (!result) return c.status(404).json({ error: 'هذا العضو مو في قائمة الستاف.' });
     let dmSent = false;
-    if (req.body?.notify !== false) {
+    if (c.body?.notify !== false) {
       const change = result.after - result.before;
-      const member = await (await ctx.getGuild(guildId)).members.fetch(userId).catch(() => null);
+      const member = await ctx.getMember(guildId, userId);
       const ar = (await getSettings(guildId).catch(() => null))?.botLanguage === 'ar';
       if (member && change !== 0) {
         const line = ar
@@ -133,122 +131,62 @@ function mountRoutes(ctx: DashboardContext) {
         dmSent = await member.send({ embeds: [new EmbedBuilder().setTitle(ar ? 'تحديث نقاطك' : 'Your points changed').setDescription(line).setFooter({ text: 'Rift Staff Operations' }).setTimestamp()], allowedMentions: { parse: [] } }).then(() => true).catch(() => false);
       }
     }
-    res.json({ ok: true, ...result, dmSent });
-  }));
-
-  // Keep the ledger in step with the older staff-page routes that write points or reset a member directly.
-  const afterSuccess = (res: Response, job: () => Promise<unknown>) => { res.on('finish', () => { if (res.statusCode < 400) job().catch(error => logDbIssue(error, 'The points ledger')); }); };
-  app.post('/api/staff/:userId/reset', (req, res, next) => {
-    try {
-      const guildId = selectedGuildId(req); const userId = String(req.params.userId);
-      afterSuccess(res, async () => { await clearLedger(guildId, userId); await supabase.from('assistances').delete().eq('guild_id', guildId).eq('staff_user_id', userId); });
-    } catch { /* no server selected: the built-in route answers */ }
-    next();
-  });
-  app.post('/api/staff/reset-all', (req, res, next) => {
-    try {
-      const guildId = selectedGuildId(req);
-      afterSuccess(res, async () => { await clearLedger(guildId); await supabase.from('assistances').delete().eq('guild_id', guildId); });
-    } catch { /* no server selected: the built-in route answers */ }
-    next();
-  });
-  app.patch('/api/staff/:userId', async (req, res, next) => {
-    if (req.body?.points === undefined) return next();
-    try {
-      const guildId = selectedGuildId(req); const userId = String(req.params.userId); const actorId = ctx.sessionUser(req)?.id ?? null;
-      const { data: before } = await supabase.from('staff').select('points').eq('guild_id', guildId).eq('user_id', userId).maybeSingle();
-      afterSuccess(res, async () => {
-        const { data: after } = await supabase.from('staff').select('points').eq('guild_id', guildId).eq('user_id', userId).maybeSingle();
-        const from = Number(before?.points) || 0; const to = Number(after?.points) || 0;
-        if (before && after && from !== to) await PointsLedger.create({ guildId, userId, delta: to - from, pointsBefore: from, pointsAfter: to, source: 'manual', reason: 'Set from the staff page', actorId });
-      });
-    } catch { /* the built-in route answers */ }
-    next();
-  });
+    c.json({ ok: true, ...result, dmSent });
+  }), { guards: [writeLimit] });
 
   // ---- Notifications ------------------------------------------------------------------------------
-  app.get('/api/notifications', route(async (req, res) => {
-    const user = signedIn(req, res); if (!user) return;
-    res.json(await listInbox(discord, selectedGuildId(req), user.id));
+  app.get('/api/notifications', route(async (c: Context) => {
+    const user = signedIn(c); if (!user) return;
+    c.json(await listInbox(discord, selectedGuildId(c), user.id));
   }));
 
   // What the composer needs: staff to pick from and roles (administrators only).
-  app.get('/api/notifications/options', route(async (req, res) => {
-    if (!await ctx.requireAdministrator(req, res)) return;
-    const guildId = selectedGuildId(req);
+  app.get('/api/notifications/options', route(async (c: Context) => {
+    if (!await ctx.requireAdministrator(c)) return;
+    const guildId = selectedGuildId(c);
     const guild = await ctx.getGuild(guildId);
     const [staffRows] = await Promise.all([Staff.find({ guildId, active: true }), guild.roles.fetch().catch(() => null)]);
     const staff = await Promise.all(staffRows.map(async row => { const info = await memberInfo(guild, row.userId); return { userId: row.userId, displayName: info?.displayName || row.userId, username: info?.username || '' }; }));
     const roles = [...guild.roles.cache.values()].filter(role => role.id !== guild.id && !role.managed).sort((a, b) => b.position - a.position).map(role => ({ id: role.id, name: role.name, color: role.hexColor }));
-    res.json({ staff: staff.sort((a, b) => a.displayName.localeCompare(b.displayName)), roles });
+    c.json({ staff: staff.sort((a, b) => a.displayName.localeCompare(b.displayName)), roles });
   }));
 
-  app.post('/api/notifications/admin-note', route(async (req, res) => {
-    if (!await ctx.requireAdministrator(req, res)) return;
-    const sender = signedIn(req, res); if (!sender) return;
-    const body = req.body || {};
+  app.post('/api/notifications/admin-note', route(async (c: Context) => {
+    if (!await ctx.requireAdministrator(c)) return;
+    const sender = signedIn(c); if (!sender) return;
+    const body = c.body || {};
     const target: NotificationTarget = ['user', 'staff', 'role'].includes(String(body.target)) ? body.target : 'user';
     const level: NotificationLevel = ['info', 'warning', 'important'].includes(String(body.level)) ? body.level : 'info';
     const delivery: NotificationDelivery = ['dashboard', 'discord', 'both'].includes(String(body.delivery)) ? body.delivery : 'both';
     // sendNotification checks the administrator again, live, before anything is saved or sent.
     const result = await sendNotification(discord, {
-      guildId: selectedGuildId(req), sender: { id: sender.id, username: sender.username }, target, recipientUserId: String(body.recipientUserId || ''), roleId: String(body.roleId || ''),
+      guildId: selectedGuildId(c), sender: { id: sender.id, username: sender.username }, target, recipientUserId: String(body.recipientUserId || ''), roleId: String(body.roleId || ''),
       delivery, level, title: String(body.title || ''), message: String(body.message || ''),
     });
-    res.json({ ...result, discordSent: delivery === 'dashboard' ? undefined : result.sent === result.recipients });
-  }));
+    c.json({ ...result, discordSent: delivery === 'dashboard' ? undefined : result.sent === result.recipients });
+  }), { guards: [writeLimit] });
 
-  app.patch('/api/notifications/:id/read', route(async (req, res) => {
-    const user = signedIn(req, res); if (!user) return;
-    if (!await markRead(selectedGuildId(req), user.id, String(req.params.id))) return res.status(404).json({ error: 'Notification not found.' });
-    res.json({ ok: true });
+  app.patch('/api/notifications/:id/read', route(async (c: Context) => {
+    const user = signedIn(c); if (!user) return;
+    if (!await markRead(selectedGuildId(c), user.id, String(c.params.id))) return c.status(404).json({ error: 'الإشعار مو موجود.' });
+    c.json({ ok: true });
   }));
 
   // ---- Staff notes (administrators only; saved in the database) -----------------------------------
-  app.post('/api/staff/:userId/notes', route(async (req, res) => {
-    if (!await ctx.requireAdministrator(req, res)) return;
-    const guildId = selectedGuildId(req);
-    const actor = signedIn(req, res); if (!actor) return;
-    const userId = String(req.params.userId);
+  app.post('/api/staff/:userId/notes', route(async (c: Context) => {
+    if (!await ctx.requireAdministrator(c)) return;
+    const guildId = selectedGuildId(c);
+    const actor = signedIn(c); if (!actor) return;
+    const userId = String(c.params.userId);
     await assertAdministrator(discord, guildId, actor.id); // second lock: live check, on top of the route guard
-    if (!isId(userId)) return res.status(400).json({ error: 'Invalid staff member.' });
-    const text = clean(req.body?.text, 1000);
-    if (!text) return res.status(400).json({ error: 'Write a note first.' });
-    if (!await Staff.findOne({ guildId, userId })) return res.status(404).json({ error: 'Staff member not found.' });
+    if (!isId(userId)) return c.status(400).json({ error: 'الستاف غير صحيح.' });
+    const text = clean(c.body?.text, 1000);
+    if (!text) return c.status(400).json({ error: 'اكتب ملاحظة أول.' });
+    if (!await Staff.findOne({ guildId, userId })) return c.status(404).json({ error: 'الستاف مو موجود.' });
     await StaffNote.create({ guildId, userId, text, addedBy: actor.username, addedById: actor.id }).catch(error => { if (/does not exist|schema cache|could not find/i.test(String(error?.message))) throw new SetupMissingError('Staff notes'); throw error; });
     await createLog(guildId, 'STAFF_NOTE_ADDED', userId, actor.id).catch(() => undefined);
-    res.json({ ok: true });
-  }));
-
-  // The staff page reads notes (and helps) from /api/bootstrap; add them there so the old in-memory notes are gone.
-  app.get('/api/bootstrap', (req, res, next) => {
-    let guildId = '';
-    try { guildId = selectedGuildId(req); } catch { /* the built-in route answers */ }
-    if (!guildId) return next();
-    const original = res.json.bind(res);
-    res.json = ((body: any) => {
-      if (!body || !Array.isArray(body.staff)) return original(body);
-      enrichBootstrap(guildId, body).catch(error => logDbIssue(error, 'Staff notes')).finally(() => { original(body); });
-      return res;
-    }) as typeof res.json;
-    next();
-  });
-
-  async function enrichBootstrap(guildId: string, body: any) {
-    const guild = await ctx.getGuild(guildId);
-    const [{ data: notes, error: notesError }, { data: claimedRows }, { data: assists, error: assistError }] = await Promise.all([
-      supabase.from('staff_notes').select('user_id, text, added_by, created_at').eq('guild_id', guildId).order('created_at', { ascending: false }).limit(1000),
-      supabase.from('staff').select('user_id, claimed').eq('guild_id', guildId),
-      supabase.from('assistances').select('id, staff_user_id, member_user_id, type, note, created_at').eq('guild_id', guildId).order('created_at', { ascending: false }).limit(300),
-    ]);
-    if (notesError) logDbIssue(notesError, 'Staff notes');
-    if (assistError) logDbIssue(assistError, 'Assist logging');
-    const claimed = new Map((claimedRows ?? []).map(row => [row.user_id as string, Number(row.claimed) || 0]));
-    const notesBy = new Map<string, Array<{ text: string; addedBy: string; createdAt: string }>>();
-    for (const row of notes ?? []) { const list = notesBy.get(row.user_id) ?? []; list.push({ text: row.text, addedBy: row.added_by, createdAt: row.created_at }); notesBy.set(row.user_id, list); }
-    for (const member of body.staff) { member.notes = notesBy.get(member.userId) ?? []; member.claimed = claimed.get(member.userId) ?? 0; }
-    body.assistances = (assists ?? []).map(row => ({ id: String(row.id), staffUserId: row.staff_user_id, memberUserId: row.member_user_id, memberName: guild.members.cache.get(row.member_user_id)?.displayName || row.member_user_id, type: row.type, note: row.note, createdAt: row.created_at }));
-  }
+    c.json({ ok: true });
+  }), { guards: [writeLimit] });
 
   // ---- Staff profile page -------------------------------------------------------------------------
   const CONNECTION_URL: Record<string, (name: string, id: string) => string> = {
@@ -263,7 +201,7 @@ function mountRoutes(ctx: DashboardContext) {
     return { type: item.type, name: item.name, verified: Boolean(item.verified), url };
   };
   async function fetchDiscordConnections(accessToken: string): Promise<ProfileConnection[] | null> {
-    const response = await fetch('https://discord.com/api/users/@me/connections', { headers: { Authorization: `Bearer ${accessToken}` } });
+    const response = await fetch(`${API_BASE}/users/@me/connections`, { headers: { Authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(8000) });
     if (!response.ok) return null;
     const rows = await response.json() as Array<{ type?: string; id?: string; name?: string; verified?: boolean; visibility?: number }>;
     return rows.filter(row => row.visibility === 1 && row.type && row.id && row.name).map(row => ({ type: String(row.type), id: String(row.id), name: String(row.name), verified: Boolean(row.verified) }));
@@ -278,29 +216,31 @@ function mountRoutes(ctx: DashboardContext) {
   };
 
   /** A profile is addressed by Discord id, "me", or username. Anyone in the server has one (stats stay at zero without a staff row). */
-  async function resolveTarget(req: Request, identifier: string) {
-    const guildId = selectedGuildId(req);
+  async function resolveTarget(c: Context, identifier: string) {
+    const guildId = selectedGuildId(c);
     const guild = await ctx.getGuild(guildId);
-    const viewerId = ctx.sessionUser(req)?.id || '';
+    const viewerId = ctx.sessionUser(c)?.id || '';
     const wanted = decodeURIComponent(identifier || 'me').replace(/^@/, '');
     let userId = wanted.toLowerCase() === 'me' ? viewerId : isId(wanted) ? wanted : '';
-    if (!userId) {
-      if (guild.members.cache.size < 2) await guild.members.fetch().catch(() => undefined);
-      userId = [...guild.members.cache.values()].find(item => item.user.username.toLowerCase() === wanted.toLowerCase() || item.displayName.toLowerCase() === wanted.toLowerCase())?.id || '';
+    if (!userId && /^[\w.\- ]{1,40}$/u.test(wanted)) {
+      // بحث بالاسم (REST search) بدل جلب كل أعضاء السيرفر.
+      const found = await guild.members.fetch({ query: wanted, limit: 10 }).catch(() => null);
+      const lower = wanted.toLowerCase();
+      userId = [...(found?.values() ?? []), ...guild.members.cache.values()].find(item => item.user.username.toLowerCase() === lower || item.displayName.toLowerCase() === lower)?.id || '';
     }
-    const member = userId ? await guild.members.fetch(userId).catch(() => null) : null;
+    const member = userId ? await ctx.getMember(guildId, userId) : null;
     return { guildId, guild, viewerId, member };
   }
 
   const profileOf = async (guildId: string, userId: string): Promise<StaffProfileDoc | null> => StaffProfile.findOne({ guildId, userId }).catch(error => { logDbIssue(error, 'Staff profiles'); return null; });
 
-  app.get('/api/profile/:identifier', route(async (req, res) => {
-    const { guildId, guild, viewerId, member } = await resolveTarget(req, String(req.params.identifier));
-    if (!member) return res.status(404).json({ error: 'Profile not found.' });
-    const viewer = ctx.sessionUser(req);
+  app.get('/api/profile/:identifier', route(async (c: Context) => {
+    const { guildId, guild, viewerId, member } = await resolveTarget(c, String(c.params.identifier));
+    if (!member) return c.status(404).json({ error: 'البروفايل مو موجود.' });
+    const viewer = ctx.sessionUser(c);
     const userId = member.id;
     const isSelf = userId === viewerId;
-    const isAdmin = await liveAdmin(req);
+    const isAdmin = await liveAdmin(c);
     // Leave, resignation, complaints and point changes are private: only the member and administrators see them.
     const seesPrivate = isSelf || isAdmin;
     const heatStart = new Date(Math.floor(Date.now() / DAY) * DAY - (HEAT_DAYS - 1) * DAY).toISOString().slice(0, 10);
@@ -322,7 +262,7 @@ function mountRoutes(ctx: DashboardContext) {
     const profile = profileRow ?? { tagline: '', bio: '', accent: '', bannerUrl: '', showFeedback: true, showConnections: true, links: [] as ProfileLink[], connections: [] as ProfileConnection[], connectionsSyncedAt: null as Date | null };
 
     // Public Discord connections come from the member's own login; refreshed while they view their own profile.
-    const accessToken = (req.session as any)?.discordAccessToken as string | undefined;
+    const accessToken = c.session?.data.discordAccessToken as string | undefined;
     let connections = profile.connections || [];
     if (isSelf && accessToken && (!profile.connectionsSyncedAt || Date.now() - new Date(profile.connectionsSyncedAt).getTime() > 10 * 60_000)) {
       const fresh = await fetchDiscordConnections(accessToken).catch(() => null);
@@ -365,7 +305,7 @@ function mountRoutes(ctx: DashboardContext) {
     const feedback = showFeedback ? await Promise.all(ratings.slice(0, 30).map(async rating => ({ rating: rating.rating, comment: rating.comment || '', createdAt: rating.createdAt, reviewerName: isAdmin ? (await memberInfo(guild, rating.reviewerUserId))?.displayName || rating.reviewerName || '' : '' }))) : [];
     const banner = cssSafeUrl(profile.bannerUrl);
 
-    res.json({
+    c.json({
       member: { userId, username: info?.username || member.user.username, displayName: info?.displayName || member.displayName, avatar: info?.avatar || null, discordBanner: cssSafeUrl(info?.banner) || null, rank: '', status: 'active', joinedAt: member.joinedAt ?? staff?.joinedAt ?? null },
       profile: { bio: profile.bio || '', tagline: profile.tagline || '', accent: profile.accent || '', bannerUrl: banner, links: profile.links || [], showFeedback: profile.showFeedback !== false, showConnections },
       connections: showConnections || isSelf ? connections.map(connectionView) : [], connectionsHidden: !showConnections && !isSelf, connectionsRequiresAuth: isSelf && !accessToken,
@@ -391,12 +331,12 @@ function mountRoutes(ctx: DashboardContext) {
     });
   }));
 
-  app.patch('/api/profile', route(async (req, res) => {
-    const guildId = selectedGuildId(req);
-    const user = signedIn(req, res); if (!user) return;
-    if (!user.isStaff && !user.isAdministrator && !user.isOwner) return res.status(403).json({ error: 'Only staff members can edit a profile.' });
+  app.patch('/api/profile', route(async (c: Context) => {
+    const guildId = selectedGuildId(c);
+    const user = signedIn(c); if (!user) return;
+    if (!user.isStaff && !user.isAdministrator && !user.isOwner) return c.status(403).json({ error: 'تعديل البروفايل للستاف فقط.' });
     try {
-      const body = (req.body || {}) as Record<string, unknown>;
+      const body = (c.body || {}) as Record<string, unknown>;
       const accent = String(body.accent ?? '').trim();
       if (accent && !/^#[0-9a-f]{6}$/i.test(accent)) throw new Error('Accent must be a hex colour like #8175f5.');
       const links = (Array.isArray(body.links) ? body.links : []).slice(0, 4).map((item: any) => ({ label: clean(item?.label, 24), url: httpUrl(item?.url, 200) })).filter(item => item.url);
@@ -407,49 +347,66 @@ function mountRoutes(ctx: DashboardContext) {
       };
       const existing = await StaffProfile.findOne({ guildId, userId: user.id }).catch(error => { if (/does not exist|schema cache|could not find/i.test(String(error?.message))) throw new SetupMissingError('Profiles'); throw error; });
       if (existing) await StaffProfile.update(existing.id, fields); else await StaffProfile.create({ guildId, userId: user.id, ...fields });
-      res.json({ ok: true, profile: { bio: fields.bio, tagline: fields.tagline, accent: fields.accent, bannerUrl, links, showFeedback: fields.showFeedback, showConnections: fields.showConnections } });
+      c.json({ ok: true, profile: { bio: fields.bio, tagline: fields.tagline, accent: fields.accent, bannerUrl, links, showFeedback: fields.showFeedback, showConnections: fields.showConnections } });
     } catch (error) {
       if (error instanceof SetupMissingError) throw error;
-      res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid profile.' });
+      c.status(400).json({ error: publicMessage(error, 'بيانات البروفايل غير صحيحة.') });
     }
-  }));
+  }), { guards: [writeLimit] });
 
   // Reputation: one per viewer per profile, toggled by the same button.
-  app.post('/api/profile/:identifier/rep', route(async (req, res) => {
-    const { guildId, viewerId, member } = await resolveTarget(req, String(req.params.identifier));
-    if (!member) return res.status(404).json({ error: 'Profile not found.' });
-    if (!viewerId) return res.status(401).json({ error: 'Unauthorized' });
-    if (member.id === viewerId) return res.status(400).json({ error: 'You cannot give reputation to yourself.' });
+  app.post('/api/profile/:identifier/rep', route(async (c: Context) => {
+    const { guildId, viewerId, member } = await resolveTarget(c, String(c.params.identifier));
+    if (!member) return c.status(404).json({ error: 'البروفايل مو موجود.' });
+    if (!viewerId) return c.status(401).json({ error: 'سجّل دخولك أول.' });
+    if (member.id === viewerId) return c.status(400).json({ error: 'ما تقدر تعطي نفسك سمعة.' });
     const filter = { guildId, profileUserId: member.id, fromUserId: viewerId };
     const existing = await ProfileRep.findOne(filter).catch(error => { if (/does not exist|schema cache|could not find/i.test(String(error?.message))) throw new SetupMissingError('Profile reputation'); throw error; });
     if (existing) await ProfileRep.deleteMany(filter);
     else await ProfileRep.create(filter).catch(error => { if (!/duplicate key/i.test(String(error?.message))) throw error; });
-    res.json({ hasRep: !existing, reps: await ProfileRep.countDocuments({ guildId, profileUserId: member.id }) });
-  }));
+    c.json({ hasRep: !existing, reps: await ProfileRep.countDocuments({ guildId, profileUserId: member.id }) });
+  }), { guards: [socialLimit] });
 
-  app.post('/api/profile/:identifier/comments', route(async (req, res) => {
-    const { guildId, guild, viewerId, member } = await resolveTarget(req, String(req.params.identifier));
-    if (!member) return res.status(404).json({ error: 'Profile not found.' });
-    const viewer = signedIn(req, res); if (!viewer || !viewerId) return;
-    const text = clean(req.body?.text, 2000);
-    if (!text) return res.status(400).json({ error: 'Write something first.' });
-    if (text.length > 500) return res.status(400).json({ error: 'Comments are limited to 500 characters.' });
+  app.post('/api/profile/:identifier/comments', route(async (c: Context) => {
+    const { guildId, guild, viewerId, member } = await resolveTarget(c, String(c.params.identifier));
+    if (!member) return c.status(404).json({ error: 'البروفايل مو موجود.' });
+    const viewer = signedIn(c); if (!viewer || !viewerId) return;
+    const text = clean(c.body?.text, 2000);
+    if (!text) return c.status(400).json({ error: 'اكتب شي أول.' });
+    if (text.length > 500) return c.status(400).json({ error: 'التعليق ما يتعدى 500 حرف.' });
     const { count } = await supabase.from('profile_comments').select('id', { count: 'exact', head: true }).eq('guild_id', guildId).eq('author_user_id', viewerId).gte('created_at', new Date(Date.now() - 8000).toISOString());
-    if (count) return res.status(429).json({ error: 'Slow down a little before commenting again.' });
+    if (count) return c.status(429).json({ error: 'خفف شوي قبل تعلّق مرة ثانية.' });
     const row = await ProfileComment.create({ guildId, profileUserId: member.id, authorUserId: viewerId, authorName: viewer.username, text }).catch(error => { if (/does not exist|schema cache|could not find/i.test(String(error?.message))) throw new SetupMissingError('Profile comments'); throw error; });
     const author = await memberInfo(guild, viewerId);
-    res.json({ comment: { id: String(row.id), text, createdAt: row.createdAt, authorUserId: viewerId, authorName: author?.displayName || viewer.username, authorUsername: author?.username || null, authorAvatar: author?.avatar || null, canDelete: true } });
-  }));
+    c.json({ comment: { id: String(row.id), text, createdAt: row.createdAt, authorUserId: viewerId, authorName: author?.displayName || viewer.username, authorUsername: author?.username || null, authorAvatar: author?.avatar || null, canDelete: true } });
+  }), { guards: [socialLimit] });
 
-  app.delete('/api/profile/comments/:id', route(async (req, res) => {
-    const guildId = selectedGuildId(req);
-    const viewer = signedIn(req, res); if (!viewer) return;
-    const id = String(req.params.id || '');
-    if (!/^\d{1,18}$/.test(id)) return res.status(400).json({ error: 'Invalid comment.' });
+  app.delete('/api/profile/comments/:id', route(async (c: Context) => {
+    const guildId = selectedGuildId(c);
+    const viewer = signedIn(c); if (!viewer) return;
+    const id = String(c.params.id || '');
+    if (!/^\d{1,18}$/.test(id)) return c.status(400).json({ error: 'التعليق غير صحيح.' });
     const row = await ProfileComment.findOne({ id: Number(id), guildId });
-    if (!row) return res.status(404).json({ error: 'Comment not found.' });
-    if (row.authorUserId !== viewer.id && row.profileUserId !== viewer.id && !await liveAdmin(req)) return res.status(403).json({ error: 'You cannot delete this comment.' });
+    if (!row) return c.status(404).json({ error: 'التعليق مو موجود.' });
+    if (row.authorUserId !== viewer.id && row.profileUserId !== viewer.id && !await liveAdmin(c)) return c.status(403).json({ error: 'ما تقدر تحذف هذا التعليق.' });
     await ProfileComment.deleteMany({ id: Number(id), guildId });
-    res.json({ ok: true });
-  }));
+    c.json({ ok: true });
+  }), { guards: [socialLimit] });
+}
+
+/** Adds staff notes, claimed counts and assist logs to /api/bootstrap (called by staff-routes.ts). */
+export async function enrichBootstrap(ctx: DashboardContext, guildId: string, body: any) {
+  const guild = await ctx.getGuild(guildId);
+  const [{ data: notes, error: notesError }, { data: claimedRows }, { data: assists, error: assistError }] = await Promise.all([
+    supabase.from('staff_notes').select('user_id, text, added_by, created_at').eq('guild_id', guildId).order('created_at', { ascending: false }).limit(1000),
+    supabase.from('staff').select('user_id, claimed').eq('guild_id', guildId),
+    supabase.from('assistances').select('id, staff_user_id, member_user_id, type, note, created_at').eq('guild_id', guildId).order('created_at', { ascending: false }).limit(300),
+  ]);
+  if (notesError) logDbIssue(notesError, 'Staff notes');
+  if (assistError) logDbIssue(assistError, 'Assist logging');
+  const claimed = new Map((claimedRows ?? []).map(row => [row.user_id as string, Number(row.claimed) || 0]));
+  const notesBy = new Map<string, Array<{ text: string; addedBy: string; createdAt: string }>>();
+  for (const row of notes ?? []) { const list = notesBy.get(row.user_id) ?? []; list.push({ text: row.text, addedBy: row.added_by, createdAt: row.created_at }); notesBy.set(row.user_id, list); }
+  for (const member of body.staff) { member.notes = notesBy.get(member.userId) ?? []; member.claimed = claimed.get(member.userId) ?? 0; }
+  body.assistances = (assists ?? []).map(row => ({ id: String(row.id), staffUserId: row.staff_user_id, memberUserId: row.member_user_id, memberName: guild.members.cache.get(row.member_user_id)?.displayName || row.member_user_id, type: row.type, note: row.note, createdAt: row.created_at }));
 }

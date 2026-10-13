@@ -1,18 +1,19 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import type { Client } from '../lib/djs/index.js';
-import { env } from '../config/env.js';
+import { ROOT, env } from '../config/env.js';
 import { allCommands } from './definitions.js';
+import { localizeCommands } from '../lib/djs/localization.js';
 
 // Registers the slash commands on start when the definitions changed since the last registration,
 // so removed commands disappear from Discord and new ones show up without running `npm run register`.
-const stampFile = fileURLToPath(new URL('../../.commands-hash', import.meta.url));
+const stampFile = `${ROOT}/.commands-hash`;
 
 export async function registerCommandsIfChanged(client: Client) {
   const commands = allCommands();
   const target = env.guildId || 'global';
-  const hash = createHash('sha1').update(JSON.stringify({ target, commands })).digest('hex');
+  // الهاش يشمل الأسماء العربية: أي تعديل على القاموس يعيد التسجيل
+  const hash = createHash('sha1').update(JSON.stringify({ target, commands: localizeCommands(commands as any[]) })).digest('hex');
   const previous = existsSync(stampFile) ? readFileSync(stampFile, 'utf8').trim() : '';
   if (previous === hash || !client.application) return false;
   if (env.guildId) await client.application.commands.set(commands as any, env.guildId);

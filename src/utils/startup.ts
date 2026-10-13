@@ -6,7 +6,7 @@ let lastStep = Date.now();
 // Under `npm run start:all` the control center already drew the banner and adds the prefixes.
 export function bootBanner() {
   if (underControlCenter()) return;
-  banner('Staff operations control plane');
+  banner('لوحة تشغيل إدارة الستاف');
 }
 
 /** A finished startup step, with how long it took since the previous one. */
@@ -25,7 +25,7 @@ export function bootWarn(label: string, message: string) {
 }
 
 export function bootFailure(message: string) {
-  console.log(`  ${status('fail', 'Failed', `${c.red}${message}${c.reset}`)}`);
+  console.log(`  ${status('fail', 'فشل', `${c.red}${message}${c.reset}`)}`);
 }
 
 export interface ReadyInfo { tag?: string; guilds?: number; staff?: number; onShift?: number; pingMs?: number; emojis?: string; dashboardUrl?: string; autoShift?: string }
@@ -34,17 +34,17 @@ export interface ReadyInfo { tag?: string; guilds?: number; staff?: number; onSh
 export function bootReady(info: ReadyInfo | string = {}) {
   const data: ReadyInfo = typeof info === 'string' ? { dashboardUrl: info } : info;
   const rows: Array<[string, string]> = [];
-  if (data.tag) rows.push(['Bot', `${c.bold}${data.tag}${c.reset}`]);
-  if (data.guilds !== undefined) rows.push(['Servers', String(data.guilds)]);
-  if (data.staff !== undefined) rows.push(['Staff', `${data.staff} registered · ${c.green}${data.onShift ?? 0} on shift${c.reset}`]);
-  if (data.pingMs !== undefined) rows.push(['Latency', `${gauge(Math.min(1, data.pingMs / 400))} ${data.pingMs}ms`]);
-  if (data.autoShift) rows.push(['Auto shifts', data.autoShift]);
-  if (data.emojis) rows.push(['Emojis', data.emojis]);
-  rows.push(['Memory', megabytes(process.memoryUsage().rss)]);
-  rows.push(['Started in', `${((Date.now() - startedAt) / 1000).toFixed(1)}s`]);
-  if (data.dashboardUrl) rows.push(['Dashboard', `${c.lilac}${data.dashboardUrl}${c.reset}`]);
-  console.log(`\n${panel('Rift is online', rows, c.purple)}`);
-  if (!underControlCenter()) console.log(`  ${c.grey}Press Ctrl+C to stop${c.reset}`);
+  if (data.tag) rows.push(['البوت', `${c.bold}${data.tag}${c.reset}`]);
+  if (data.guilds !== undefined) rows.push(['السيرفرات', String(data.guilds)]);
+  if (data.staff !== undefined) rows.push(['الستاف', `${data.staff} مسجّل · ${c.green}${data.onShift ?? 0} في الشفت${c.reset}`]);
+  if (data.pingMs !== undefined) rows.push(['الاستجابة', `${gauge(Math.min(1, data.pingMs / 400))} ${data.pingMs}ms`]);
+  if (data.autoShift) rows.push(['الشفت التلقائي', data.autoShift]);
+  if (data.emojis) rows.push(['الإيموجي', data.emojis]);
+  rows.push(['الذاكرة', megabytes(process.memoryUsage().rss)]);
+  rows.push(['وقت التشغيل', `${((Date.now() - startedAt) / 1000).toFixed(1)} ثانية`]);
+  if (data.dashboardUrl) rows.push(['لوحة التحكم', `${c.lilac}${data.dashboardUrl}${c.reset}`]);
+  console.log(`\n${panel('Rift شغّال', rows, c.purple)}`);
+  if (!underControlCenter()) console.log(`  ${c.grey}اضغط Ctrl+C للإيقاف${c.reset}`);
   console.log('');
 }
 

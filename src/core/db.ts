@@ -1,6 +1,6 @@
 // Small helpers so a missing migration never crashes the bot: the feature that needs the table logs one clear line and degrades.
 
-export const MIGRATION_HINT = 'Run supabase/migrations/030_staff_core.sql in the Supabase SQL editor.';
+export const MIGRATION_HINT = 'شغّل supabase/migrations/030_staff_core.sql في محرر SQL في Supabase.';
 
 const warned = new Set<string>();
 /** Logs a message the first time only. */
@@ -10,9 +10,15 @@ export function warnOnce(key: string, message: string) {
   console.warn(`[core] ${message}`);
 }
 
+// أسماء الميزات بالعربي للرسالة اللي تظهر للمستخدم (الاسم الإنجليزي يبقى لسجل المطوّر).
+const FEATURE_AR: Record<string, string> = {
+  'Assist logging': 'تسجيل المساعدات', 'Staff warnings': 'تحذيرات الستاف', Notifications: 'الإشعارات', 'Staff notes': 'ملاحظات الستاف',
+  Profiles: 'البروفايلات', 'Profile reputation': 'سمعة البروفايل', 'Profile comments': 'تعليقات البروفايل', 'The points ledger': 'سجل النقاط', 'Staff profiles': 'بروفايلات الستاف',
+};
+
 /** A feature needs a table that does not exist yet. The message is safe to show to the person who used it. */
 export class SetupMissingError extends Error {
-  constructor(what: string) { super(`${what} is not set up yet. An administrator needs to apply the latest database migration (030_staff_core.sql).`); this.name = 'SetupMissingError'; }
+  constructor(what: string) { super(`${FEATURE_AR[what] || what} ما انضبط للحين. لازم أدمن يطبّق آخر تحديث لقاعدة البيانات (030_staff_core.sql).`); this.name = 'SetupMissingError'; }
 }
 
 /** Rethrows a database error as SetupMissingError when it only means the migration is missing. */

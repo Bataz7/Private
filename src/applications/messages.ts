@@ -2,12 +2,12 @@ import { EmbedBuilder } from '../lib/djs/index.js';
 import type { Language } from './questions.js';
 
 // The three messages an applicant receives in DMs: received, accepted, rejected. Normal embeds (not panels).
-// One language per message, chosen by the form's language; Arabic and English are never mixed in one message.
+// البوت عربي دائمًا: say() يرجّع النص العربي مهما كانت لغة النموذج.
 // A custom message written in the form settings replaces the default paragraph only; the details stay.
 
 const TEXT = {
   receivedTitle: { ar: '✅ تم استلام تقديمك', en: '✅ Application received' },
-  receivedBody: { ar: 'شكرًا لك {user} على اهتمامك بالانضمام إلينا. وصلنا تقديمك بنجاح وهو الآن بيد فريق الإدارة للمراجعة.', en: 'Thank you {user} for your interest in joining us. Your application reached us and is now with the management team for review.' },
+  receivedBody: { ar: 'شكرًا {user} على اهتمامك تنضم لنا. وصلنا تقديمك وهو الحين عند الإدارة للمراجعة.', en: 'Thank you {user} for your interest in joining us. Your application reached us and is now with the management team for review.' },
   accepted: { ar: 'مقبول', en: 'Accepted' },
   rejected: { ar: 'غير مقبول', en: 'Not accepted' },
   underReview: { ar: '⏳ قيد المراجعة', en: '⏳ Under review' },
@@ -18,29 +18,29 @@ const TEXT = {
   decidedAt: { ar: '📅 تاريخ القرار', en: '📅 Decision date' },
   next: { ar: '🧭 الخطوات القادمة', en: '🧭 What happens next' },
   receivedNext: {
-    ar: '**١.** يراجع الفريق إجاباتك بعناية.\n**٢.** يصدر القرار وتصلك النتيجة هنا في الخاص.\n**٣.** لا حاجة إلى تقديم آخر، تقديم واحد يكفي.',
+    ar: '**١.** الفريق يراجع إجاباتك بعناية.\n**٢.** يطلع القرار وتوصلك النتيجة هنا في الخاص.\n**٣.** ما يحتاج تقدّم مرة ثانية، تقديم واحد يكفي.',
     en: '**1.** The team reviews your answers carefully.\n**2.** A decision is made and the result is sent to you here in DMs.\n**3.** You do not need to apply again. One application is enough.',
   },
-  keepDm: { ar: '💡 أبقِ رسائل الخاص من هذا السيرفر مفتوحة حتى تصلك النتيجة.', en: '💡 Keep DMs from this server open so the result can reach you.' },
+  keepDm: { ar: '💡 خلّ الخاص من هذا السيرفر مفتوح عشان توصلك النتيجة.', en: '💡 Keep DMs from this server open so the result can reach you.' },
   acceptedTitle: { ar: '🎉 مبروك! تم قبول تقديمك', en: '🎉 Congratulations! You were accepted' },
-  acceptedBody: { ar: 'يسعدنا إبلاغك بقبول تقديمك في **{form}** في سيرفر **{server}**. أهلًا بك معنا في الفريق!', en: 'We are happy to tell you that your application for **{form}** in **{server}** was accepted. Welcome to the team!' },
+  acceptedBody: { ar: 'يسعدنا نبلغك إن تقديمك في **{form}** في سيرفر **{server}** انقبل. حيّاك معنا في الفريق!', en: 'We are happy to tell you that your application for **{form}** in **{server}** was accepted. Welcome to the team!' },
   roles: { ar: '🎖️ الرتب الممنوحة', en: '🎖️ Roles granted' },
   acceptedNext: {
-    ar: '**١.** ادخل السيرفر وتعرّف على القنوات الجديدة المتاحة لك.\n**٢.** اقرأ قوانين الفريق وتعليماته.\n**٣.** تواصل مع الإدارة إذا احتجت أي مساعدة في بدايتك.',
+    ar: '**١.** ادخل السيرفر وتعرّف على الرومات الجديدة اللي انفتحت لك.\n**٢.** اقرأ قوانين الفريق وتعليماته.\n**٣.** تواصل مع الإدارة لو احتجت أي مساعدة في بدايتك.',
     en: '**1.** Head to the server and look at the channels now open to you.\n**2.** Read the team rules and guidelines.\n**3.** Contact management if you need any help getting started.',
   },
   rejectedTitle: { ar: 'نتيجة تقديمك', en: 'Your application result' },
-  rejectedBody: { ar: 'نشكرك على وقتك واهتمامك بالانضمام إلى **{server}**. بعد المراجعة، للأسف لم يتم قبول تقديمك في **{form}** هذه المرة.', en: 'Thank you for your time and your interest in joining **{server}**. After review, we are sorry to say your application for **{form}** was not accepted this time.' },
+  rejectedBody: { ar: 'نشكرك على وقتك واهتمامك تنضم لـ **{server}**. بعد المراجعة، للأسف ما انقبل تقديمك في **{form}** هالمرة.', en: 'Thank you for your time and your interest in joining **{server}**. After review, we are sorry to say your application for **{form}** was not accepted this time.' },
   reason: { ar: '📌 السبب', en: '📌 Reason' },
   retry: { ar: '🔁 التقديم مرة أخرى', en: '🔁 Applying again' },
   retryAt: { ar: 'تقدر تقدّم من جديد {when}.', en: 'You can apply again {when}.' },
-  retryAnytime: { ar: 'تقدر تقدّم من جديد متى ما فُتح التقديم.', en: 'You can apply again whenever applications are open.' },
-  rejectedTip: { ar: '💬 هذا القرار ليس نهائيًا لمستقبلك معنا، راجع إجاباتك وحسّن تقديمك وجرّب مرة ثانية.', en: '💬 This is not the end. Review your answers, improve your application and try again.' },
+  retryAnytime: { ar: 'تقدر تقدّم من جديد متى ما انفتح التقديم.', en: 'You can apply again whenever applications are open.' },
+  rejectedTip: { ar: '💬 هذا القرار مو نهاية الطريق، راجع إجاباتك وحسّن تقديمك وجرّب مرة ثانية.', en: '💬 This is not the end. Review your answers, improve your application and try again.' },
   footer: { ar: 'إدارة {server}', en: '{server} management' },
 } as const;
 
 type Key = keyof typeof TEXT;
-const say = (lang: Language, key: Key, vars: Record<string, string> = {}) => (TEXT[key][lang] ?? TEXT[key].en).replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? '');
+const say = (_lang: Language, key: Key, vars: Record<string, string> = {}) => (TEXT[key].ar as string).replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? '');
 const clip = (value: string, max: number) => (value.length > max ? `${value.slice(0, Math.max(0, max - 1))}…` : value);
 const stamp = (date: Date) => `<t:${Math.floor(date.getTime() / 1000)}:f>`;
 

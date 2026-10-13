@@ -19,14 +19,16 @@ import { buildShiftPanel } from '../utils/shift-panel.js';
 import { autoShiftConfig } from '../services/auto-shift.service.js';
 import { buildLeavePanel } from '../utils/leave-panel.js';
 import { buildStaffCard } from '../utils/staff-card.js';
+import { staffCardData } from '../core/profile-stats.js';
 import { buildComplaintPanel } from '../utils/complaint-panel.js';
 import { buildRatingPanel } from '../utils/rating-panel.js';
 
 const ratingPanelTimers = new Map<string, NodeJS.Timeout>();
+const REPORT_STATUS: Record<string, string> = { pending: 'ينتظر', reviewed: 'تمت المراجعة', approved: 'مقبول', rejected: 'مرفوض' };
 const complaintPanelPublishing = new Set<string>();
 
 export async function handleCommand(i: ChatInputCommandInteraction) {
-  if (!i.guild) return i.reply({ content: 'This bot can only be used in a server.', flags: 64 });
+  if (!i.guild) return i.reply({ content: 'هذا البوت يشتغل في السيرفر بس.', flags: 64 });
 
   if (i.commandName === 'staff') {
     const sub = i.options.getSubcommand();
@@ -96,12 +98,12 @@ async function ratingPanel(i: ChatInputCommandInteraction) {
 
 async function pointsHelp(i: ChatInputCommandInteraction) {
   const member = await i.guild!.members.fetch(i.user.id);
-  if (!await isStaff(member)) return i.reply({ content: 'This help guide is available to staff members only.', flags: 64 });
-  return i.reply({ flags: 64, embeds: [new EmbedBuilder().setColor(0x8175f5).setTitle('Rift Staff Points System').setDescription('Your private guide to points, activity, and the weekly report.').addFields(
-    { name: 'Automatic shifts and points', value: 'A shift begins by itself after **20 messages within 10 minutes** (the server can change this), or when a staff member joins an unmuted voice channel. It ends after 30 minutes without activity.\n\n• **+1 point** for every 30 active shift minutes\n• **+3 points** for every 100 chat messages during a shift\n• **+1 point** for every 30 voice minutes during a shift\n• **-1 point** when a complaint is approved', inline: false },
-    { name: 'Weekly report', value: 'Every **week**, Rift sends a performance report with shift hours, activity hours, voice time, messages, ratings, points, and approved complaints. Administrators can review reports and add a private note.', inline: false },
-    { name: 'Private commands', value: '`/points` shows your private card.\n`/staff leaderboard` shows the public ranking.\n`/report stats` shows a full performance card.', inline: false }
-  ).setFooter({ text: 'Rift Staff Operations' }).setTimestamp()] });
+  if (!await isStaff(member)) return i.reply({ content: 'هذا الدليل للستاف فقط.', flags: 64 });
+  return i.reply({ flags: 64, embeds: [new EmbedBuilder().setColor(0x8175f5).setTitle('نظام نقاط ستاف Rift').setDescription('دليلك الخاص للنقاط والنشاط والتقرير الأسبوعي.').addFields(
+    { name: 'الشفتات التلقائية والنقاط', value: 'الشفت يبدأ لحاله بعد **20 رسالة خلال 10 دقايق** (السيرفر يقدر يغيّرها)، أو لما تدخل روم صوتي. شفت الرسائل ينتهي بعد 30 دقيقة بدون نشاط، وفي الفويس يسألك البوت «هل انت موجود؟» كل ساعة بدون تفاعل.\n\n• **+1 نقطة** كل 30 دقيقة شفت\n• **+3 نقاط** كل 100 رسالة وأنت في الشفت\n• **+1 نقطة** كل 30 دقيقة فويس وأنت في الشفت\n• **-1 نقطة** لما تنقبل شكوى عليك', inline: false },
+    { name: 'التقرير الأسبوعي', value: 'كل **أسبوع** يرسل Rift تقرير أداء فيه ساعات الشفت والنشاط والفويس والرسائل والتقييمات والنقاط والشكاوى المقبولة. الإدارة تقدر تراجع التقارير وتضيف ملاحظة خاصة.', inline: false },
+    { name: 'أوامر خاصة', value: '`/points` نقاطك.\n`/staff leaderboard` الترتيب العام.\n`/report stats` بطاقة أداء كاملة.', inline: false }
+  ).setFooter({ text: 'Rift · إدارة الستاف' }).setTimestamp()] });
 }
 
 async function complaintPanel(i: ChatInputCommandInteraction) {
@@ -132,10 +134,10 @@ async function complaintSubmit(i: ChatInputCommandInteraction) {
   const member = await i.guild!.members.fetch(staff.id).catch(() => null);
   const registered = await Staff.findOne({ guildId: i.guild!.id, userId: staff.id, active: true });
   if (!member || !registered || staff.bot) return i.reply({ content: 'لا يمكن تقديم الشكوى على هذا العضو.', flags: 64 });
-  const modal = new ModalBuilder().setCustomId(`complaint_modal:${staff.id}`).setTitle('Submit Staff Complaint');
+  const modal = new ModalBuilder().setCustomId(`complaint_modal:${staff.id}`).setTitle('شكوى على إداري');
   modal.addComponents(
-    new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId('complaint_reason').setLabel('What happened?').setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(1000)),
-    new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId('complaint_evidence').setLabel('Evidence or context (optional)').setStyle(TextInputStyle.Paragraph).setRequired(false).setMaxLength(1500))
+    new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId('complaint_reason').setLabel('وش صار؟').setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(1000)),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId('complaint_evidence').setLabel('دليل أو تفاصيل (اختياري)').setStyle(TextInputStyle.Paragraph).setRequired(false).setMaxLength(1500))
   );
   return i.showModal(modal);
 }
@@ -145,43 +147,39 @@ async function submitRating(i: ChatInputCommandInteraction) {
   const staffUser = i.options.getUser('staff', true);
   if (staffUser.id === i.user.id) return i.reply({ content: 'لا يمكنك تقييم نفسك.', flags: 64 });
   const member = await i.guild!.members.fetch(staffUser.id).catch(() => null);
-  if (!member || !member.roles.cache.has(settings.staffRoleId) || isAdministrator(member)) return i.reply({ content: 'Ratings do not apply to Administrators.', flags: 64 });
-  if (staffUser.id === i.user.id) return i.reply({ content: 'You cannot rate yourself.', flags: 64 });
+  if (!member || !member.roles.cache.has(settings.staffRoleId) || isAdministrator(member)) return i.reply({ content: 'التقييم ما ينطبق على هذا العضو (مو ستاف أو أدمن).', flags: 64 });
   const score = i.options.getInteger('score', true);
   const comment = i.options.getString('comment') ?? '';
   await StaffRating.create({ guildId: i.guild!.id, staffUserId: staffUser.id, reviewerUserId: i.user.id, rating: score, comment, createdAt: new Date() });
-  return i.reply({ content: `✅ Your ${score}/5 rating for ${staffUser} was submitted.`, flags: 64 });
+  return i.reply({ content: `✅ انرسل تقييمك ${score}/5 لـ ${staffUser}.`, flags: 64 });
 }
 
 async function ratingStats(i: ChatInputCommandInteraction) {
   const settings = await requireSettings(i.guild!.id);
   const staffUser = i.options.getUser('staff', true);
-  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'Management only.', flags: 64 });
+  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'هذا الأمر للإدارة فقط.', flags: 64 });
   const member = await i.guild!.members.fetch(staffUser.id).catch(() => null);
-  if (!member || !member.roles.cache.has(settings.staffRoleId)) return i.reply({ content: 'Staff member not found.', flags: 64 });
+  if (!member || !member.roles.cache.has(settings.staffRoleId)) return i.reply({ content: 'ما لقيت هذا الإداري.', flags: 64 });
   const rows = await StaffRating.find({ guildId: i.guild!.id, staffUserId: staffUser.id }).sort({ createdAt: -1 }).limit(50);
   const average = rows.length ? rows.reduce((total, row) => total + row.rating, 0) / rows.length : 0;
-  const breakdown = [5, 4, 3, 2, 1].map(score => `Rift ${score}/5: ${rows.filter(row => row.rating === score).length}`).join('\n');
-  return i.reply({ embeds: [new EmbedBuilder().setTitle(`Rift Ratings — ${staffUser.tag}`).setDescription(`Average: **${average.toFixed(2)}/5**\nTotal: **${rows.length}**\n\n${breakdown}`)], flags: 64 });
+  const breakdown = [5, 4, 3, 2, 1].map(score => `${'⭐'.repeat(score)} ${score}/5: ${rows.filter(row => row.rating === score).length}`).join('\n');
+  return i.reply({ embeds: [new EmbedBuilder().setTitle(`تقييمات ${staffUser.tag}`).setDescription(`المعدل: **${average.toFixed(2)}/5**\nالعدد: **${rows.length}**\n\n${breakdown}`)], flags: 64 });
 }
 
 async function reportStats(i: ChatInputCommandInteraction) {
   const member = await i.guild!.members.fetch(i.user.id);
   const management = await isManagement(member);
   const user = i.options.getUser('user') ?? i.user;
-  if (user.id !== i.user.id && !management) return i.reply({ content: 'Management only for other staff reports.', flags: 64 });
-  const staff = await Staff.findOne({ guildId: i.guild!.id, userId: user.id });
-  const shifts = await Shift.find({ guildId: i.guild!.id, userId: user.id });
-  const approvedComplaints = await Complaint.find({ guildId: i.guild!.id, staffUserId: user.id, status: 'approved' });
-  const totalHours = shifts.reduce((total, shift) => total + activeMs(shift), 0) / 3600000;
-  const points = staff?.points ?? 0;
-  const image = buildStaffCard({ name: user.username, avatar: user.displayAvatarURL({ extension: 'png', size: 256 }), points, complaints: approvedComplaints.length, shiftHours: totalHours, voiceHours: (staff?.voiceMinutes ?? 0) / 60, messages: staff?.messageCount ?? 0 });
-  return i.reply(image);
+  if (user.id !== i.user.id && !management) return i.reply({ content: 'بس الإدارة تقدر تشوف بطاقة إداري ثاني.', flags: 64 });
+  await i.deferReply();
+  const data = await staffCardData(i.guild!, user);
+  if (!data) return i.editReply({ content: 'هذا العضو مو في قائمة الستاف بعد.' });
+  return i.editReply(buildStaffCard(data));
 }
 
 async function staffSetup(i: ChatInputCommandInteraction) {
   const member = await i.guild!.members.fetch(i.user.id);
-  if (!member.permissions.has(PermissionFlagsBits.Administrator)) return i.reply({ content: 'Administrator permission is required.', flags: 64 });
+  if (!member.permissions.has(PermissionFlagsBits.Administrator)) return i.reply({ content: 'يلزمك صلاحية Administrator.', flags: 64 });
 
   const roles = i.guild!.roles.cache.filter(r => !r.managed).sort((a,b) => b.position - a.position).first(25);
   const channels = i.guild!.channels.cache.filter(c => c.isTextBased()).first(25);
@@ -189,12 +187,12 @@ async function staffSetup(i: ChatInputCommandInteraction) {
   const roleOptions = [...roles].map(r => ({ label: r.name.slice(0,100), value: r.id }));
   const channelOptions = [...channels].map(c => ({ label: c.name.slice(0,100), value: c.id }));
 
-  const modal = new ModalBuilder().setCustomId('setup_modal').setTitle('Rift Server Setup');
-  const staff = new TextInputBuilder().setCustomId('staff_role').setLabel('Staff role ID').setPlaceholder('Role ID for registered staff').setStyle(TextInputStyle.Short).setRequired(true);
-  const onShift = new TextInputBuilder().setCustomId('on_shift_role').setLabel('On-shift role ID').setPlaceholder('Role ID applied during an active shift').setStyle(TextInputStyle.Short).setRequired(true);
-  const leave = new TextInputBuilder().setCustomId('leave_role').setLabel('Leave role ID').setPlaceholder('Role ID applied during approved leave').setStyle(TextInputStyle.Short).setRequired(true);
-  const management = new TextInputBuilder().setCustomId('management_role').setLabel('Management role ID').setPlaceholder('Optional management role ID').setStyle(TextInputStyle.Short).setRequired(true);
-  const channelsField = new TextInputBuilder().setCustomId('channels').setLabel('Channel IDs: shift, leave, logs, reports').setPlaceholder('shift, leave, resignation, logs, reports').setStyle(TextInputStyle.Paragraph).setRequired(true);
+  const modal = new ModalBuilder().setCustomId('setup_modal').setTitle('إعداد Rift للسيرفر');
+  const staff = new TextInputBuilder().setCustomId('staff_role').setLabel('آيدي رتبة الستاف').setPlaceholder('رتبة الستاف المسجلين').setStyle(TextInputStyle.Short).setRequired(true);
+  const onShift = new TextInputBuilder().setCustomId('on_shift_role').setLabel('آيدي رتبة الشفت').setPlaceholder('تنعطى وقت الشفت النشط').setStyle(TextInputStyle.Short).setRequired(true);
+  const leave = new TextInputBuilder().setCustomId('leave_role').setLabel('آيدي رتبة الإجازة').setPlaceholder('تنعطى وقت الإجازة المقبولة').setStyle(TextInputStyle.Short).setRequired(true);
+  const management = new TextInputBuilder().setCustomId('management_role').setLabel('آيدي رتبة الإدارة').setPlaceholder('رتبة الإدارة').setStyle(TextInputStyle.Short).setRequired(true);
+  const channelsField = new TextInputBuilder().setCustomId('channels').setLabel('آيديات الرومات (بفواصل)').setPlaceholder('الشفت، الإجازات، الاستقالات، اللوق، التقارير').setStyle(TextInputStyle.Paragraph).setRequired(true);
   modal.addComponents(
     new ActionRowBuilder<TextInputBuilder>().addComponents(staff),
     new ActionRowBuilder<TextInputBuilder>().addComponents(onShift),
@@ -207,11 +205,11 @@ async function staffSetup(i: ChatInputCommandInteraction) {
 
 async function staffPanel(i: ChatInputCommandInteraction) {
   const settings = await requireSettings(i.guild!.id);
-  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'Management only.', flags: 64 });
-  const embed = new EmbedBuilder().setTitle('🛡️ Staff Management').setDescription('Use the buttons below to access staff tools.');
+  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'هذا الأمر للإدارة فقط.', flags: 64 });
+  const embed = new EmbedBuilder().setTitle('🛡️ إدارة الستاف').setDescription('استخدم الأزرار تحت للوصول لأدوات الستاف.');
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId('staff_stats').setLabel('Team Stats').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('staff_config_info').setLabel('Configuration').setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId('staff_stats').setLabel('إحصائيات الفريق').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('staff_config_info').setLabel('الإعدادات').setStyle(ButtonStyle.Secondary)
   );
   return i.reply({ embeds: [embed], components: [row], flags: 64 });
 }
@@ -222,38 +220,37 @@ async function staffAdd(i: ChatInputCommandInteraction) {
 
 async function staffRemove(i: ChatInputCommandInteraction) {
   const settings = await requireSettings(i.guild!.id);
-  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'Administrator permission required.', flags: 64 });
+  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'يلزمك صلاحية Administrator.', flags: 64 });
   const user = i.options.getUser('user', true);
   const staff = await Staff.findOne({ guildId: i.guild!.id, userId: user.id });
-  if (!staff || !staff.active) return i.reply({ content: 'This member is not an active staff member.', flags: 64 });
-  staff.active = false;
-  await staff.save();
+  if (!staff || !staff.active) return i.reply({ content: 'هذا العضو مو ستاف نشط.', flags: 64 });
+  await Staff.update(staff.id, { active: false });
   const member = await i.guild!.members.fetch(user.id).catch(() => null);
-  if (member) await member.roles.remove(settings.staffRoleId, `Staff removed by ${i.user.tag}`).catch(() => undefined);
-  return i.reply({ content: `✅ ${user} has been removed from the staff team.`, flags: 64 });
+  if (member) await member.roles.remove(settings.staffRoleId, `شاله ${i.user.tag} من الستاف`).catch(() => undefined);
+  return i.reply({ content: `✅ انشال ${user} من فريق الستاف.`, flags: 64 });
 }
 
 async function staffList(i: ChatInputCommandInteraction) {
-  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'Management only.', flags: 64 });
+  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'هذا الأمر للإدارة فقط.', flags: 64 });
   const rows = await Staff.find({ guildId: i.guild!.id, active: true }).sort({ joinedAt: 1 });
-  const text = rows.length ? rows.map(staff => `<@${staff.userId}> — joined ${discordDate(staff.joinedAt, 'd')}`).join('\n') : 'No staff members have been registered yet.';
-  return i.reply({ embeds: [new EmbedBuilder().setTitle('👥 Staff Members').setDescription(text)], flags: 64 });
+  const text = rows.length ? rows.map(staff => `<@${staff.userId}> — انضم ${discordDate(staff.joinedAt, 'd')}`).join('\n').slice(0, 4000) : 'ما فيه ستاف مسجلين بعد.';
+  return i.reply({ embeds: [new EmbedBuilder().setTitle('👥 أعضاء الستاف').setDescription(text)], flags: 64 });
 }
 
 async function staffPoints(i: ChatInputCommandInteraction) {
   const settings = await requireSettings(i.guild!.id);
   const member = await i.guild!.members.fetch(i.user.id);
-  if (!await isStaff(member)) return i.reply({ content: 'Staff only.', flags: 64 });
+  if (!await isStaff(member)) return i.reply({ content: 'هذا الأمر للستاف فقط.', flags: 64 });
   const staff = await Staff.findOne({ guildId: i.guild!.id, userId: i.user.id });
-  return i.reply({ flags: 64, embeds: [new EmbedBuilder().setColor(0x8175f5).setTitle('💜 Your Rift Points').setDescription(`**${staff?.points ?? 0} points**`).setThumbnail(i.user.displayAvatarURL({ extension: 'png', size: 128 })).setFooter({ text: 'Private to you' }).setTimestamp()] });
+  return i.reply({ flags: 64, embeds: [new EmbedBuilder().setColor(0x8175f5).setTitle('💜 نقاطك في Rift').setDescription(`**${staff?.points ?? 0} نقطة**`).setThumbnail(i.user.displayAvatarURL({ extension: 'png', size: 128 })).setFooter({ text: 'تظهر لك بس' }).setTimestamp()] });
 }
 
 async function staffLeaderboard(i: ChatInputCommandInteraction) {
   await i.deferReply();
   const settings = await requireSettings(i.guild!.id);
   const member = await i.guild!.members.fetch(i.user.id);
-  if (!await isStaff(member)) return i.editReply({ content: settings.botLanguage === 'ar' ? 'هذا الأمر متاح للستاف فقط.' : 'This command is for staff only.' });
-  const ar = settings.botLanguage === 'ar';
+  if (!await isStaff(member)) return i.editReply({ content: 'هذا الأمر متاح للستاف فقط.' });
+  const ar = true;
   const rows = await Staff.find({ guildId: i.guild!.id, active: true }).sort({ points: -1 }).limit(10);
   const lines = rows.length ? rows.map((row, index) => {
     const medal = ['🥇', '🥈', '🥉'][index] || `**${index + 1}**`;
@@ -261,12 +258,12 @@ async function staffLeaderboard(i: ChatInputCommandInteraction) {
       ? `${medal} <@${row.userId}>\n> **${row.points} نقطة**  •  ${row.messageCount} رسالة  •  ${(row.voiceMinutes / 60).toFixed(1)} ساعة فويس`
       : `${medal} <@${row.userId}>\n> **${row.points} points**  •  ${row.messageCount} messages  •  ${(row.voiceMinutes / 60).toFixed(1)}h voice`;
   }).join('\n\n') : (ar ? 'لا توجد بيانات ليدر بورد حتى الآن.' : 'No leaderboard data yet.');
-  return i.editReply({ embeds: [new EmbedBuilder().setColor(0x8175f5).setTitle('🏆 Rift Staff Leaderboard').setDescription(`${ar ? 'ترتيب الستاف حسب النقاط' : 'Staff ranked by points'}\n\n${lines}`).addFields({ name: ar ? 'نظام النقاط' : 'How points work', value: ar ? 'نقطة لكل 30 دقيقة شفت، و3 نقاط لكل 100 رسالة خلال الشفت، ونقطة لكل 30 دقيقة فويس خلال الشفت.' : '1 point per 30 minutes on shift · 3 points per 100 messages during a shift · 1 point per 30 minutes in voice during a shift.', inline: false }).setFooter({ text: 'Rift Staff Operations' }).setTimestamp()] });
+  return i.editReply({ embeds: [new EmbedBuilder().setColor(0x8175f5).setTitle('🏆 ترتيب ستاف Rift').setDescription(`${ar ? 'ترتيب الستاف حسب النقاط' : 'Staff ranked by points'}\n\n${lines}`).addFields({ name: ar ? 'نظام النقاط' : 'How points work', value: ar ? 'نقطة لكل 30 دقيقة شفت، و3 نقاط لكل 100 رسالة خلال الشفت، ونقطة لكل 30 دقيقة فويس خلال الشفت.' : '1 point per 30 minutes on shift · 3 points per 100 messages during a shift · 1 point per 30 minutes in voice during a shift.', inline: false }).setFooter({ text: 'Rift · إدارة الستاف' }).setTimestamp()] });
 }
 
 async function shiftPanel(i: ChatInputCommandInteraction) {
   const settings = await requireSettings(i.guild!.id);
-  if (!await isStaff(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'Staff only.', flags: 64 });
+  if (!await isStaff(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'هذا الأمر للستاف فقط.', flags: 64 });
   const active = await Shift.findOne({ guildId: i.guild!.id, userId: i.user.id, status: 'active' });
   const auto = autoShiftConfig(settings);
   return i.reply(buildShiftPanel({ messages: auto.messages, windowMinutes: Math.round(auto.windowMs / 60_000), idleMinutes: Math.round(auto.idleMs / 60_000), enabled: auto.enabled }));
@@ -319,35 +316,33 @@ async function leavePanel(i: ChatInputCommandInteraction) {
 
 async function resignationPanel(i: ChatInputCommandInteraction) {
   await requireSettings(i.guild!.id);
-  const embed = new EmbedBuilder().setTitle('🚪 Staff Resignation').setDescription('If you wish to resign from the staff team, submit your request below.');
-  return i.reply({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId('resignation_request').setLabel('Submit Resignation').setEmoji('🚪').setStyle(ButtonStyle.Danger))] });
+  const embed = new EmbedBuilder().setTitle('🚪 استقالة من الستاف').setDescription('لو تبي تستقيل من فريق الستاف، قدّم طلبك من الزر تحت.');
+  return i.reply({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId('resignation_request').setLabel('تقديم استقالة').setEmoji('🚪').setStyle(ButtonStyle.Danger))] });
 }
 
 async function staffStats(i: ChatInputCommandInteraction) {
-  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'Management only.', flags: 64 });
-  const settings = await requireSettings(i.guild!.id);
-  const members = await i.guild!.members.fetch();
-  const staff = members.filter(m => m.roles.cache.has(settings.staffRoleId));
+  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'هذا الأمر للإدارة فقط.', flags: 64 });
+  const staff = await Staff.countDocuments({ guildId: i.guild!.id, active: true });
   const active = await Shift.countDocuments({ guildId: i.guild!.id, status: 'active' });
-  return i.reply({ embeds: [new EmbedBuilder().setTitle('📊 Team Statistics').setDescription(`👥 Staff: ${staff.size}\n🟢 On Shift: ${active}\n📅 Active Leave Requests: ${await LeaveRequest.countDocuments({ guildId: i.guild!.id, status: 'approved' })}\n🚪 Pending Resignations: ${await ResignationRequest.countDocuments({ guildId: i.guild!.id, status: 'pending' })}`)] });
+  return i.reply({ embeds: [new EmbedBuilder().setTitle('📊 إحصائيات الفريق').setDescription(`👥 الستاف: ${staff}\n🟢 في الشفت: ${active}\n📅 إجازات مقبولة: ${await LeaveRequest.countDocuments({ guildId: i.guild!.id, status: 'approved' })}\n🚪 استقالات تنتظر: ${await ResignationRequest.countDocuments({ guildId: i.guild!.id, status: 'pending' })}`)] });
 }
 
 async function staffHistory(i: ChatInputCommandInteraction) {
-  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'Management only.', flags: 64 });
+  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'هذا الأمر للإدارة فقط.', flags: 64 });
   const user = i.options.getUser('user', true);
   return shiftHistoryFor(i, user.id, user.tag);
 }
 
 async function shiftHistory(i: ChatInputCommandInteraction) {
   const user = i.options.getUser('user') ?? i.user;
-  if (user.id !== i.user.id && !await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'Management only.', flags: 64 });
+  if (user.id !== i.user.id && !await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'بس الإدارة تقدر تشوف شفتات غيرك.', flags: 64 });
   return shiftHistoryFor(i, user.id, user.tag);
 }
 
 async function shiftHistoryFor(i: ChatInputCommandInteraction, userId: string, label: string) {
   const rows = await Shift.find({ guildId: i.guild!.id, userId }).sort({ startedAt: -1 }).limit(10);
-  const text = rows.length ? rows.map(s => `• ${discordDate(s.startedAt)} → ${s.endedAt ? discordDate(s.endedAt) : '🟢 Active'} — ${duration(activeMs(s))}`).join('\n') : 'No shifts found.';
-  return i.reply({ embeds: [new EmbedBuilder().setTitle(`📋 Shift History — ${label}`).setDescription(text)] });
+  const text = rows.length ? rows.map(s => `• ${discordDate(s.startedAt)} → ${s.endedAt ? discordDate(s.endedAt) : '🟢 نشط'} — ${duration(activeMs(s))}`).join('\n') : 'ما فيه شفتات.';
+  return i.reply({ embeds: [new EmbedBuilder().setTitle(`📋 سجل الشفتات — ${label}`).setDescription(text)] });
 }
 
 async function shiftStats(i: ChatInputCommandInteraction) {
@@ -365,39 +360,39 @@ async function shiftStats(i: ChatInputCommandInteraction) {
 
 async function reportPanel(i: ChatInputCommandInteraction) {
   await requireSettings(i.guild!.id);
-  const embed = new EmbedBuilder().setTitle('📝 Staff Reports').setDescription('Submit a shift summary, incident report, or general report. Reports are sent to your DMs and the report channel.');
+  const embed = new EmbedBuilder().setTitle('📝 تقارير الستاف').setDescription('قدّم ملخص شفت أو بلاغ حادثة أو تقرير عام. التقرير يوصلك بالخاص وفي روم التقارير.');
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId('report_submit').setLabel('Submit Report').setEmoji('📝').setStyle(ButtonStyle.Primary)
+    new ButtonBuilder().setCustomId('report_submit').setLabel('تقديم تقرير').setEmoji('📝').setStyle(ButtonStyle.Primary)
   );
   return i.reply({ embeds: [embed], components: [row] });
 }
 
 async function reportSubmit(i: ChatInputCommandInteraction) {
   await requireSettings(i.guild!.id);
-  const embed = new EmbedBuilder().setTitle('📝 Submit a Report').setDescription('Select the report type below, then fill in the details in the modal.');
+  const embed = new EmbedBuilder().setTitle('📝 تقديم تقرير').setDescription('اختر نوع التقرير تحت، وبعدها عبّي التفاصيل.');
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId('report_modal:shift_summary').setLabel('Shift Summary').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('report_modal:incident').setLabel('Incident').setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId('report_modal:general').setLabel('General').setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId('report_modal:shift_summary').setLabel('ملخص شفت').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('report_modal:incident').setLabel('حادثة').setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId('report_modal:general').setLabel('عام').setStyle(ButtonStyle.Secondary)
   );
   return i.reply({ embeds: [embed], components: [row], flags: 64 });
 }
 
 async function reportHistory(i: ChatInputCommandInteraction) {
   const rows = await Report.find({ guildId: i.guild!.id, userId: i.user.id }).sort({ createdAt: -1 }).limit(20);
-  if (!rows.length) return i.reply({ content: 'You have no submitted reports.', flags: 64 });
-  const text = rows.map(r => `• ${discordDate(r.createdAt)} — **${r.title}** (${r.status})`).join('\n');
-  return i.reply({ embeds: [new EmbedBuilder().setTitle('📋 Your Reports').setDescription(text)], flags: 64 });
+  if (!rows.length) return i.reply({ content: 'ما قدّمت أي تقرير بعد.', flags: 64 });
+  const text = rows.map(r => `• ${discordDate(r.createdAt)} — **${r.title}** (${REPORT_STATUS[r.status] ?? r.status})`).join('\n');
+  return i.reply({ embeds: [new EmbedBuilder().setTitle('📋 تقاريرك').setDescription(text)], flags: 64 });
 }
 
 async function reportReview(i: ChatInputCommandInteraction) {
-  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'Management only.', flags: 64 });
+  if (!await isManagement(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'هذا الأمر للإدارة فقط.', flags: 64 });
   const rows = await getPendingReports(i.guild!.id);
-  if (!rows.length) return i.reply({ content: 'No pending reports.', flags: 64 });
+  if (!rows.length) return i.reply({ content: 'ما فيه تقارير تنتظر مراجعة.', flags: 64 });
   const text = rows.map(r => `• ${discordDate(r.createdAt)} — **${r.title}** — <@${r.userId}>`).join('\n');
   const row = new ActionRowBuilder<ButtonBuilder>();
   for (const r of rows.slice(0, 5)) {
-    row.addComponents(new ButtonBuilder().setCustomId(`report_review:${r._id}`).setLabel(`Review #${String(r._id).slice(-6)}`).setStyle(ButtonStyle.Success));
+    row.addComponents(new ButtonBuilder().setCustomId(`report_review:${r._id}`).setLabel(`مراجعة #${String(r._id).slice(-6)}`).setStyle(ButtonStyle.Success));
   }
-  return i.reply({ embeds: [new EmbedBuilder().setTitle('📋 Pending Reports').setDescription(text)], components: [row], flags: 64 });
+  return i.reply({ embeds: [new EmbedBuilder().setTitle('📋 تقارير تنتظر المراجعة').setDescription(text)], components: [row], flags: 64 });
 }

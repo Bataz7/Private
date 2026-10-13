@@ -18,7 +18,7 @@ export function buildApplicationPanel(form: ApplicationFormDoc) {
       { name: t(lang, 'panelStatus'), value: closed ? t(lang, 'closed') : t(lang, 'open'), inline: true },
     )
     .setFooter({ text: s.mode === 'web' ? t(lang, 'panelFooterWeb') : t(lang, 'panelFooter') });
-  if (s.closesAt && !closed) embed.addFields({ name: lang === 'ar' ? 'يغلق' : 'Closes', value: `<t:${Math.floor(new Date(s.closesAt).getTime() / 1000)}:R>`, inline: true });
+  if (s.closesAt && !closed) embed.addFields({ name: 'يقفل', value: `<t:${Math.floor(new Date(s.closesAt).getTime() / 1000)}:R>`, inline: true });
   if (s.bannerUrl) embed.setImage(s.bannerUrl);
   const row = new ActionRowBuilder<ButtonBuilder>();
   if (s.mode !== 'web') row.addComponents(new ButtonBuilder().setCustomId(`app_apply:${form.id}`).setLabel((s.panelButtonLabel || t(lang, 'apply')).slice(0, 80)).setEmoji('📝').setStyle(ButtonStyle.Primary).setDisabled(closed));

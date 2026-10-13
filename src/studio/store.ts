@@ -6,7 +6,7 @@ export interface StudioRow { id: string; guildId: string; name: string; data: St
 
 /** The migration has not been applied yet. */
 export class StudioSetupError extends Error {
-  constructor() { super('Embed Studio is not set up yet: run supabase/migrations/033_embed_studio.sql in the Supabase SQL editor.'); }
+  constructor() { super('استوديو الرسائل ما انضبط للحين: شغّل supabase/migrations/033_embed_studio.sql في محرر SQL في Supabase.'); }
 }
 
 const TABLE = 'studio_messages';

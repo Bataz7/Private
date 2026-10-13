@@ -14,20 +14,20 @@ const TEXT = {
   },
   ar: {
     placeholder: (page: number, pages: number) => `اختر الإداري (${page}/${pages})`,
-    user: (name: string) => `يوزر: @${name}`,
+    user: (name: string) => `اليوزر: @${name}`,
     previous: 'السابق', next: 'التالي',
     title: '⭐ قيّم فريق الستاف',
-    description: 'شاركنا رأيك في تعامل الإداري معك. اختره من القائمة، ثم أعطه من 1 إلى 5 نجوم واكتب ملاحظة اختيارية.\nتقييمك يساعد على إبقاء الفريق في أفضل مستوى.',
+    description: 'شاركنا رأيك في تعامل الإداري معك. اختره من القائمة، وعطه من 1 إلى 5 نجوم واكتب ملاحظة لو تبي.\nتقييمك يساعدنا نخلي الفريق بأفضل مستوى.',
     staff: 'عدد الستاف', page: 'الصفحة', how: 'طريقة احتساب النقاط',
     points: '⭐⭐⭐⭐⭐  5 نجوم = **3 نقاط**\n⭐⭐⭐⭐  4 نجوم = **نقطتان**\n⭐⭐⭐  3 نجوم = **نقطة**',
-    footer: 'Rift Staff · تتحدث القائمة تلقائيًا كل 30 ثانية',
+    footer: 'ستاف Rift · القائمة تتحدث تلقائيًا كل 30 ثانية',
   },
 } as const;
 
 export async function buildRatingPanel(guild: Guild, page = 0) {
   const settings = await GuildSettings.findOne({ guildId: guild.id });
   if (!settings) return null;
-  const t = TEXT[settings.botLanguage === 'ar' ? 'ar' : 'en'];
+  const t = TEXT.ar;
   const membersCache = guild.members.cache.size ? guild.members.cache : await guild.members.fetch();
   const allMembers = membersCache.filter(member => member.roles.cache.has(settings.staffRoleId) && !member.user.bot);
   const members = [...allMembers.values()];

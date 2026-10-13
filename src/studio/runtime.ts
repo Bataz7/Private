@@ -56,24 +56,24 @@ async function runActions(i: Interaction, row: StudioRow, actions: Action[], var
       for (const roleId of action.roleIds) {
         const role = member.guild.roles.cache.get(roleId);
         if (!role) continue;
-        if (protectedRoles.has(roleId)) { notes.push(`⚠️ **${role.name}** is a staff role, so it cannot be given from a button.`); continue; }
-        if (!role.editable) { notes.push(`⚠️ I cannot manage **${role.name}** (it is above my role).`); continue; }
-        if (isDangerousRole(role)) { notes.push(`⚠️ **${role.name}** has moderator or admin permissions, so it cannot be given from a button.`); continue; }
+        if (protectedRoles.has(roleId)) { notes.push(`⚠️ **${role.name}** رتبة ستاف، فما تنعطى من زر.`); continue; }
+        if (!role.editable) { notes.push(`⚠️ ما أقدر أتحكم في **${role.name}** (فوق رتبتي).`); continue; }
+        if (isDangerousRole(role)) { notes.push(`⚠️ **${role.name}** فيها صلاحيات إشراف أو أدمن، فما تنعطى من زر.`); continue; }
         const has = member.roles.cache.has(roleId);
         const add = action.type === 'addRoles' || (action.type === 'toggleRoles' && !has);
-        if (add && !has) await member.roles.add(roleId, `Studio: ${row.name}`).then(() => notes.push(`✅ Added **${role.name}**`)).catch(() => notes.push(`⚠️ Could not add **${role.name}**`));
-        if (!add && has) await member.roles.remove(roleId, `Studio: ${row.name}`).then(() => notes.push(`➖ Removed **${role.name}**`)).catch(() => notes.push(`⚠️ Could not remove **${role.name}**`));
+        if (add && !has) await member.roles.add(roleId, `الاستوديو: ${row.name}`).then(() => notes.push(`✅ انضافت **${role.name}**`)).catch(() => notes.push(`⚠️ ما قدرت أضيف **${role.name}**`));
+        if (!add && has) await member.roles.remove(roleId, `الاستوديو: ${row.name}`).then(() => notes.push(`➖ انشالت **${role.name}**`)).catch(() => notes.push(`⚠️ ما قدرت أشيل **${role.name}**`));
       }
     }
-    if (action.type === 'dm') await i.user.send({ content: fill(action.content, vars).slice(0, 2000) || '​', allowedMentions: { parse: [] } }).catch(() => notes.push('⚠️ Your DMs are closed.'));
+    if (action.type === 'dm') await i.user.send({ content: fill(action.content, vars).slice(0, 2000) || '​', allowedMentions: { parse: [] } }).catch(() => notes.push('⚠️ الخاص عندك مقفل.'));
     if (action.type === 'channel' && action.channelId) {
       const channel: any = await i.client.channels.fetch(action.channelId).catch(() => null);
       if (channel?.isTextBased?.() && 'send' in channel && channel.guildId === row.guildId) {
         const payload = action.format === 'answers' && answers
-          ? { content: fill(action.content, vars).slice(0, 2000) || undefined, embeds: [{ color: BRAND_COLOR, author: { name: `${i.user.username} · ${row.name}`.slice(0, 256), icon_url: i.user.displayAvatarURL({ extension: 'png', size: 64 }) }, fields: answers.slice(0, 25).map(item => ({ name: item.label.slice(0, 256), value: (item.value || '—').slice(0, 1024) })), footer: { text: `User ID ${i.user.id}` }, timestamp: new Date().toISOString() }] }
+          ? { content: fill(action.content, vars).slice(0, 2000) || undefined, embeds: [{ color: BRAND_COLOR, author: { name: `${i.user.username} · ${row.name}`.slice(0, 256), icon_url: i.user.displayAvatarURL({ extension: 'png', size: 64 }) }, fields: answers.slice(0, 25).map(item => ({ name: item.label.slice(0, 256), value: (item.value || '—').slice(0, 1024) })), footer: { text: `آيدي العضو ${i.user.id}` }, timestamp: new Date().toISOString() }] }
           : { content: fill(action.content, vars).slice(0, 2000) || '​' };
         // Form answers are member text: only the person who pressed the button can be mentioned, nobody else.
-        await channel.send({ ...payload, allowedMentions: { parse: [], users: [i.user.id] } }).catch(() => notes.push('⚠️ Could not post to the configured channel.'));
+        await channel.send({ ...payload, allowedMentions: { parse: [], users: [i.user.id] } }).catch(() => notes.push('⚠️ ما قدرت أرسل في الروم المحدد.'));
       }
     }
   }
@@ -98,7 +98,7 @@ async function respond(i: Interaction, row: StudioRow, result: { replies: Array<
 }
 
 function formModal(docId: string, ownerId: string, action: Extract<Action, { type: 'form' }>) {
-  const modal = new ModalBuilder().setCustomId(`esf:${docId}:${ownerId}`).setTitle(action.title.slice(0, 45) || 'Form');
+  const modal = new ModalBuilder().setCustomId(`esf:${docId}:${ownerId}`).setTitle(action.title.slice(0, 45) || 'نموذج');
   modal.addLabelComponents(...action.fields.map(field => {
     const input = new TextInputBuilder().setCustomId(field.id).setStyle(field.style === 'paragraph' ? TextInputStyle.Paragraph : TextInputStyle.Short).setRequired(field.required);
     if (field.max) input.setMaxLength(field.max);
@@ -114,8 +114,8 @@ function formModal(docId: string, ownerId: string, action: Extract<Action, { typ
 export async function handleStudioComponent(i: ButtonInteraction | StringSelectMenuInteraction) {
   const [, docId = '', componentId = ''] = i.customId.split(':');
   const row = await load(docId);
-  if (!row || row.guildId !== i.guildId) return i.reply({ content: 'This message is no longer active.', flags: ephemeral });
-  if (tooFast(i.user.id, docId)) return i.reply({ content: 'Slow down a little.', flags: ephemeral });
+  if (!row || row.guildId !== i.guildId) return i.reply({ content: 'هذي الرسالة ما عادت فعّالة.', flags: ephemeral });
+  if (tooFast(i.user.id, docId)) return i.reply({ content: 'شوي شوي، انتظر لحظة.', flags: ephemeral });
   const hit = findInteractive(row.data, componentId);
   let actions: Action[] = [];
   let ownerId = componentId;
@@ -140,15 +140,15 @@ export async function handleStudioComponent(i: ButtonInteraction | StringSelectM
 export async function handleStudioModal(i: ModalSubmitInteraction) {
   const [, docId = '', ownerId = ''] = i.customId.split(':');
   const row = await load(docId);
-  if (!row || row.guildId !== i.guildId) return i.reply({ content: 'This form is no longer active.', flags: ephemeral });
-  if (tooFast(i.user.id, `${docId}:form`)) return i.reply({ content: 'Slow down a little.', flags: ephemeral });
+  if (!row || row.guildId !== i.guildId) return i.reply({ content: 'هذا النموذج ما عاد فعّال.', flags: ephemeral });
+  if (tooFast(i.user.id, `${docId}:form`)) return i.reply({ content: 'شوي شوي، انتظر لحظة.', flags: ephemeral });
   const hit = findInteractive(row.data, ownerId);
   const actions = hit.option?.actions || hit.button?.actions || [];
   const form = actions[0]?.type === 'form' ? actions[0] : null;
-  if (!form) return i.reply({ content: 'This form is no longer active.', flags: ephemeral });
+  if (!form) return i.reply({ content: 'هذا النموذج ما عاد فعّال.', flags: ephemeral });
   const answers = form.fields.map(field => ({ id: field.id, label: field.label, value: (() => { try { return i.fields.getTextInputValue(field.id).trim(); } catch { return ''; } })() }));
   const vars = varsFor(i, Object.fromEntries(answers.map(item => [`form.${item.id}`, item.value])));
-  const submit = form.submit.length ? form.submit : [{ type: 'reply', content: '✅ Thanks, your answers were sent.', ephemeral: true, messageId: '' } as Action];
+  const submit = form.submit.length ? form.submit : [{ type: 'reply', content: '✅ شكرًا، انرسلت إجاباتك.', ephemeral: true, messageId: '' } as Action];
   await i.deferReply(submit.some(action => action.type === 'reply' && !action.ephemeral) ? {} : { flags: ephemeral });
   const result = await runActions(i, row, submit, vars, answers);
   await respond(i, row, result);

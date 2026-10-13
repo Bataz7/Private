@@ -18,7 +18,7 @@ export interface ClientOptions {
   intents: number | number[];
   partials?: unknown[];
   allowedMentions?: { parse?: string[]; users?: string[]; roles?: string[]; repliedUser?: boolean } | null;
-  /** حجم كاش الأعضاء لكل سيرفر (الافتراضي من MEMBER_CACHE أو 1000). */
+  /** حجم كاش الأعضاء لكل سيرفر (الافتراضي من MEMBER_CACHE أو 400). */
   memberCacheSize?: number;
   presence?: { status?: string; activities?: any[]; afk?: boolean };
   /** بدون اتصال Gateway (REST فقط) — للوحة التحكم. */
@@ -93,7 +93,7 @@ export class GuildManager {
 export class UserManager {
   cache: LimitedCollection<string, User>;
   constructor(readonly client: Client) {
-    this.cache = new LimitedCollection(Number(process.env.USER_CACHE) || 1500);
+    this.cache = new LimitedCollection(Number(process.env.USER_CACHE) || 500);
   }
   _add(d: any): User {
     if (!d?.id) return new User(this.client, { id: "0", username: "unknown" });
@@ -183,6 +183,7 @@ export class ApplicationEmojiManager {
   cache = new Collection<string, { id: string; name: string; animated: boolean; toString: () => string; delete: () => Promise<void> }>();
   constructor(readonly client: Client) {}
   private wrap(e: any) {
+    if (!e?.id) throw new Error("emoji response has no id");
     const em = {
       id: e.id as string, name: e.name as string, animated: !!e.animated,
       toString: () => `<${e.animated ? "a" : ""}:${e.name}:${e.id}>`,
@@ -250,7 +251,7 @@ export class Client extends Emitter {
 
   constructor(options: ClientOptions) {
     super();
-    this.options = { ...options, memberCacheSize: options.memberCacheSize ?? (Number(process.env.MEMBER_CACHE) || 1000) };
+    this.options = { ...options, memberCacheSize: options.memberCacheSize ?? (Number(process.env.MEMBER_CACHE) || 400) };
     if (options.presence) this.presence = { ...this.presence, ...options.presence } as any;
   }
 

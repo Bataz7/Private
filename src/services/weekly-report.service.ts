@@ -3,7 +3,7 @@ import { supabase } from '../supabase/client.js';
 import { env } from '../config/env.js';
 import { BRAND_COLOR, e, emojisReady, progressBar } from '../utils/emoji.js';
 import { event } from '../utils/terminal.js';
-import { V2_FLAG, button, clip, container, row, section, separator, text, thumbnail, type Raw } from '../utils/v2.js';
+import { V2_FLAG, button, clip, container, row, rtl, section, separator, text, thumbnail, type Raw } from '../utils/v2.js';
 
 const DAY = 86_400_000;
 
@@ -22,7 +22,7 @@ export interface WeeklySettings { enabled: boolean; dmStaff: boolean; dmSummary:
 const num = (value: unknown, min: number, max: number, fallback: number) => { const n = Number(value); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback; };
 
 /** Cleans a settings object (from the dashboard or built from a database row) into a safe WeeklySettings. */
-export function weeklySettings(raw: unknown, fallbackChannel = '', fallbackLang: ReportLang = 'en'): WeeklySettings {
+export function weeklySettings(raw: unknown, fallbackChannel = '', _fallbackLang: ReportLang = 'ar'): WeeklySettings {
   const s = (raw && typeof raw === 'object' ? raw : {}) as Record<string, any>;
   const targets = (s.targets && typeof s.targets === 'object' ? s.targets : {}) as Record<string, unknown>;
   return {
@@ -32,7 +32,8 @@ export function weeklySettings(raw: unknown, fallbackChannel = '', fallbackLang:
     recipients: s.recipients === 'selected' ? 'selected' : 'all',
     staffIds: [...new Set((Array.isArray(s.staffIds) ? s.staffIds : []).map(String).filter((id: string) => /^\d{15,22}$/.test(id)))].slice(0, 200) as string[],
     channelId: /^\d{15,22}$/.test(String(s.channelId || '')) ? String(s.channelId) : fallbackChannel,
-    language: s.language === 'ar' || s.language === 'en' ? s.language : fallbackLang,
+    // البوت عربي دائمًا: التقارير الأسبوعية بالعربي مهما كان المحفوظ.
+    language: 'ar',
     targets: { shiftHours: num(targets.shiftHours, 1, 100, DEFAULT_TARGETS.shiftHours), activeDays: num(targets.activeDays, 1, 7, DEFAULT_TARGETS.activeDays), voiceHours: num(targets.voiceHours, 1, 100, DEFAULT_TARGETS.voiceHours), messages: num(targets.messages, 10, 20000, DEFAULT_TARGETS.messages) },
   };
 }
@@ -44,7 +45,7 @@ export function settingsFromRow(row: Record<string, any> | null | undefined): We
     enabled: r.weekly_enabled, dmStaff: r.weekly_dm_staff, dmSummary: r.weekly_dm_summary, recipients: r.weekly_recipients, staffIds: r.weekly_staff_ids,
     // null means "never chosen": use the server's report channel. An empty string means "do not post a summary".
     channelId: r.weekly_channel_id ?? r.report_channel_id ?? '', language: r.weekly_language || r.bot_language, targets: r.weekly_targets,
-  }, '', 'en');
+  }, '', 'ar');
 }
 
 export function rowFromSettings(s: WeeklySettings) {
@@ -56,7 +57,7 @@ export function rowFromSettings(s: WeeklySettings) {
 
 export async function loadWeeklySettings(guildId: string) {
   const { data, error } = await supabase.from('guild_settings').select('*').eq('guild_id', guildId).maybeSingle();
-  if (error) throw new Error(`Could not read the weekly report settings: ${error.message}`);
+  if (error) throw new Error(`ما قدرنا نقرأ إعدادات التقرير الأسبوعي: ${error.message}`);
   return { row: data as Record<string, any> | null, settings: settingsFromRow(data) };
 }
 
@@ -152,7 +153,7 @@ function activeMsIn(shift: ShiftRow, from: number, to: number, now = Date.now())
 
 async function rows<T>(query: PromiseLike<{ data: T[] | null; error: { message: string } | null }>, label: string): Promise<T[]> {
   const { data, error } = await query;
-  if (error) throw new Error(`Weekly report ${label} query failed: ${error.message}`);
+  if (error) throw new Error(`التقرير الأسبوعي: فشل استعلام ${label}: ${error.message}`);
   return data ?? [];
 }
 
@@ -209,18 +210,21 @@ export async function computeWeek(guildId: string, start: Date, end: Date, baseT
 
 // ---- Rendering (all cards use Rift purple) ------------------------------------------------------
 const bar = (value: number) => (emojisReady() ? progressBar(value / 100) : `\`${progressBar(value / 100)}\``);
-const hours = (value: number) => `${(Math.round(value * 10) / 10).toFixed(1)}h`;
+const hours = (value: number) => `${(Math.round(value * 10) / 10).toFixed(1)} ساعة`;
 const trend = (now: number, before: number | undefined) => {
   if (before === undefined) return '';
-  if (!before) return now ? ' `▲ new`' : '';
+  if (!before) return now ? ' `▲ جديد`' : '';
   const change = Math.round(((now - before) / before) * 100);
   return change === 0 ? ' `= 0%`' : change > 0 ? ` \`▲ ${change}%\`` : ` \`▼ ${Math.abs(change)}%\``;
 };
 const locale = (lang: ReportLang) => (lang === 'ar' ? 'ar-SA-u-nu-latn-ca-gregory' : 'en-US');
-const range = (start: Date, end: Date, lang: ReportLang = 'en') => { const f = new Intl.DateTimeFormat(locale(lang), { month: 'short', day: 'numeric', timeZone: 'UTC' }); return `${f.format(start)} – ${f.format(end)}`; };
+const range = (start: Date, end: Date, lang: ReportLang = 'ar') => { const f = new Intl.DateTimeFormat(locale(lang), { month: 'short', day: 'numeric', timeZone: 'UTC' }); return `${f.format(start)} – ${f.format(end)}`; };
 const LEVEL = { elite: ['نخبة', 'Elite'], high: ['عالي', 'High'], steady: ['ثابت', 'Steady'], low: ['منخفض', 'Low'] } as const;
-const weekday = (day: string, lang: ReportLang = 'en') => new Intl.DateTimeFormat(locale(lang), { weekday: 'long', timeZone: 'UTC' }).format(new Date(`${day}T00:00:00Z`));
-const pick = (lang: ReportLang) => (ar: string, en: string) => (lang === 'ar' ? ar : en);
+const weekday = (day: string, lang: ReportLang = 'ar') => new Intl.DateTimeFormat(locale(lang), { weekday: 'long', timeZone: 'UTC' }).format(new Date(`${day}T00:00:00Z`));
+// البوت عربي دائمًا: pick يرجّع النص العربي.
+const tx = (value: string) => text(rtl(value));
+const rtlAll = (values: string[]) => values.map(rtl);
+const pick = (_lang: ReportLang) => (ar: string, _en: string) => ar;
 
 function tip(m: Metrics, base: WeeklyTargets, lang: ReportLang) {
   const L = pick(lang);
@@ -235,7 +239,7 @@ function tip(m: Metrics, base: WeeklyTargets, lang: ReportLang) {
   return gaps.gap <= 0 ? `${e('fire')} ${L('أداء ممتاز في كل المحاور، استمر!', 'Excellent across the board. Keep it up!')}` : `${e('idea')} ${gaps.text}`;
 }
 
-export function staffReportPayload(m: Metrics, t: WeeklyTargets, info: { name: string; avatar: string }, start: Date, end: Date, note = '', lang: ReportLang = 'en'): Raw {
+export function staffReportPayload(m: Metrics, t: WeeklyTargets, info: { name: string; avatar: string }, start: Date, end: Date, note = '', lang: ReportLang = 'ar'): Raw {
   const L = pick(lang);
   const p = m.previous;
   const next = nextGrade(m.score);
@@ -244,7 +248,7 @@ export function staffReportPayload(m: Metrics, t: WeeklyTargets, info: { name: s
   const lines = [
     `${e('timer')} **${L('ساعات الشفت', 'Shift hours')}:** ${hours(m.shiftHours)} ${L('في', 'across')} ${m.shifts} ${L('شفت', `shift${m.shifts === 1 ? '' : 's'}`)}${trend(m.shiftHours, p?.shiftHours)}`,
     `${e('voice')} **${L('ساعات الفويس', 'Voice hours')}:** ${hours(m.voiceHours)}${trend(m.voiceHours, p?.voiceHours)}`,
-    `${e('chat')} **${L('الرسائل', 'Messages')}:** ${m.messages.toLocaleString('en-US')}${trend(m.messages, p?.messages)}${m.messagesPerHour ? ` · ${Math.round(m.messagesPerHour)}/h ${L('في الشفت', 'on shift')}` : ''}`,
+    `${e('chat')} **${L('الرسائل', 'Messages')}:** ${m.messages.toLocaleString('en-US')}${trend(m.messages, p?.messages)}${m.messagesPerHour ? ` · ${Math.round(m.messagesPerHour)}/ساعة ${L('في الشفت', 'on shift')}` : ''}`,
     `${e('calendar')} **${L('أيام النشاط', 'Active days')}:** ${m.activeDays}/${m.days}${trend(m.activeDays, p?.activeDays)}${m.busiestDay ? ` · ${L('الأنشط', 'busiest')} ${weekday(m.busiestDay, lang)}` : ''}`,
     `${e('star')} **${L('التقييم', 'Rating')}:** ${m.ratingCount ? `${m.ratingAverage.toFixed(1)}/5 · ${m.ratingCount} ${weekly ? L('تقييم هذا الأسبوع', 'this week') : L('تقييم', 'ratings')}` : m.overallRating ? `${m.overallRating.toFixed(1)}/5 ${L('إجمالي', 'overall')}` : '—'}`,
     `${e('points')} **${L('النقاط', 'Points')}:** ${m.pointsGained === null ? m.pointsTotal : `${m.pointsGained >= 0 ? '+' : ''}${m.pointsGained} · ${L('الإجمالي', 'total')} ${m.pointsTotal}`}`,
@@ -254,25 +258,25 @@ export function staffReportPayload(m: Metrics, t: WeeklyTargets, info: { name: s
   if (m.rank <= 3 && m.score >= 40 && m.of > 1) highlights.push(`${e('trophy')} ${weekly ? L(`من أفضل 3 في الفريق هذا الأسبوع (المركز ${m.rank})`, `Top 3 in the team this week (#${m.rank})`) : L(`من أفضل 3 في الفريق في هذي الفترة (المركز ${m.rank})`, `Top 3 in the team this period (#${m.rank})`)}`);
   if (p && m.score - p.score >= 10) highlights.push(`${e('trend')} ${L(`تحسّن بمقدار ${m.score - p.score} نقطة عن الأسبوع الماضي`, `Improved by ${m.score - p.score} points since last week`)}`);
   const parts: Raw[] = [
-    section([
+    section(rtlAll([
       `## ${e('chart')} ${weekly ? L('تقريرك الأسبوعي', 'Your weekly report') : L('تقرير أدائك', 'Your performance report')}\n-# ${range(start, end, lang)}`,
       `**${clip(info.name, 80)}** · ${L('التقدير', 'Grade')} **${m.grade}** · **${m.score}**/100 · ${L('المركز', 'Rank')} **#${m.rank}** ${L('من', 'of')} ${m.of}${p ? trend(m.score, p.score) : ''}`,
-    ], thumbnail(info.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png')),
-    text(`${bar(m.score)}  **${m.score}%**`),
+    ]), thumbnail(info.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png')),
+    tx(`${bar(m.score)}  **${m.score}%**`),
     separator(),
-    text(`### ${e('engage')} ${L('التفاعل', 'Engagement')} · **${LEVEL[m.engagementLevel][lang === 'ar' ? 0 : 1]}**\n${bar(m.engagement)}  **${m.engagement}%**\n-# ${L(`الشات والفويس مقارنة بالأهداف (${Math.round(st.messages)} رسالة، ${Math.round(st.voiceHours * 10) / 10} ساعة فويس)`, `Chat and voice, measured against the targets (${Math.round(st.messages)} messages, ${Math.round(st.voiceHours * 10) / 10}h voice)`)}`),
+    tx(`### ${e('engage')} ${L('التفاعل', 'Engagement')} · **${LEVEL[m.engagementLevel][0]}**\n${bar(m.engagement)}  **${m.engagement}%**\n-# ${L(`الشات والفويس مقارنة بالأهداف (${Math.round(st.messages)} رسالة، ${Math.round(st.voiceHours * 10) / 10} ساعة فويس)`, `Chat and voice, measured against the targets (${Math.round(st.messages)} messages, ${Math.round(st.voiceHours * 10) / 10}h voice)`)}`),
     separator(),
     text(lines.join('\n')),
     separator(),
-    text([...highlights, next ? `${e('up')} ${L(`الدرجة الجاية: **${next.letter}** من ${next.min}. ناقصك **${next.need}** نقطة.`, `Next grade: **${next.letter}** at ${next.min}. You need **${next.need}** more points.`)}` : `${e('crown')} ${L('أنت في أعلى درجة (S)، استمر!', 'You are at the top grade (S). Keep it up!')}`, tip(m, t, lang)].join('\n')),
+    tx([...highlights, next ? `${e('up')} ${L(`الدرجة الجاية: **${next.letter}** من ${next.min}. ناقصك **${next.need}** نقطة.`, `Next grade: **${next.letter}** at ${next.min}. You need **${next.need}** more points.`)}` : `${e('crown')} ${L('أنت في أعلى درجة (S)، استمر!', 'You are at the top grade (S). Keep it up!')}`, tip(m, t, lang)].join('\n')),
   ];
-  if (note) parts.push(text(`${e('edit')} **${L('ملاحظة الإدارة', 'Note from management')}**\n> ${clip(note, 900).replace(/\n/g, '\n> ')}`));
-  parts.push(text(`-# Rift Staff${weekly ? ` · ${L('يُرسل كل يوم اثنين', 'sent every Monday')}` : ''}`));
+  if (note) parts.push(tx(`${e('edit')} **${L('ملاحظة الإدارة', 'Note from management')}**\n> ${clip(note, 900).replace(/\n/g, '\n> ')}`));
+  parts.push(tx(`-# ستاف Rift${weekly ? ` · ${L('ينرسل كل يوم اثنين', 'sent every Monday')}` : ''}`));
   if (/^https?:\/\//.test(env.dashboardUrl)) parts.push(row([button({ url: `${env.dashboardUrl}/p/${m.userId}`, label: L('ملفي الشخصي', 'My profile'), emoji: '👤' }), button({ url: `${env.dashboardUrl}/dashboard/grades`, label: L('كيف تنحسب الدرجة', 'How grades work'), emoji: 'ℹ️' })]));
   return { flags: V2_FLAG, components: [container(parts, BRAND_COLOR)], allowedMentions: { parse: [] as never[] } };
 }
 
-export function teamSummaryPayload(metrics: Metrics[], guildName: string, start: Date, end: Date, lang: ReportLang = 'en'): Raw {
+export function teamSummaryPayload(metrics: Metrics[], guildName: string, start: Date, end: Date, lang: ReportLang = 'ar'): Raw {
   const L = pick(lang);
   const days = metrics[0]?.days ?? 7;
   const ranked = [...metrics].sort((a, b) => a.rank - b.rank);
@@ -286,22 +290,22 @@ export function teamSummaryPayload(metrics: Metrics[], guildName: string, start:
   const average = metrics.length ? Math.round(sum(item => item.score) / metrics.length) : 0;
   const engagement = metrics.length ? Math.round(sum(item => item.engagement) / metrics.length) : 0;
   const parts: Raw[] = [
-    text(`# ${e('chart')} ${days === 7 ? L('التقرير الأسبوعي للفريق', 'Weekly team report') : L('تقرير أداء الفريق', 'Team performance report')}\n-# ${guildName} · ${range(start, end, lang)}`),
+    tx(`# ${e('chart')} ${days === 7 ? L('التقرير الأسبوعي للفريق', 'Weekly team report') : L('تقرير أداء الفريق', 'Team performance report')}\n-# ${guildName} · ${range(start, end, lang)}`),
     separator(),
-    text([
+    tx([
       `${e('timer')} **${hours(sum(item => item.shiftHours))}** ${L('شفتات', 'on shift')} · ${e('voice')} **${hours(sum(item => item.voiceHours))}** ${L('فويس', 'in voice')} · ${e('chat')} **${sum(item => item.messages).toLocaleString('en-US')}** ${L('رسالة', 'messages')}`,
       `${e('star')} **${rated.length ? (rated.reduce((total, item) => total + item.ratingAverage, 0) / rated.length).toFixed(1) : '—'}** ${L('متوسط التقييم', 'avg rating')} · ${e('trend')} **${average}**/100 ${L('متوسط الأداء', 'avg score')} · ${e('engage')} **${engagement}%** ${L('متوسط التفاعل', 'avg engagement')}`,
     ].join('\n')),
     separator(),
-    text(`### ${e('trophy')} ${L('الأفضل', 'Top performers')}\n${ranked.slice(0, 5).map((item, index) => `${medals[index]} <@${item.userId}> — **${item.score}** · ${item.grade} · ${hours(item.shiftHours)} ${L('شفت', 'shift')} · ${hours(item.voiceHours)} ${L('فويس', 'voice')}`).join('\n') || '—'}`),
+    tx(`### ${e('trophy')} ${L('الأفضل', 'Top performers')}\n${ranked.slice(0, 5).map((item, index) => `${medals[index]} <@${item.userId}> — **${item.score}** · ${item.grade} · ${hours(item.shiftHours)} ${L('شفت', 'shift')} · ${hours(item.voiceHours)} ${L('فويس', 'voice')}`).join('\n') || '—'}`),
   ];
   const leaders: string[] = [];
   if (voiceLeader && voiceLeader.voiceHours > 0) leaders.push(`${e('voice')} ${L('الأكثر وقتًا في الفويس', 'Most voice time')}: <@${voiceLeader.userId}> (${hours(voiceLeader.voiceHours)})`);
   if (chatLeader && chatLeader.messages > 0) leaders.push(`${e('chat')} ${L('الأنشط في الشات', 'Most active in chat')}: <@${chatLeader.userId}> (${chatLeader.messages.toLocaleString('en-US')})`);
   if (improved && improved.delta > 0) leaders.push(`${e('trend')} ${L('الأكثر تحسنًا', 'Most improved')}: <@${improved.item.userId}> (+${improved.delta})`);
-  if (leaders.length) parts.push(text(`### ${e('fire')} ${L('أبرز اللحظات', 'Highlights')}\n${leaders.join('\n')}`));
-  if (idle.length) parts.push(text(`### ${e('moon')} ${L('بدون نشاط', 'No activity')}\n${idle.slice(0, 15).map(item => `<@${item.userId}>`).join(' ')}${idle.length > 15 ? ` +${idle.length - 15}` : ''}`));
-  parts.push(text(`-# ${GRADE_STEPS.map(step => `${step.letter} ${step.min}+`).join(' · ')}\n-# ${metrics.length} ${L('عضو في الفريق', 'staff members')}`));
+  if (leaders.length) parts.push(tx(`### ${e('fire')} ${L('أبرز اللحظات', 'Highlights')}\n${leaders.join('\n')}`));
+  if (idle.length) parts.push(tx(`### ${e('moon')} ${L('بدون نشاط', 'No activity')}\n${idle.slice(0, 15).map(item => `<@${item.userId}>`).join(' ')}${idle.length > 15 ? ` +${idle.length - 15}` : ''}`));
+  parts.push(tx(`-# ${GRADE_STEPS.map(step => `${step.letter} ${step.min}+`).join(' · ')}\n-# ${metrics.length} ${L('عضو في الفريق', 'staff members')}`));
   if (/^https?:\/\//.test(env.dashboardUrl)) parts.push(row([button({ url: `${env.dashboardUrl}/dashboard/reports`, label: L('فتح التقارير', 'Open reports'), emoji: '📊' })]));
   return { flags: V2_FLAG, components: [container(parts, BRAND_COLOR)], allowedMentions: { parse: [] as never[] } };
 }
@@ -328,7 +332,7 @@ export interface DeliverOptions {
 /** Saves each report, DMs the member their card, and posts the team summary to the report channel. */
 export async function deliverReports(client: Client, guild: Guild, reportChannelId: string | null, metrics: Metrics[], start: Date, end: Date, options: DeliverOptions) {
   const targets = options.targets ?? DEFAULT_TARGETS;
-  const lang = options.lang ?? 'en';
+  const lang = options.lang ?? 'ar';
   let dms = 0; const unreachable: string[] = [];
   // The team report is the same for everyone, so it is built once and sent after each person's own card.
   const team = options.dm && (options.dmSummary ?? true) && metrics.length > 1 ? teamSummaryPayload(metrics, guild.name, start, end, lang) : null;
@@ -386,7 +390,7 @@ export async function runWeeklyForGuild(client: Client, guild: Guild, { force = 
     const result = await deliverReports(client, guild, settings.channelId || null, metrics, start, end, {
       automated: true, authorId: client.user?.id || guild.ownerId, dm: settings.dmStaff, dmSummary: settings.dmSummary, summary: true, targets: settings.targets, lang: settings.language,
     });
-    event('report', `Weekly reports for ${guild.name}: ${result.staff} staff, ${result.dms} DMs sent${result.unreachable.length ? `, ${result.unreachable.length} unreachable` : ''}${result.posted ? ', team summary posted' : ''}`);
+    event('report', `التقارير الأسبوعية لـ ${guild.name}: ${result.staff} إداري، ${result.dms} رسالة خاص${result.unreachable.length ? `، ${result.unreachable.length} ما وصلتهم` : ''}${result.posted ? '، وانرسل ملخص الفريق' : ''}`);
     return result;
   } catch (error) {
     // The week was claimed before sending; a failure must not mark it as sent for good.
@@ -407,7 +411,7 @@ export async function sendReportsNow(client: Client, guild: Guild, input: { user
   const { settings } = await loadWeeklySettings(guild.id);
   const include = input.userIds === 'all' ? undefined : new Set(input.userIds);
   const metrics = await computeWeek(guild.id, input.start, input.end, settings.targets, include);
-  if (!metrics.length) throw new Error('None of the chosen people are active staff.');
+  if (!metrics.length) throw new Error('ولا أحد من اللي اخترتهم إداري فعّال.');
   const result = await deliverReports(client, guild, settings.channelId || null, metrics, input.start, input.end, {
     automated: false, authorId: input.authorId, dm: true, dmSummary: input.dmSummary ?? settings.dmSummary, summary: input.summary, note: input.note, targets: settings.targets, lang: settings.language,
   });
@@ -421,7 +425,7 @@ export async function previewForMember(client: Client, guild: Guild, targetUserI
   const end = new Date();
   const metrics = await computeWeek(guild.id, start, end, settings.targets);
   const m = metrics.find(item => item.userId === targetUserId);
-  if (!m) throw new Error('That member is not an active staff member.');
+  if (!m) throw new Error('هذا العضو مو إداري فعّال.');
   const info = await memberInfo(guild, targetUserId);
   const recipient = await client.users.fetch(recipientId);
   await recipient.send(staffReportPayload(m, settings.targets, info, start, end, '', settings.language));

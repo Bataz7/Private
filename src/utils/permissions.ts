@@ -1,5 +1,5 @@
 import type { Client, GuildMember, Interaction } from '../lib/djs/index.js';
-import { requireSettings, getSettings } from '../services/settings.service.js';
+import { requireSettings } from '../services/settings.service.js';
 
 // Who may do what. Two levels only:
 //   - staff: the Staff role (or an administrator). Can use their own tools.
@@ -25,7 +25,7 @@ export async function isStaff(member: GuildMember) {
 export const ADMIN_ONLY_TEXT = { en: 'Only administrators can do this.', ar: 'هذا الأمر للأدمن فقط، ما تقدر تسويه.' };
 
 export class AdminOnlyError extends Error {
-  constructor() { super(ADMIN_ONLY_TEXT.en); this.name = 'AdminOnlyError'; }
+  constructor() { super(ADMIN_ONLY_TEXT.ar); this.name = 'AdminOnlyError'; }
 }
 
 /**
@@ -39,8 +39,7 @@ export async function assertAdministrator(client: Client, guildId: string, userI
   if (!member || !isAdministrator(member)) throw new AdminOnlyError();
 }
 
-/** Ephemeral "only administrators" reply, in the server's bot language. */
+/** رد خاص: "للأدمن فقط". */
 export async function replyAdminOnly(interaction: Interaction & { reply: (options: any) => Promise<unknown>; guildId: string | null }) {
-  const settings = interaction.guildId ? await getSettings(interaction.guildId).catch(() => null) : null;
-  return interaction.reply({ content: `⛔ ${settings?.botLanguage === 'ar' ? ADMIN_ONLY_TEXT.ar : ADMIN_ONLY_TEXT.en}`, flags: 64 });
+  return interaction.reply({ content: `⛔ ${ADMIN_ONLY_TEXT.ar}`, flags: 64 });
 }

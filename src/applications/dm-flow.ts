@@ -14,9 +14,11 @@ import type { ApplicationDoc, ApplicationFormDoc } from '../models/Application.j
 
 type AnyInteraction = ButtonInteraction | StringSelectMenuInteraction | ModalSubmitInteraction;
 const REVIEW = '__review';
+const APP_STATUS_AR: Record<string, string> = { accepted: 'مقبول', rejected: 'مرفوض', cancelled: 'ملغي', expired: 'منتهي', in_progress: 'جاري' };
 const TEXT_TYPES = new Set(['short', 'paragraph', 'number', 'url', 'date']);
 const clip = (value: string, max: number) => (value.length > max ? `${value.slice(0, Math.max(0, max - 1))}…` : value);
-const langOf = (app: ApplicationDoc): Language => app.meta?.lang || 'en';
+// البوت عربي دائمًا، مهما كانت لغة التقديم المحفوظة.
+const langOf = (_app: ApplicationDoc): Language => 'ar';
 const colorNum = (app: ApplicationDoc) => parseInt(String(app.meta?.color || '#8175f5').replace('#', ''), 16) || 0x8175f5;
 const bar = (done: number, total: number) => { const size = 12; const filled = Math.round((done / Math.max(1, total)) * size); return `${'▰'.repeat(filled)}${'▱'.repeat(size - filled)}`; };
 const ephemeral = { flags: 64 as const };
@@ -37,9 +39,9 @@ function promptPayload(app: ApplicationDoc, question: Question, state: { answere
   const section = sectionOf(app, question);
   const hint = TEXT_TYPES.has(question.type) ? t(lang, 'typeHint') : question.type === 'checkbox' ? t(lang, 'pickManyHint') : question.type === 'yesno' || question.type === 'scale' ? t(lang, 'buttonHint') : t(lang, 'pickHint');
   const limits: string[] = [];
-  if ((question.type === 'short' || question.type === 'paragraph') && question.min) limits.push(lang === 'ar' ? `الحد الأدنى ${question.min} حرف` : `min ${question.min} characters`);
+  if ((question.type === 'short' || question.type === 'paragraph') && question.min) limits.push(`الحد الأدنى ${question.min} حرف`);
   if (question.type === 'number' && (question.min !== null || question.max !== null)) limits.push(`${question.min ?? '−∞'} – ${question.max ?? '∞'}`);
-  if (question.type === 'date') limits.push('YYYY-MM-DD');
+  if (question.type === 'date') limits.push('سنة-شهر-يوم (YYYY-MM-DD)');
   if (question.type === 'scale') limits.push(`${question.min ?? 1}${question.minLabel ? ` (${question.minLabel})` : ''} → ${question.max ?? 5}${question.maxLabel ? ` (${question.maxLabel})` : ''}`);
   const done = state.answered !== undefined;
   const description = [
@@ -57,7 +59,7 @@ function promptPayload(app: ApplicationDoc, question: Question, state: { answere
     .setFooter({ text: clip(`${bar(position - 1, total)}  ${app.formTitle} · ${question.required ? t(lang, 'required') : t(lang, 'optional')}`, 2048) });
   if (section) embed.setAuthor({ name: clip(`📂 ${section.label}`, 256) });
   if (done) embed.addFields({ name: t(lang, 'answered'), value: clip(formatAnswer(question, state.answered, lang), 1024) });
-  else if (app.answers[question.id] !== undefined) embed.addFields({ name: lang === 'ar' ? 'إجابتك الحالية' : 'Current answer', value: clip(formatAnswer(question, app.answers[question.id], lang), 1024) });
+  else if (app.answers[question.id] !== undefined) embed.addFields({ name: 'إجابتك الحالية', value: clip(formatAnswer(question, app.answers[question.id], lang), 1024) });
   if (done) return { embeds: [embed], components: [] };
 
   const id = app.id;
@@ -85,7 +87,7 @@ function promptPayload(app: ApplicationDoc, question: Question, state: { answere
   }
   const nav = new ActionRowBuilder<ButtonBuilder>();
   if (TEXT_TYPES.has(question.type)) nav.addComponents(new ButtonBuilder().setCustomId(`app_ans:${id}:${question.id}`).setLabel(t(lang, 'answer')).setEmoji('✏️').setStyle(ButtonStyle.Primary));
-  if (app.answers[question.id] !== undefined) nav.addComponents(new ButtonBuilder().setCustomId(`app_keep:${id}:${question.id}`).setLabel(lang === 'ar' ? 'إبقاء الإجابة' : 'Keep answer').setEmoji('↪️').setStyle(ButtonStyle.Success));
+  if (app.answers[question.id] !== undefined) nav.addComponents(new ButtonBuilder().setCustomId(`app_keep:${id}:${question.id}`).setLabel('خلّ الإجابة').setEmoji('↪️').setStyle(ButtonStyle.Success));
   else if (!question.required) nav.addComponents(new ButtonBuilder().setCustomId(`app_skip:${id}:${question.id}`).setLabel(t(lang, 'skip')).setEmoji('⏭️').setStyle(ButtonStyle.Secondary));
   nav.addComponents(
     new ButtonBuilder().setCustomId(`app_back:${id}:${question.id}`).setLabel(t(lang, 'back')).setEmoji('⬅️').setStyle(ButtonStyle.Secondary).setDisabled(position <= 1),
@@ -182,14 +184,14 @@ async function recordAnswer(app: ApplicationDoc, question: Question, value: unkn
 async function loadOwn(i: AnyInteraction, id: string) {
   const app = await getApplication(id);
   if (!app || app.userId !== i.user.id || app.status !== 'in_progress') {
-    await i.reply({ content: t(app ? langOf(app) : 'en', 'notActive'), ...ephemeral }).catch(() => undefined);
+    await i.reply({ content: t('ar', 'notActive'), ...ephemeral }).catch(() => undefined);
     return null;
   }
   return app;
 }
 
 async function stale(i: AnyInteraction, app: ApplicationDoc) {
-  await i.reply({ content: langOf(app) === 'ar' ? 'هذه الرسالة قديمة، استخدم آخر رسالة في المحادثة 👇' : 'This message is outdated, use the latest one below 👇', ...ephemeral }).catch(() => undefined);
+  await i.reply({ content: 'هذي الرسالة قديمة، استخدم آخر رسالة في المحادثة 👇', ...ephemeral }).catch(() => undefined);
 }
 
 async function answerFromComponent(i: ButtonInteraction | StringSelectMenuInteraction | ModalSubmitInteraction, app: ApplicationDoc, question: Question, value: unknown) {
@@ -206,7 +208,7 @@ async function answerFromComponent(i: ButtonInteraction | StringSelectMenuIntera
 async function startFromPanel(i: ButtonInteraction, formId: string) {
   await i.deferReply(ephemeral);
   const form = await getForm(formId);
-  if (!form || form.guildId !== i.guildId) return i.editReply({ content: t('en', 'notActive') });
+  if (!form || form.guildId !== i.guildId) return i.editReply({ content: t('ar', 'notActive') });
   const s = formSettings(form);
   const lang = s.language;
   const dmLink = (channelId: string) => new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel(t(lang, 'openDm')).setURL(`https://discord.com/channels/@me/${channelId}`));
@@ -279,26 +281,26 @@ async function submit(i: ButtonInteraction, app: ApplicationDoc) {
   await announceApplication(i.client, submitted, form);
 }
 
-const adminOnly = (i: ButtonInteraction | ModalSubmitInteraction) => i.reply({ content: '⛔ Only the server owner and Administrators can accept or reject applications.', ...ephemeral });
+const adminOnly = (i: ButtonInteraction | ModalSubmitInteraction) => i.reply({ content: '⛔ بس صاحب السيرفر والأدمن يقدرون يقبلون أو يرفضون التقديمات.', ...ephemeral });
 
 // Management actions on the review message in the server.
 async function reviewerAction(i: ButtonInteraction, action: string, id: string, extra: string) {
-  if (!i.inCachedGuild()) return i.reply({ content: 'Server only.', ...ephemeral });
+  if (!i.inCachedGuild()) return i.reply({ content: 'هذا داخل السيرفر فقط.', ...ephemeral });
   const app = await getApplication(id);
-  if (!app || app.guildId !== i.guildId) return i.reply({ content: 'Application not found.', ...ephemeral });
+  if (!app || app.guildId !== i.guildId) return i.reply({ content: 'ما لقينا التقديم.', ...ephemeral });
   const form = await getForm(app.formId);
   // Voting (like or dislike) is open to reviewers. Accepting or rejecting is for administrators only.
-  if (action === 'app_vote') { if (!await canReview(i.member, form)) return i.reply({ content: '⛔ You are not allowed to vote on applications.', ...ephemeral }); }
+  if (action === 'app_vote') { if (!await canReview(i.member, form)) return i.reply({ content: '⛔ ما عندك صلاحية تصوّت على التقديمات.', ...ephemeral }); }
   else if (!canDecide(i.member)) return adminOnly(i);
-  if (app.status !== 'pending') return i.reply({ content: `This application was already ${app.status}.`, ...ephemeral });
+  if (app.status !== 'pending') return i.reply({ content: `هذا التقديم انحسم من قبل (${APP_STATUS_AR[app.status] || app.status}).`, ...ephemeral });
   if (action === 'app_vote') {
     const updated = await toggleVote(id, i.user.id, extra === 'down' ? 'down' : 'up').catch(() => null);
-    if (!updated) return i.reply({ content: 'Voting is closed.', ...ephemeral });
+    if (!updated) return i.reply({ content: 'التصويت مقفل.', ...ephemeral });
     return i.update(buildReviewPayload(updated, form));
   }
   const decision = action === 'app_accept' ? 'accepted' : 'rejected';
-  const modal = new ModalBuilder().setCustomId(`app_decide:${id}:${decision}`).setTitle(decision === 'accepted' ? 'Accept application' : 'Reject application');
-  modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId('reason').setLabel(decision === 'accepted' ? 'Internal note (optional)' : 'Reason (sent to the applicant)').setStyle(TextInputStyle.Paragraph).setRequired(false).setMaxLength(1000)));
+  const modal = new ModalBuilder().setCustomId(`app_decide:${id}:${decision}`).setTitle(decision === 'accepted' ? 'قبول التقديم' : 'رفض التقديم');
+  modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId('reason').setLabel(decision === 'accepted' ? 'ملاحظة داخلية (اختياري)' : 'السبب (ينرسل للمتقدم)').setStyle(TextInputStyle.Paragraph).setRequired(false).setMaxLength(1000)));
   return i.showModal(modal);
 }
 
@@ -309,8 +311,8 @@ export async function handleApplicationButton(i: ButtonInteraction) {
   if (action === 'app_cancel') {
     const app = await loadOwn(i, id); if (!app) return;
     const lang = langOf(app);
-    return i.reply({ content: lang === 'ar' ? 'هل أنت متأكد من إلغاء التقديم؟ ستفقد إجاباتك.' : 'Cancel this application? Your answers will be lost.', components: [new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId(`app_cancelok:${id}`).setLabel(lang === 'ar' ? 'نعم، إلغاء' : 'Yes, cancel').setStyle(ButtonStyle.Danger),
+    return i.reply({ content: 'متأكد تبي تلغي التقديم؟ بتروح إجاباتك.', components: [new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder().setCustomId(`app_cancelok:${id}`).setLabel('إيه، ألغِ').setStyle(ButtonStyle.Danger),
     )], ...ephemeral });
   }
   const app = await loadOwn(i, id); if (!app) return;
@@ -352,7 +354,7 @@ export async function handleApplicationButton(i: ButtonInteraction) {
     const max = Math.min(cap, question.max && (question.type === 'short' || question.type === 'paragraph') ? question.max : cap);
     input.setMaxLength(max);
     if ((question.type === 'short' || question.type === 'paragraph') && question.min) input.setMinLength(Math.min(question.min, max));
-    const placeholder = question.placeholder || (question.type === 'date' ? 'YYYY-MM-DD' : question.type === 'url' ? 'https://' : '');
+    const placeholder = question.placeholder || (question.type === 'date' ? 'سنة-شهر-يوم مثل 2026-09-28' : question.type === 'url' ? 'https://' : '');
     if (placeholder) input.setPlaceholder(clip(placeholder, 100));
     const current = app.answers[question.id];
     if (current !== undefined && String(current).length <= max) input.setValue(String(current));
@@ -394,16 +396,16 @@ export async function handleApplicationSelect(i: StringSelectMenuInteraction) {
 export async function handleApplicationModal(i: ModalSubmitInteraction) {
   const [action = '', id = '', extra = ''] = i.customId.split(':');
   if (action === 'app_decide') {
-    if (!i.inCachedGuild()) return i.reply({ content: 'Server only.', ...ephemeral });
+    if (!i.inCachedGuild()) return i.reply({ content: 'هذا داخل السيرفر فقط.', ...ephemeral });
     const app = await getApplication(id);
-    if (!app || app.guildId !== i.guildId) return i.reply({ content: 'Application not found.', ...ephemeral });
+    if (!app || app.guildId !== i.guildId) return i.reply({ content: 'ما لقينا التقديم.', ...ephemeral });
     if (!canDecide(i.member)) return adminOnly(i);
     await i.deferReply(ephemeral);
     try {
       const result = await decideApplication(i.client, id, extra === 'accepted' ? 'accepted' : 'rejected', { id: i.user.id, name: i.user.username }, i.fields.getTextInputValue('reason'));
-      return i.editReply({ content: `${extra === 'accepted' ? '✅ Accepted' : '❌ Rejected'} <@${app.userId}>.${result.warnings.length ? `\n⚠️ ${result.warnings.join('\n⚠️ ')}` : ''}` });
+      return i.editReply({ content: `${extra === 'accepted' ? '✅ انقبل' : '❌ انرفض'} <@${app.userId}>.${result.warnings.length ? `\n⚠️ ${result.warnings.join('\n⚠️ ')}` : ''}` });
     } catch (error) {
-      return i.editReply({ content: `⚠️ ${error instanceof Error ? error.message : 'Could not save the decision.'}` });
+      return i.editReply({ content: `⚠️ ${error instanceof Error ? error.message : 'ما قدرنا نحفظ القرار.'}` });
     }
   }
   const app = await loadOwn(i, id); if (!app) return;
@@ -421,7 +423,7 @@ export async function handleApplicationMessage(message: Message) {
   const app = await findApplication({ userId: message.author.id, status: 'in_progress' });
   if (!app) return false;
   const lang = langOf(app);
-  if (!app.cursor) { await message.reply(lang === 'ar' ? 'اضغط **ابدأ التقديم** في الرسالة بالأعلى للبدء 👆' : 'Press **Start** in the message above to begin 👆').catch(() => undefined); return true; }
+  if (!app.cursor) { await message.reply('اضغط **ابدأ التقديم** في الرسالة اللي فوق عشان تبدأ 👆').catch(() => undefined); return true; }
   if (app.cursor === REVIEW) { await message.reply(t(lang, 'useButtons')).catch(() => undefined); return true; }
   const question = questionOf(app, app.cursor);
   if (!question) return true;

@@ -32,8 +32,8 @@ export async function recordStartup() {
   const stopped = previous.stopped_at ? new Date(previous.stopped_at) : null;
   const lastAlive = stopped && stopped > new Date(previous.updated_at) ? stopped : new Date(previous.updated_at);
   const gap = now.getTime() - lastAlive.getTime();
-  const events: Array<Record<string, unknown>> = [{ kind: 'restart', started_at: now.toISOString(), ended_at: now.toISOString(), note: previous.stopped_at ? 'Stopped cleanly and started again' : 'Started after an unexpected stop' }];
-  if (gap > DOWNTIME_GAP_MS) events.push({ kind: 'downtime', started_at: lastAlive.toISOString(), ended_at: now.toISOString(), note: previous.stopped_at ? 'Bot was stopped' : 'Bot stopped responding (crash or lost connection)' });
+  const events: Array<Record<string, unknown>> = [{ kind: 'restart', started_at: now.toISOString(), ended_at: now.toISOString(), note: previous.stopped_at ? 'توقف بشكل سليم وانعاد تشغيله' : 'اشتغل بعد توقف مفاجئ' }];
+  if (gap > DOWNTIME_GAP_MS) events.push({ kind: 'downtime', started_at: lastAlive.toISOString(), ended_at: now.toISOString(), note: previous.stopped_at ? 'البوت انوقف' : 'البوت وقف عن الاستجابة (تعطّل أو انقطع الاتصال)' });
   const saved = await supabase.from('bot_status_events').insert(events);
   if (saved.error) warnSchema('bot_status_events', saved.error) || console.error('Could not record the restart:', saved.error.message);
 }

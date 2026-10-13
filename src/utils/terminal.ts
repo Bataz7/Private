@@ -55,15 +55,15 @@ export function status(kind: 'ok' | 'wait' | 'fail' | 'info' | 'warn', label: st
 
 // ---- Events: things that happen while the bot runs (shifts, reports, emoji sync). ---------------
 const EVENTS = {
-  shiftStart: { icon: '▶', colour: c.green, label: 'SHIFT' },
-  shiftEnd: { icon: '■', colour: c.lilac, label: 'SHIFT' },
-  report: { icon: '◆', colour: c.purple, label: 'REPORT' },
-  voice: { icon: '♪', colour: c.cyan, label: 'VOICE' },
-  db: { icon: '⛁', colour: c.cyan, label: 'DATA' },
-  emoji: { icon: '✦', colour: c.lilac, label: 'EMOJI' },
-  warn: { icon: '▲', colour: c.yellow, label: 'WARN' },
-  error: { icon: '✖', colour: c.red, label: 'ERROR' },
-  info: { icon: '›', colour: c.purple, label: 'INFO' },
+  shiftStart: { icon: '▶', colour: c.green, label: 'شفت' },
+  shiftEnd: { icon: '■', colour: c.lilac, label: 'شفت' },
+  report: { icon: '◆', colour: c.purple, label: 'تقرير' },
+  voice: { icon: '♪', colour: c.cyan, label: 'فويس' },
+  db: { icon: '⛁', colour: c.cyan, label: 'بيانات' },
+  emoji: { icon: '✦', colour: c.lilac, label: 'إيموجي' },
+  warn: { icon: '▲', colour: c.yellow, label: 'تنبيه' },
+  error: { icon: '✖', colour: c.red, label: 'خطأ' },
+  info: { icon: '›', colour: c.purple, label: 'معلومة' },
 } as const;
 export type EventKind = keyof typeof EVENTS;
 

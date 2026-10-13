@@ -1,5 +1,13 @@
+import type { Guild, User } from '../lib/djs/index.js';
 import { supabase } from '../supabase/client.js';
 import { activeMs } from '../services/shift.service.js';
+import { Staff } from '../models/Staff.js';
+import { Complaint } from '../models/Complaint.js';
+import { GuildSettings } from '../models/GuildSettings.js';
+import { weekPointsOf } from '../services/leaderboard.service.js';
+import { isDismissed } from '../discipline/dismissed.js';
+import { countActiveWarnings, warnLimitFrom } from './warnings.js';
+import type { StaffCardData } from '../utils/staff-card.js';
 
 // Numbers for the staff profile page. Everything here is counted from data the bot really records:
 // shifts, messages sent (staff_daily_activity), assists, ratings, mod reports and complaints.
@@ -76,4 +84,51 @@ export function badgesOf(input: { position: number; totalStaff: number; streak: 
 // What the activity timeline may show. Everyone sees the first group; the member and administrators see all of it,
 // because leave, resignation, complaints and point changes are private.
 export const PUBLIC_ACTIONS = ['SHIFT_STARTED', 'SHIFT_STARTED_AUTOMATICALLY', 'SHIFT_ENDED', 'SHIFT_AUTO_ENDED', 'ASSISTANCE_RECORDED', 'MOD_REPORT_SUBMITTED'];
-export const PRIVATE_ACTIONS = ['BREAK_STARTED', 'BREAK_RESUMED', 'BREAK_AUTO_ENDED', 'LEAVE_REQUESTED', 'LEAVE_APPROVED', 'LEAVE_STARTED', 'LEAVE_EXTENDED', 'RETURNED_FROM_LEAVE', 'RESIGNATION_REQUESTED', 'RESIGNATION_CONFIRMED', 'RESIGNATION_WITHDRAWN', 'COMPLAINT_REVIEWED', 'REPORT_SUBMITTED', 'REPORT_REVIEWED', 'POINTS_ADJUSTED'];
+export const PRIVATE_ACTIONS = ['SHIFT_PRESENCE_TIMEOUT', 'STAFF_DISMISSED', 'STAFF_REINSTATED', 'BREAK_STARTED', 'BREAK_RESUMED', 'BREAK_AUTO_ENDED', 'LEAVE_REQUESTED', 'LEAVE_APPROVED', 'LEAVE_STARTED', 'LEAVE_EXTENDED', 'RETURNED_FROM_LEAVE', 'RESIGNATION_REQUESTED', 'RESIGNATION_CONFIRMED', 'RESIGNATION_WITHDRAWN', 'COMPLAINT_REVIEWED', 'REPORT_SUBMITTED', 'REPORT_REVIEWED', 'POINTS_ADJUSTED'];
+
+// ---- بطاقة الستاف (/profile و /report stats) ---------------------------------------------------------
+type ShiftLite = { started_at: string; ended_at: string | null; status: string; breaks: Array<{ startedAt: string; endedAt: string | null }> | null };
+
+/**
+ * كل حقول بطاقة الستاف بأقل عدد استعلامات: الترتيب بعدّ (count head) بدل تحميل كل الستاف، ونقاط الأسبوع من السجل
+ * لهذا العضو بس. يرجّع null لو العضو مو مسجل في الستاف أبداً.
+ */
+export async function staffCardData(guild: Guild, user: User): Promise<StaffCardData | null> {
+  const guildId = guild.id;
+  const staff = await Staff.findOne({ guildId, userId: user.id }).catch(() => null);
+  if (!staff) return null;
+  const points = Number(staff.points) || 0;
+  const [shiftRows, complaints, ratings, settings, member, above, top, weekPoints, warnings, dismissed] = await Promise.all([
+    supabase.from('shifts').select('started_at,ended_at,status,breaks').eq('guild_id', guildId).eq('user_id', user.id).order('started_at', { ascending: false }).limit(5000).then(r => (r.data ?? []) as ShiftLite[]),
+    Complaint.countDocuments({ guildId, staffUserId: user.id, status: 'approved' }).catch(() => 0),
+    supabase.from('staff_ratings').select('rating').eq('guild_id', guildId).eq('staff_user_id', user.id).limit(5000).then(r => (r.data ?? []) as Array<{ rating: number }>),
+    GuildSettings.findOne({ guildId }).catch(() => null),
+    guild.members.fetch(user.id).catch(() => null),
+    supabase.from('staff').select('id', { count: 'exact', head: true }).eq('guild_id', guildId).eq('active', true).gt('points', points).then(r => r.count ?? 0),
+    supabase.from('staff').select('points').eq('guild_id', guildId).eq('active', true).order('points', { ascending: false }).limit(1).then(r => Number(r.data?.[0]?.points) || 0),
+    weekPointsOf(guildId, user.id).catch(() => 0),
+    countActiveWarnings(guildId, user.id),
+    staff.active ? Promise.resolve(false) : isDismissed(guildId, user.id).catch(() => false),
+  ]);
+  const shifts = shiftRows.map(row => ({ startedAt: new Date(row.started_at), endedAt: row.ended_at ? new Date(row.ended_at) : null, status: row.status, breaks: (row.breaks ?? []).map(b => ({ startedAt: new Date(b.startedAt), endedAt: b.endedAt ? new Date(b.endedAt) : null })) }));
+  const current = shifts.find(shift => shift.status === 'active');
+  const highest = member?.roles.highest;
+  return {
+    name: member?.displayName ?? user.globalName ?? user.username,
+    avatar: (member ?? user).displayAvatarURL({ extension: 'png', size: 256 }),
+    points, complaints,
+    shiftHours: shifts.reduce((sum, shift) => sum + activeMs(shift), 0) / 3_600_000,
+    voiceHours: (Number(staff.voiceMinutes) || 0) / 60,
+    messages: Number(staff.messageCount) || 0,
+    helped: Number(staff.claimed) || 0,
+    ratingAverage: ratings.length ? ratings.reduce((sum, row) => sum + (Number(row.rating) || 0), 0) / ratings.length : 0,
+    ratingCount: ratings.length,
+    rank: staff.active ? above + 1 : null,
+    topPoints: Math.max(top, points),
+    weekPoints,
+    warnings, warnLimit: warnLimitFrom(settings?.warnLimit) || undefined,
+    onShiftSince: current ? current.startedAt : null,
+    roleName: highest && highest.id !== guild.id ? highest.name : undefined,
+    dismissed,
+  };
+}

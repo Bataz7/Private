@@ -107,7 +107,7 @@ export class SupabaseModel<T extends Record<string, any>> {
     }
     if (options.rowLimit) query = query.limit(options.rowLimit);
     const { data, error } = await query;
-    if (error) throw new Error(`Supabase ${this.config.table} query failed: ${error.message}`);
+    if (error) throw new Error(`فشل استعلام ${this.config.table} في قاعدة البيانات: ${error.message}`);
     return (data ?? []).map((row: Record<string, any>) => this.fromDb(row));
   }
 
@@ -127,13 +127,13 @@ export class SupabaseModel<T extends Record<string, any>> {
   async create(data: Partial<T>) {
     const payload = this.toDb({ ...this.config.defaults, ...data });
     const { data: rows, error } = await supabase.from(this.config.table).insert(payload).select('*').single();
-    if (error) throw new Error(`Supabase ${this.config.table} insert failed: ${error.message}`);
+    if (error) throw new Error(`فشل حفظ ${this.config.table} في قاعدة البيانات: ${error.message}`);
     return this.fromDb(rows);
   }
 
   async update(id: string | number, data: Partial<T>) {
     const { data: row, error } = await supabase.from(this.config.table).update(this.toDb(data)).eq(this.config.primaryKey ?? 'id', id).select('*').single();
-    if (error) throw new Error(`Supabase ${this.config.table} update failed: ${error.message}`);
+    if (error) throw new Error(`فشل تحديث ${this.config.table} في قاعدة البيانات: ${error.message}`);
     return this.fromDb(row);
   }
 
@@ -141,7 +141,7 @@ export class SupabaseModel<T extends Record<string, any>> {
     let query = supabase.from(this.config.table).delete();
     query = this.applyFilters(query, filters);
     const { error } = await query;
-    if (error) throw new Error(`Supabase ${this.config.table} delete failed: ${error.message}`);
+    if (error) throw new Error(`فشل حذف ${this.config.table} من قاعدة البيانات: ${error.message}`);
   }
 
   async findByIdAndUpdate(id: string | number, data: Partial<T>, _options?: { new?: boolean }) {
@@ -158,7 +158,7 @@ export class SupabaseModel<T extends Record<string, any>> {
   async countDocuments(filters: Filter = {}) {
     let query = this.applyFilters(supabase.from(this.config.table).select('id', { count: 'exact', head: true }), filters);
     const { count, error } = await query;
-    if (error) throw new Error(`Supabase ${this.config.table} count failed: ${error.message}`);
+    if (error) throw new Error(`فشل عدّ ${this.config.table} في قاعدة البيانات: ${error.message}`);
     return count ?? 0;
   }
 }

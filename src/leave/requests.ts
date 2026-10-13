@@ -23,7 +23,7 @@ export async function createLeave(data: { guildId: string; userId: string; start
   // and the other is removed, so a member never has two open leaves.
   const rows = await LeaveRequest.find({ guildId: data.guildId, userId: data.userId }).sort({ createdAt: 1 }).limit(20);
   const first = rows.filter(row => row.status === 'pending' || row.status === 'approved').sort(byAge)[0];
-  if (first && first.id !== created.id) { await LeaveRequest.deleteMany({ id: created.id }); throw new Error('You already have an active leave request.'); }
+  if (first && first.id !== created.id) { await LeaveRequest.deleteMany({ id: created.id }); throw new Error('عندك طلب إجازة مفتوح.'); }
   return created;
 }
 
@@ -47,7 +47,7 @@ export async function createResignation(data: { guildId: string; userId: string;
   const created = await ResignationRequest.create({ ...data, reason: String(data.reason || '').slice(0, 1000), notes: String(data.notes ?? '').slice(0, 1000) });
   const rows = await ResignationRequest.find({ guildId: data.guildId, userId: data.userId }).sort({ createdAt: 1 }).limit(20);
   const first = rows.filter(row => row.status === 'pending' || row.status === 'approved').sort(byAge)[0];
-  if (first && first.id !== created.id) { await ResignationRequest.deleteMany({ id: created.id }); throw new Error('You already have an active resignation request.'); }
+  if (first && first.id !== created.id) { await ResignationRequest.deleteMany({ id: created.id }); throw new Error('عندك طلب استقالة مفتوح.'); }
   return created;
 }
 

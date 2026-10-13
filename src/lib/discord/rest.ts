@@ -5,6 +5,8 @@
  * - يدعم رفع الملفات (multipart)
  */
 import { API_BASE } from "./constants.ts";
+import { limiter } from "../limit.ts";
+import { deadline } from "../timeout.ts";
 import { log } from "../log.ts";
 
 export interface FileUpload {
@@ -59,6 +61,8 @@ export class REST {
   private readonly buckets = new Map<string, Bucket>();
   private readonly queues = new Map<string, Promise<unknown>>();
   private globalResetAt = 0;
+  /** أقصى عدد طلبات متزامنة لديسكورد (REST_CONCURRENCY، الافتراضي 6). */
+  private readonly gate = limiter(Number(globalThis.process?.env?.REST_CONCURRENCY) || 6);
 
   constructor(private readonly token: string, private readonly maxRetries = 4, private readonly timeoutMs = 20_000) {}
 
@@ -95,8 +99,8 @@ export class REST {
     const remaining = res.headers.get("x-ratelimit-remaining");
     const resetAfter = res.headers.get("x-ratelimit-reset-after");
     if (!bucket || remaining === null || resetAfter === null) return;
-    if (this.buckets.size > 2000) this.buckets.clear(); // ما نخلي الخريطة تكبر بلا حد
-    if (this.routeToBucket.size > 2000) this.routeToBucket.clear();
+    if (this.buckets.size > 500) this.buckets.clear(); // ما نخلي الخريطة تكبر بلا حد
+    if (this.routeToBucket.size > 500) this.routeToBucket.clear();
     this.routeToBucket.set(key, bucket);
     this.buckets.set(bucket, { remaining: Number(remaining), resetAt: Date.now() + Number(resetAfter) * 1000 + 50 });
   }
@@ -140,8 +144,17 @@ export class REST {
       if (opts.reason) headers["x-audit-log-reason"] = encodeURIComponent(opts.reason.slice(0, 400));
 
       let res: Response;
+      let text: string;
       try {
-        res = await fetch(url, { method, headers, body, signal: AbortSignal.timeout(this.timeoutMs) });
+        [res, text] = await this.gate(async () => {
+          const t = deadline(this.timeoutMs);
+          try {
+            const r = await fetch(url, { method, headers, body, signal: t.signal });
+            return [r, r.status === 204 || r.status === 429 ? "" : await r.text()] as const;
+          } finally {
+            t.done();
+          }
+        });
       } catch (err) {
         if (attempt >= maxRetries) throw err;
         const wait = Math.min(1000 * 2 ** attempt, 15_000);
@@ -165,7 +178,6 @@ export class REST {
         continue;
       }
       if (res.status === 204) return undefined as T;
-      const text = await res.text();
       const data = text ? safeJson(text) : undefined;
       if (!res.ok) throw new DiscordAPIError(res.status, data, method, path);
       return data as T;

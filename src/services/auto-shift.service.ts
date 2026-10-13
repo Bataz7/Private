@@ -2,15 +2,16 @@ import { EmbedBuilder, type Client, type Guild, type GuildMember } from '../lib/
 import { Shift, type ShiftDoc } from '../models/Shift.js';
 import type { GuildSettingsDoc } from '../models/GuildSettings.js';
 import { createLog } from './log.service.js';
-import { activeMs, duration, endShift, ensureStaff, getActiveShift, isOnBreak, startShift } from './shift.service.js';
+import { activeMs, DismissedError, duration, endShift, ensureStaff, getActiveShift, isOnBreak, startShift } from './shift.service.js';
+import { clearPresenceStop, isPresenceStopped } from './presence-check.service.js';
 import { BRAND_COLOR, e } from '../utils/emoji.js';
 import { event } from '../utils/terminal.js';
 
 // Automatic shifts.
 //   Start: a staff member sends `messages` messages inside a rolling `window` (default 20 in 10 minutes), or sits in an
 //          unmuted voice channel. The shift is back-dated to the first message of that burst.
-//   End:   no message and no voice for `idle` minutes (default 30). The shift is closed at the last activity, so the
-//          idle wait is never counted as work time.
+//   End:   message-only shifts: no message for `idle` minutes (default 30), closed at the last activity so the idle wait
+//          is never counted. Voice shifts: the presence check («هل انت موجود؟», presence-check.service.ts) decides.
 // Manual start/end buttons keep working; a member who ends a shift by hand is left alone for a while.
 
 export interface AutoShiftConfig { enabled: boolean; messages: number; windowMs: number; idleMs: number }
@@ -45,6 +46,12 @@ export function suppressAutoStart(guildId: string, userId: string, ms = MANUAL_E
   shiftCache.delete(id);
 }
 
+/** ينسى كاش العضو بعد ما ينتهي شفته من مكان ثاني (تحقق التواجد، الفصل). */
+export function forgetShift(guildId: string, userId: string) {
+  const id = key(guildId, userId);
+  shiftCache.delete(id); bursts.delete(id); lastTouch.delete(id);
+}
+
 async function cachedShift(guildId: string, userId: string, now: number) {
   const id = key(guildId, userId);
   const cached = shiftCache.get(id);
@@ -70,9 +77,10 @@ function prune() {
   for (const [id, list] of bursts) if (!list.length || now - list[list.length - 1]! > 3_600_000) bursts.delete(id);
   for (const [id, until] of suppressedUntil) if (until < now) suppressedUntil.delete(id);
   for (const [id, entry] of shiftCache) if (now - entry.at > 60_000) shiftCache.delete(id);
+  for (const [id, at] of lastTouch) if (now - at > 3_600_000) lastTouch.delete(id);
 }
 
-async function announce(client: Client, settings: GuildSettingsDoc, embed: EmbedBuilder) {
+export async function announce(client: Client, settings: GuildSettingsDoc, embed: EmbedBuilder) {
   const channel = settings.logsChannelId ? await client.channels.fetch(settings.logsChannelId).catch(() => null) : null;
   if (channel?.isTextBased() && 'send' in channel) await channel.send({ embeds: [embed], allowedMentions: { parse: [] } }).catch(() => undefined);
 }
@@ -85,7 +93,7 @@ async function begin(guild: Guild, member: GuildMember, settings: GuildSettingsD
   if (settings.leaveRoleId && member.roles.cache.has(settings.leaveRoleId)) return null;
   starting.add(id);
   try {
-    const staff = await ensureStaff(guild.id, member.id).catch(error => { console.error(`Automatic shift registration failed for ${member.id}:`, error); return null; });
+    const staff = await ensureStaff(guild.id, member.id).catch(error => { if (!(error instanceof DismissedError)) console.error(`Automatic shift registration failed for ${member.id}:`, error); return null; });
     if (!staff?.active) return null;
     const shift = await startShift(guild.id, member.id, { startedAt }).catch(error => {
       const message = error instanceof Error ? error.message : '';
@@ -94,12 +102,13 @@ async function begin(guild: Guild, member: GuildMember, settings: GuildSettingsD
     });
     if (!shift) return null;
     bursts.delete(id);
+    clearPresenceStop(guild.id, member.id);
     shiftCache.set(id, { shift: shift as ShiftDoc, at: Date.now() });
-    if (settings.onShiftRoleId) await member.roles.add(settings.onShiftRoleId, 'Shift started automatically from staff activity').catch(() => undefined);
+    if (settings.onShiftRoleId) await member.roles.add(settings.onShiftRoleId, 'بدأ الشفت تلقائياً من نشاط الإداري').catch(() => undefined);
     await createLog(guild.id, 'SHIFT_STARTED_AUTOMATICALLY', member.id, member.id, { shiftId: String(shift._id), reason, ...detail });
     await announce(guild.client, settings, new EmbedBuilder().setColor(BRAND_COLOR)
-      .setDescription(`### ${e('shiftstart')} Shift started automatically\n${member} — ${reason}\nStarted <t:${Math.floor(startedAt.getTime() / 1000)}:R>`));
-    event('shiftStart', `${member.displayName} started automatically (${reason})`);
+      .setDescription(`### ${e('shiftstart')} بدأ شفت تلقائياً\n${member} — ${reason}\nبدأ <t:${Math.floor(startedAt.getTime() / 1000)}:R>`));
+    event('shiftStart', `${member.displayName} started automatically (${detail.voice ? 'voice' : `${detail.messages} messages`})`);
     return shift as ShiftDoc;
   } finally {
     starting.delete(id);
@@ -124,17 +133,20 @@ export async function onStaffMessage(guild: Guild, member: GuildMember, settings
     return shift;
   }
   if (!cfg.enabled || burst.length < cfg.messages) return null;
-  return begin(guild, member, settings, new Date(burst[0]!), `${burst.length} messages in ${Math.round(cfg.windowMs / 60_000)} minutes`, { messages: burst.length, windowMinutes: Math.round(cfg.windowMs / 60_000) });
+  return begin(guild, member, settings, new Date(burst[0]!), `${burst.length} رسالة خلال ${Math.round(cfg.windowMs / 60_000)} دقيقة`, { messages: burst.length, windowMinutes: Math.round(cfg.windowMs / 60_000) });
 }
 
-/** Joining an unmuted voice channel counts as being on duty straight away. */
-export async function onStaffVoice(guild: Guild, member: GuildMember, settings: GuildSettingsDoc): Promise<ShiftDoc | null> {
+/**
+ * Joining an unmuted voice channel counts as being on duty straight away. `touch: false` (bot restart) does not count
+ * as activity. Someone whose shift the presence check stopped is not restarted from voice until they leave and rejoin.
+ */
+export async function onStaffVoice(guild: Guild, member: GuildMember, settings: GuildSettingsDoc, { touch = true } = {}): Promise<ShiftDoc | null> {
   const cfg = autoShiftConfig(settings);
   const now = Date.now();
   const shift = await cachedShift(guild.id, member.id, now);
-  if (shift) { await touchShift(shift, now); return shift; }
-  if (!cfg.enabled) return null;
-  return begin(guild, member, settings, new Date(now), 'joined a voice channel', { voice: true });
+  if (shift) { if (touch) await touchShift(shift, now); return shift; }
+  if (!cfg.enabled || isPresenceStopped(guild.id, member.id, now)) return null;
+  return begin(guild, member, settings, new Date(now), 'دخل روم صوتي', { voice: true });
 }
 
 /** Closes a shift that has been idle for too long. Returns true when it was ended. */
@@ -146,12 +158,12 @@ export async function endIfIdle(client: Client, shift: ShiftDoc, settings: Guild
   if (!ended) return false;
   const id = key(shift.guildId, shift.userId);
   shiftCache.delete(id); bursts.delete(id); lastTouch.delete(id);
-  if (member && settings.onShiftRoleId) await member.roles.remove(settings.onShiftRoleId, 'Shift ended automatically after inactivity').catch(() => undefined);
+  if (member && settings.onShiftRoleId) await member.roles.remove(settings.onShiftRoleId, 'انتهى الشفت تلقائياً بسبب عدم النشاط').catch(() => undefined);
   const worked = duration(activeMs(ended));
   event('shiftEnd', `${member?.displayName ?? shift.userId} ended automatically after ${Math.round(cfg.idleMs / 60_000)}m idle, counted ${worked}`);
   await createLog(shift.guildId, 'SHIFT_AUTO_ENDED', shift.userId, null, { shiftId: String(ended._id), duration: worked, idleMinutes: Math.round(cfg.idleMs / 60_000) });
   await announce(client, settings, new EmbedBuilder().setColor(BRAND_COLOR)
-    .setDescription(`### ${e('shiftend')} Shift ended automatically\n<@${shift.userId}> — no activity for ${Math.round(cfg.idleMs / 60_000)} minutes\nCounted time: **${worked}**`));
+    .setDescription(`### ${e('shiftend')} انتهى شفت تلقائياً\n<@${shift.userId}> — ما فيه نشاط من ${Math.round(cfg.idleMs / 60_000)} دقيقة\nالوقت المحسوب: **${worked}**`));
   // No DM to the member: the shift closing on its own is silent (it is still written to the staff log and the logs channel).
   return true;
 }

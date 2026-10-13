@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Client } from '../lib/djs/index.js';
-import type { Request, Response } from 'express';
+import type { Context } from '../web/server/http.js';
 import type { DashboardContext, DashboardExtension } from '../dashboard/extensions.js';
 import { env } from '../config/env.js';
 import { supabase } from '../supabase/client.js';
@@ -24,7 +24,7 @@ function rateLimit(max: number, windowMs: number) {
     const key = req.ip || 'unknown';
     const hit = hits.get(key);
     if (!hit || hit.reset < now) { hits.set(key, { n: 1, reset: now + windowMs }); return next(); }
-    if (++hit.n > max) { res.setHeader('Retry-After', String(Math.ceil((hit.reset - now) / 1000))); return void res.status(429).type('text/plain').send('Too many requests. Try again in a moment.'); }
+    if (++hit.n > max) { c.headers.set('Retry-After', String(Math.ceil((hit.reset - now) / 1000))); return void c.status(429).type('text/plain').send('Too many requests. Try again in a moment.'); }
     next();
   };
 }
@@ -89,17 +89,17 @@ function startMonitor(discord: Client) {
 
 /** The status page is global, so only administrators of the main server (GUILD_ID) may change it. Without GUILD_ID only a server owner may. */
 async function requireStatusAdmin(ctx: DashboardContext, req: Request, res: Response) {
-  if (!await ctx.requireAdministrator(req, res)) return false;
-  const allowed = env.guildId ? ctx.selectedGuildId(req) === env.guildId : Boolean(ctx.sessionUser(req)?.isOwner);
-  if (!allowed) { res.status(403).json({ error: 'Only administrators of the main server can manage the public status page.' }); return false; }
+  if (!await ctx.requireAdministrator(c)) return false;
+  const allowed = env.guildId ? ctx.selectedGuildId(c) === env.guildId : Boolean(ctx.sessionUser(c)?.isOwner);
+  if (!allowed) { c.status(403).json({ error: 'Only administrators of the main server can manage the public status page.' }); return false; }
   return true;
 }
 
-const failure = (res: Response, error: unknown, fallback: string) => {
+const failure = (c: Context, error: unknown, fallback: string) => {
   const schema = error && typeof error === 'object' && isSchemaError(error as { message?: string; code?: string });
-  res.status(schema ? 503 : 400).json({ error: schema ? `The status tables are missing. ${MIGRATION_HINT}` : error instanceof Error ? error.message : fallback });
+  c.status(schema ? 503 : 400).json({ error: schema ? `The status tables are missing. ${MIGRATION_HINT}` : error instanceof Error ? error.message : fallback });
 };
-const dbFailure = (res: Response, error: { message: string; code?: string }) => { warnSchema('status tables', error); failure(res, error, error.message); };
+const dbFailure = (c: Context, error: { message: string; code?: string }) => { warnSchema('status tables', error); failure(c, error, error.message); };
 
 const postView = (row: any) => ({ id: String(row.id), title: row.title, body: row.body, kind: row.kind, pinned: row.pinned, authorName: row.author_name, authorAvatar: row.author_avatar, createdAt: row.created_at, updatedAt: row.updated_at });
 
@@ -114,43 +114,43 @@ export const statusDashboard: DashboardExtension = {
     const limited = rateLimit(120, 60_000);
     app.use(['/status', '/status.rss', '/api/status'], limited);
 
-    app.get('/status/badge.svg', async (_req, res) => {
+    app.get('/status/badge.svg', async (c: Context) => {
       let state: 'operational' | 'degraded' | 'outage' | 'maintenance' = 'outage';
       try { state = ((await cached('status', 5000, buildStatus)) as any).overall.state; } catch { /* unknown means outage */ }
-      res.setHeader('Cache-Control', 'public, max-age=60');
+      c.headers.set('Cache-Control', 'public, max-age=60');
       res.type('image/svg+xml').send(statusBadge(state));
     });
 
     // The page itself is a static file; the head gets the live status for link previews and the browser colour.
     let template = '';
-    app.get(['/status', '/status/:tab'], async (req, res) => {
+    app.get(['/status', '/status/:tab'], async (c: Context) => {
       try {
         template ||= readFileSync(statusIndex, 'utf8');
         let overall: any = null;
         try { overall = ((await cached('status', 5000, buildStatus)) as any).overall; } catch { /* the page shows its own error state */ }
-        res.setHeader('Cache-Control', 'no-cache');
+        c.headers.set('Cache-Control', 'no-cache');
         res.type('html').send(template.replace('<!--meta-->', statusMetaTags(overall, publicBase(`${req.protocol}://${req.get('host')}`))));
       } catch { res.sendFile(statusIndex); }
     });
 
-    app.get('/api/status', async (_req, res) => {
-      try { res.setHeader('Cache-Control', 'public, max-age=5'); res.json(await cached('status', 5000, buildStatus)); }
-      catch (error) { console.error('Status build failed:', error); res.status(503).json({ error: 'Status is temporarily unavailable.' }); }
+    app.get('/api/status', async (c: Context) => {
+      try { c.headers.set('Cache-Control', 'public, max-age=5'); c.json(await cached('status', 5000, buildStatus)); }
+      catch (error) { console.error('Status build failed:', error); c.status(503).json({ error: 'Status is temporarily unavailable.' }); }
     });
 
-    app.get('/api/status/metrics', async (req, res) => {
-      const source = req.query.source === 'dashboard' ? 'dashboard' : 'bot';
-      const range = validRange(req.query.range);
+    app.get('/api/status/metrics', async (c: Context) => {
+      const source = c.query.get("source") === 'dashboard' ? 'dashboard' : 'bot';
+      const range = validRange(c.query.get("range"));
       try {
         const value = await cached(`metrics:${source}:${range}`, 15_000, () => buildMetrics(source, range));
-        res.setHeader('Cache-Control', 'public, max-age=15');
-        res.json(value);
-      } catch (error) { console.error('Status metrics failed:', error instanceof Error ? error.message : error); res.status(503).json({ error: 'Metrics are temporarily unavailable.' }); }
+        c.headers.set('Cache-Control', 'public, max-age=15');
+        c.json(value);
+      } catch (error) { console.error('Status metrics failed:', error instanceof Error ? error.message : error); c.status(503).json({ error: 'Metrics are temporarily unavailable.' }); }
     });
 
-    app.get('/status.rss', async (req, res) => {
+    app.get('/status.rss', async (c: Context) => {
       try { res.type('application/rss+xml').send(statusRss(await cached('status', 5000, buildStatus), publicBase(`${req.protocol}://${req.get('host')}`))); }
-      catch { res.status(503).type('text/plain').send('Status feed is temporarily unavailable.'); }
+      catch { c.status(503).type('text/plain').send('Status feed is temporarily unavailable.'); }
     });
   },
 
@@ -158,10 +158,10 @@ export const statusDashboard: DashboardExtension = {
   mountApi(ctx) {
     const { app, discord } = ctx;
 
-    app.get('/api/health', async (req, res) => {
-      if (!await ctx.requireAdministrator(req, res)) return;
+    app.get('/api/health', async (c: Context) => {
+      if (!await ctx.requireAdministrator(c)) return;
       try {
-        const guildId = ctx.selectedGuildId(req);
+        const guildId = ctx.selectedGuildId(c);
         const now = Date.now();
         const beat = await loadHeartbeat();
         const connected = !beat.error || isSchemaError(beat.error);
@@ -182,7 +182,7 @@ export const statusDashboard: DashboardExtension = {
         ]);
         const row = beat.row;
         const logs = logRows.map((log: any) => ({ action: log.action, userId: log.user_id, createdAt: log.created_at, name: guild?.members.cache.get(log.user_id)?.displayName || undefined }));
-        res.json({
+        c.json({
           now,
           bot: row ? { startedAt: row.started_at, updatedAt: row.updated_at, pingMs: row.ping_ms ?? 0, guilds: row.guilds ?? 0, memoryMb: row.memory_mb ?? 0, nodeVersion: row.node_version ?? '', activeShifts: row.active_shifts ?? 0, watchdogs: row.watchdogs || {} } : null,
           database: { connected, latencyMs: beat.ms },
@@ -190,14 +190,14 @@ export const statusDashboard: DashboardExtension = {
           queue: { staff, pendingComplaints, pendingLeaves, pendingResignations },
           logs, uptime,
         });
-      } catch (error) { res.status(400).json({ error: error instanceof Error ? error.message : 'Could not load health.' }); }
+      } catch (error) { c.status(400).json({ error: error instanceof Error ? error.message : 'Could not load health.' }); }
     });
 
     // ---- Maintenance windows shown on the public status page ------------------------------------
-    app.post('/api/maintenances', async (req, res) => {
+    app.post('/api/maintenances', async (c: Context) => {
       if (!await requireStatusAdmin(ctx, req, res)) return;
       try {
-        const body = (req.body || {}) as Record<string, any>;
+        const body = (c.body || {}) as Record<string, any>;
         const title = cleanText(body.title, 90);
         const description = cleanText(body.description, 600);
         const startsAt = new Date(body.startsAt);
@@ -207,32 +207,32 @@ export const statusDashboard: DashboardExtension = {
         if (endsAt <= startsAt) throw new Error('The end must be after the start.');
         const affects = (Array.isArray(body.affects) ? body.affects : []).map(String).filter((key: string) => COMPONENTS.includes(key));
         const { data, error } = await supabase.from('status_maintenances').insert({ title, description, starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(), affects, updates: [{ at: new Date().toISOString(), text: 'Maintenance scheduled.' }] }).select('id').single();
-        if (error) return dbFailure(res, error);
-        res.json({ ok: true, id: String(data.id) });
-      } catch (error) { res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid maintenance.' }); }
+        if (error) return dbFailure(c, error);
+        c.json({ ok: true, id: String(data.id) });
+      } catch (error) { c.status(400).json({ error: error instanceof Error ? error.message : 'Invalid maintenance.' }); }
     });
 
-    app.post('/api/maintenances/:id/end', async (req, res) => {
+    app.post('/api/maintenances/:id/end', async (c: Context) => {
       if (!await requireStatusAdmin(ctx, req, res)) return;
-      const id = String(req.params.id || '');
-      if (!uuid.test(id)) return res.status(400).json({ error: 'Invalid maintenance.' });
+      const id = String(c.params.id || '');
+      if (!uuid.test(id)) return c.status(400).json({ error: 'Invalid maintenance.' });
       const { data: row, error } = await supabase.from('status_maintenances').select('*').eq('id', id).maybeSingle();
-      if (error) return dbFailure(res, error);
-      if (!row) return res.status(404).json({ error: 'Maintenance not found.' });
+      if (error) return dbFailure(c, error);
+      if (!row) return c.status(404).json({ error: 'Maintenance not found.' });
       const started = new Date(row.starts_at).getTime() <= Date.now();
       const updates = [...(Array.isArray(row.updates) ? row.updates : []), { at: new Date().toISOString(), text: started ? 'Maintenance completed.' : 'Maintenance cancelled.' }];
       const saved = await supabase.from('status_maintenances').update({ ended_early: true, ended_at: new Date().toISOString(), updates }).eq('id', id);
-      if (saved.error) return dbFailure(res, saved.error);
-      res.json({ ok: true });
+      if (saved.error) return dbFailure(c, saved.error);
+      c.json({ ok: true });
     });
 
-    app.delete('/api/maintenances/:id', async (req, res) => {
+    app.delete('/api/maintenances/:id', async (c: Context) => {
       if (!await requireStatusAdmin(ctx, req, res)) return;
-      const id = String(req.params.id || '');
-      if (!uuid.test(id)) return res.status(400).json({ error: 'Invalid maintenance.' });
+      const id = String(c.params.id || '');
+      if (!uuid.test(id)) return c.status(400).json({ error: 'Invalid maintenance.' });
       const { error } = await supabase.from('status_maintenances').delete().eq('id', id);
-      if (error) return dbFailure(res, error);
-      res.json({ ok: true });
+      if (error) return dbFailure(c, error);
+      c.json({ ok: true });
     });
 
     // ---- Status posts ("tweets"): announcements shown on the public status page ------------------
@@ -245,7 +245,7 @@ export const statusDashboard: DashboardExtension = {
     const announcePost = async (req: Request, post: { kind: string; title: string; body: string; author_name: string }, channelId: string) => {
       if (!/^\d{15,22}$/.test(channelId)) return false;
       const channel: any = await discord.channels.fetch(channelId).catch(() => null);
-      if (!channel?.isTextBased?.() || !('send' in channel) || channel.guildId !== ctx.selectedGuildId(req)) throw new Error('Choose a text channel in this server.');
+      if (!channel?.isTextBased?.() || !('send' in channel) || channel.guildId !== ctx.selectedGuildId(c)) throw new Error('Choose a text channel in this server.');
       const color = ({ incident: 0xe9697b, resolved: 0x4fc08d, maintenance: 0xe0b04f, announcement: 0x8175f5, update: 0x8175f5 } as Record<string, number>)[post.kind] ?? 0x8175f5;
       const kindLabel = ({ incident: 'Incident', resolved: 'Resolved', maintenance: 'Maintenance', announcement: 'Announcement', update: 'Update' } as Record<string, string>)[post.kind] || 'Update';
       const statusUrl = `${env.dashboardUrl}/status`;
@@ -263,40 +263,40 @@ export const statusDashboard: DashboardExtension = {
       return (data ?? []).map(postView);
     };
 
-    app.get('/api/status-posts', async (req, res) => {
+    app.get('/api/status-posts', async (c: Context) => {
       if (!await requireStatusAdmin(ctx, req, res)) return;
-      try { res.json({ posts: await list() }); } catch (error) { failure(res, error, 'Could not load the updates.'); }
+      try { c.json({ posts: await list() }); } catch (error) { failure(c, error, 'Could not load the updates.'); }
     });
-    app.post('/api/status-posts', async (req, res) => {
+    app.post('/api/status-posts', async (c: Context) => {
       if (!await requireStatusAdmin(ctx, req, res)) return;
       try {
-        const user = ctx.sessionUser(req);
-        const input = postInput(req.body);
+        const user = ctx.sessionUser(c);
+        const input = postInput(c.body);
         const avatar = user?.avatar ? (String(user.avatar).startsWith('http') ? user.avatar : `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`) : '';
         const { data, error } = await supabase.from('status_posts').insert({ ...input, author_id: user?.id || '', author_name: user?.username || '', author_avatar: avatar }).select('*').single();
-        if (error) return dbFailure(res, error);
-        const announced = req.body?.channelId ? await announcePost(req, data, String(req.body.channelId)) : false;
-        res.json({ post: postView(data), announced });
-      } catch (error) { failure(res, error, 'Invalid update.'); }
+        if (error) return dbFailure(c, error);
+        const announced = c.body?.channelId ? await announcePost(c, data, String(c.body.channelId)) : false;
+        c.json({ post: postView(data), announced });
+      } catch (error) { failure(c, error, 'Invalid update.'); }
     });
-    app.patch('/api/status-posts/:id', async (req, res) => {
+    app.patch('/api/status-posts/:id', async (c: Context) => {
       if (!await requireStatusAdmin(ctx, req, res)) return;
-      const id = String(req.params.id || '');
-      if (!uuid.test(id)) return res.status(400).json({ error: 'Invalid update.' });
+      const id = String(c.params.id || '');
+      if (!uuid.test(id)) return c.status(400).json({ error: 'Invalid update.' });
       try {
-        const { data, error } = await supabase.from('status_posts').update({ ...postInput(req.body), updated_at: new Date().toISOString() }).eq('id', id).select('*').maybeSingle();
-        if (error) return dbFailure(res, error);
-        if (!data) return res.status(404).json({ error: 'Update not found.' });
-        res.json({ post: postView(data) });
-      } catch (error) { failure(res, error, 'Invalid update.'); }
+        const { data, error } = await supabase.from('status_posts').update({ ...postInput(c.body), updated_at: new Date().toISOString() }).eq('id', id).select('*').maybeSingle();
+        if (error) return dbFailure(c, error);
+        if (!data) return c.status(404).json({ error: 'Update not found.' });
+        c.json({ post: postView(data) });
+      } catch (error) { failure(c, error, 'Invalid update.'); }
     });
-    app.delete('/api/status-posts/:id', async (req, res) => {
+    app.delete('/api/status-posts/:id', async (c: Context) => {
       if (!await requireStatusAdmin(ctx, req, res)) return;
-      const id = String(req.params.id || '');
-      if (!uuid.test(id)) return res.status(400).json({ error: 'Invalid update.' });
+      const id = String(c.params.id || '');
+      if (!uuid.test(id)) return c.status(400).json({ error: 'Invalid update.' });
       const { error } = await supabase.from('status_posts').delete().eq('id', id);
-      if (error) return dbFailure(res, error);
-      res.json({ ok: true });
+      if (error) return dbFailure(c, error);
+      c.json({ ok: true });
     });
 
     mountPresenceRoutes(ctx);

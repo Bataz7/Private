@@ -68,16 +68,16 @@ function sanitizeActions(raw: unknown, seen: Set<string>, { allowForm, inForm = 
     else if (type === 'channel') actions.push({ type, channelId: SNOWFLAKE.test(String(item.channelId || '')) ? String(item.channelId) : '', content: str(item.content, 2000), format: item.format === 'answers' ? 'answers' : 'text' });
     else if (type === 'form' && allowForm && !inForm) {
       // A modal must be the interaction's first response, so a form can only be the first step.
-      if (index !== 0) fail('“Open question form” must be the first step of a button or option.');
+      if (index !== 0) fail('“فتح نموذج الأسئلة” لازم يكون أول خطوة في الزر أو الخيار.');
       const fields: FormField[] = (Array.isArray(item.fields) ? item.fields : []).slice(0, LIMITS.fields).map((field: any) => {
         const style = field?.style === 'paragraph' ? 'paragraph' as const : 'short' as const;
         const cap = style === 'paragraph' ? 4000 : 400;
         const max = field?.max === null || field?.max === undefined || field?.max === '' ? null : Math.max(1, Math.min(cap, Math.round(Number(field.max)) || cap));
         const min = field?.min === null || field?.min === undefined || field?.min === '' ? null : Math.max(0, Math.min(max ?? cap, Math.round(Number(field.min)) || 0));
-        return { id: makeId(field?.id, seen), label: trim(field?.label, 45) || 'Question', description: trim(field?.description, 100), style, required: field?.required !== false, placeholder: trim(field?.placeholder, 100), min, max };
+        return { id: makeId(field?.id, seen), label: trim(field?.label, 45) || 'سؤال', description: trim(field?.description, 100), style, required: field?.required !== false, placeholder: trim(field?.placeholder, 100), min, max };
       });
-      if (!fields.length) fail('A question form needs at least one field.');
-      actions.push({ type, title: trim(item.title, 45) || 'Form', fields, submit: sanitizeActions(item.submit, seen, { allowForm: false, inForm: true }) });
+      if (!fields.length) fail('نموذج الأسئلة يحتاج حقل واحد على الأقل.');
+      actions.push({ type, title: trim(item.title, 45) || 'نموذج', fields, submit: sanitizeActions(item.submit, seen, { allowForm: false, inForm: true }) });
     }
   });
   return actions;
@@ -86,20 +86,20 @@ function sanitizeActions(raw: unknown, seen: Set<string>, { allowForm, inForm = 
 function sanitizeButton(raw: any, seen: Set<string>): Button {
   const style = (['primary', 'secondary', 'success', 'danger', 'link'] as const).includes(raw?.style) ? raw.style as ButtonStyle : 'secondary';
   const button: Button = { id: makeId(raw?.id, seen), label: trim(raw?.label, 80), emoji: trim(raw?.emoji, 64), style, url: style === 'link' ? url(raw?.url) : '', disabled: Boolean(raw?.disabled), actions: style === 'link' ? [] : sanitizeActions(raw?.actions, seen, { allowForm: true }) };
-  if (!button.label && !parseEmoji(button.emoji)) button.label = 'Button';
-  if (style === 'link' && !button.url) fail(`The link button “${button.label || 'Button'}” needs a valid URL.`);
+  if (!button.label && !parseEmoji(button.emoji)) button.label = 'زر';
+  if (style === 'link' && !button.url) fail(`زر الرابط “${button.label || 'زر'}” يحتاج رابط صحيح.`);
   return button;
 }
 
 function sanitizeSelect(raw: any, seen: Set<string>): Select {
   const options: SelectOption[] = (Array.isArray(raw?.options) ? raw.options : []).slice(0, LIMITS.options).map((option: any) => ({
-    id: makeId(option?.id, seen), label: trim(option?.label, 100) || 'Option', description: trim(option?.description, 100), emoji: trim(option?.emoji, 64),
+    id: makeId(option?.id, seen), label: trim(option?.label, 100) || 'خيار', description: trim(option?.description, 100), emoji: trim(option?.emoji, 64),
     actions: sanitizeActions(option?.actions, seen, { allowForm: true }),
   }));
-  if (!options.length) fail('A select menu needs at least one option.');
+  if (!options.length) fail('القائمة المنسدلة تحتاج خيار واحد على الأقل.');
   const max = Math.max(1, Math.min(options.length, Math.round(Number(raw?.max)) || 1));
   const min = Math.max(0, Math.min(max, Math.round(Number(raw?.min ?? 1))));
-  if (max > 1 && options.some(option => option.actions[0]?.type === 'form')) fail('Question forms only work in single-choice menus (max selections 1).');
+  if (max > 1 && options.some(option => option.actions[0]?.type === 'form')) fail('نماذج الأسئلة تشتغل بس في القوائم ذات الاختيار الواحد (أقصى اختيار 1).');
   return { id: makeId(raw?.id, seen), placeholder: trim(raw?.placeholder, 150), min: Number.isFinite(min) ? min : 1, max, disabled: Boolean(raw?.disabled), options };
 }
 
@@ -119,24 +119,24 @@ function sanitizeNode(raw: any, seen: Set<string>, nested: boolean): Node | null
       const accessory = raw.accessory?.kind === 'button'
         ? { kind: 'button' as const, button: sanitizeButton(raw.accessory.button, seen) }
         : { kind: 'thumbnail' as const, url: url(raw.accessory?.url, { allowAttachment: true }), description: trim(raw.accessory?.description, 1024), spoiler: Boolean(raw.accessory?.spoiler) };
-      if (accessory.kind === 'thumbnail' && !accessory.url) fail('A section thumbnail needs an image URL.');
+      if (accessory.kind === 'thumbnail' && !accessory.url) fail('الصورة المصغّرة في القسم تحتاج رابط صورة.');
       return { id, type, texts, accessory };
     }
     case 'media': {
       const items = (Array.isArray(raw.items) ? raw.items : []).slice(0, LIMITS.media).map((item: any) => ({ url: url(item?.url, { allowAttachment: true }), description: trim(item?.description, 1024), spoiler: Boolean(item?.spoiler) })).filter((item: { url: string }) => item.url);
-      if (!items.length) fail('A media gallery needs at least one image URL.');
+      if (!items.length) fail('معرض الوسائط يحتاج رابط صورة واحد على الأقل.');
       return { id, type, items };
     }
     case 'file': {
       const fileUrl = url(raw.url, { allowAttachment: true });
-      if (!fileUrl) fail('A file component needs a file URL.');
+      if (!fileUrl) fail('عنصر الملف يحتاج رابط ملف.');
       const name = trim(raw.name, 100).replace(/[^\w.-]/g, '_') || fileUrl.split('/').pop()?.split('?')[0]?.replace(/[^\w.-]/g, '_') || 'file';
       return { id, type, url: fileUrl, name, spoiler: Boolean(raw.spoiler) };
     }
     case 'separator': return { id, type, divider: raw.divider !== false, spacing: raw.spacing === 'large' ? 'large' : 'small' };
     case 'buttons': {
       const buttons = (Array.isArray(raw.buttons) ? raw.buttons : []).slice(0, LIMITS.buttons).map((item: any) => sanitizeButton(item, seen));
-      if (!buttons.length) fail('A button row needs at least one button.');
+      if (!buttons.length) fail('صف الأزرار يحتاج زر واحد على الأقل.');
       return { id, type, buttons };
     }
     case 'select': return { id, type, select: sanitizeSelect(raw.select, seen) };
@@ -184,20 +184,20 @@ export function sanitizeDoc(raw: any): StudioDoc {
   const mode = raw?.mode === 'embed' ? 'embed' : 'v2';
   if (mode === 'v2') {
     const components = (Array.isArray(raw?.components) ? raw.components : []).map((node: any) => sanitizeNode(node, seen, false)).filter(Boolean) as Node[];
-    if (!components.length) fail('Add at least one component.');
+    if (!components.length) fail('أضف عنصر واحد على الأقل.');
     const count = countComponents(components);
-    if (count > LIMITS.components) fail(`Discord allows ${LIMITS.components} components per message; this one has ${count}.`);
+    if (count > LIMITS.components) fail(`ديسكورد يسمح بـ ${LIMITS.components} عنصر في الرسالة؛ هذي فيها ${count}.`);
     const chars = textLength(components);
-    if (chars > LIMITS.textTotal) fail(`Text across the message is limited to ${LIMITS.textTotal} characters; this one has ${chars}.`);
-    if (!textLength(components) && !components.some(node => ['media', 'file', 'container', 'section'].includes(node.type))) fail('Add some text or media — Discord rejects messages with only buttons.');
+    if (chars > LIMITS.textTotal) fail(`نص الرسالة كامل حده ${LIMITS.textTotal} حرف؛ هذي فيها ${chars}.`);
+    if (!textLength(components) && !components.some(node => ['media', 'file', 'container', 'section'].includes(node.type))) fail('أضف نص أو وسائط — ديسكورد يرفض الرسائل اللي فيها أزرار بس.');
     return { mode, content: '', embeds: [], components };
   }
   const content = str(raw?.content, LIMITS.content).trim();
   const embeds = (Array.isArray(raw?.embeds) ? raw.embeds : []).slice(0, LIMITS.embeds).map(sanitizeEmbed).filter((embed: Embed) => embed.title || embed.description || embed.fields.length || embed.image || embed.thumbnail || embed.author.name || embed.footer.text);
   const total = embeds.reduce((sum: number, embed: Embed) => sum + embedLength(embed), 0);
-  if (total > LIMITS.embedTotal) fail(`Embeds are limited to ${LIMITS.embedTotal} characters in total; these have ${total}.`);
+  if (total > LIMITS.embedTotal) fail(`الإمبدات حدها ${LIMITS.embedTotal} حرف بالمجموع؛ هذي فيها ${total}.`);
   const components = (Array.isArray(raw?.components) ? raw.components : []).filter((node: any) => node?.type === 'buttons' || node?.type === 'select').slice(0, LIMITS.rows).map((node: any) => sanitizeNode(node, seen, false)).filter(Boolean) as Node[];
-  if (!content && !embeds.length) fail('Write some content or add an embed.');
+  if (!content && !embeds.length) fail('اكتب محتوى أو أضف إمبد.');
   return { mode, content, embeds, components };
 }
 
@@ -302,7 +302,7 @@ function importComponent(raw: any): Node | null {
     case T.separator: return { id: newId(), type: 'separator', divider: raw.divider !== false, spacing: raw.spacing === 2 ? 'large' : 'small' };
     case T.row: {
       const first = raw.components?.[0];
-      if (first?.type === T.stringSelect) return { id: newId(), type: 'select', select: { id: newId(), placeholder: first.placeholder || '', min: first.min_values ?? 1, max: first.max_values ?? 1, disabled: Boolean(first.disabled), options: (first.options || []).map((option: any) => ({ id: newId(), label: option.label || 'Option', description: option.description || '', emoji: emojiText(option.emoji), actions: [] })) } };
+      if (first?.type === T.stringSelect) return { id: newId(), type: 'select', select: { id: newId(), placeholder: first.placeholder || '', min: first.min_values ?? 1, max: first.max_values ?? 1, disabled: Boolean(first.disabled), options: (first.options || []).map((option: any) => ({ id: newId(), label: option.label || 'خيار', description: option.description || '', emoji: emojiText(option.emoji), actions: [] })) } };
       return { id: newId(), type: 'buttons', buttons: (raw.components || []).filter((item: any) => item.type === T.button).map(importButton) };
     }
   }
