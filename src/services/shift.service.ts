@@ -5,6 +5,12 @@ import { DismissedError, isDismissed } from '../discipline/dismissed.js';
 
 export { DismissedError };
 
+// من يبي يعرف إن شفت بدأ أو انتهى (كاش المحرك التلقائي) يسجّل هنا، عشان ما يبقى كاش قديم بعد إنهاء من أي مكان.
+type ShiftChange = (guildId: string, userId: string, kind: 'start' | 'end') => void;
+const shiftListeners: ShiftChange[] = [];
+export function onShiftChange(listener: ShiftChange) { shiftListeners.push(listener); }
+function notifyShift(guildId: string, userId: string, kind: 'start' | 'end') { for (const listener of shiftListeners) { try { listener(guildId, userId, kind); } catch { /* ignore */ } } }
+
 /** يسجّل الإداري أو يرجّع سجله. المفصول ما يرجع نشط تلقائياً: يرمي DismissedError لين أحد يلغي فصله. */
 export async function ensureStaff(guildId: string, userId: string) {
   try {
@@ -47,7 +53,9 @@ export async function startShift(guildId: string, userId: string, options: { sta
   const existing = await getActiveShift(guildId, userId);
   if (existing) throw new Error('عندك شفت نشط بالفعل.');
   try {
-    return await Shift.create({ guildId, userId, startedAt: options.startedAt ?? new Date(), lastActivityAt: new Date(), checkSentAt: null, status: 'active', breaks: [], pointsAwarded: 0, interactionPointsAwarded: 0 });
+    const shift = await Shift.create({ guildId, userId, startedAt: options.startedAt ?? new Date(), lastActivityAt: new Date(), checkSentAt: null, status: 'active', breaks: [], pointsAwarded: 0, interactionPointsAwarded: 0 });
+    notifyShift(guildId, userId, 'start');
+    return shift;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (message.includes('shifts_active_per_user') || message.includes('duplicate key')) {
@@ -98,6 +106,7 @@ export async function endShift(guildId: string, userId: string, options: { ended
   shift.lastActivityAt = finishedAt;
   await awardShiftPoints(shift);
   await shift.save();
+  notifyShift(guildId, userId, 'end');
   return shift;
 }
 

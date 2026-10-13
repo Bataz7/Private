@@ -7,7 +7,8 @@ import { Icon } from '../ui/Icon';
 import { Avatar, Badge, Button, ErrorState, Kpi, PageHeader, PageSkeleton } from '../ui/kit';
 import { createList } from '../ui/list';
 import { confirmDialog, openMenu, toast, toastError } from '../ui/overlay';
-import { STATE_LABEL, StateBadge, addStaffDialog, manageMenu, nameOf, openStaffDrawer, reinstateDialog, staffState, syncStaff, type StaffRow, type StaffState } from './staff-actions';
+import { STATE_LABEL, StateBadge, addStaffDialog, manageMenu, nameOf, reinstateDialog, staffState, syncStaff, type StaffRow, type StaffState } from './staff-actions';
+import { openStaffProfile } from './staff-profile';
 
 export default async function staffPage(ctx: PageCtx) {
   mount(ctx.root, <PageSkeleton />);
@@ -36,7 +37,7 @@ export default async function staffPage(ctx: PageCtx) {
   const states = new Map(rows.map(member => [member.userId, staffState(member, data.leaves)]));
   const stateOf = (member: StaffRow) => states.get(member.userId) ?? 'off';
   const counts = (state: StaffState) => rows.filter(member => stateOf(member) === state).length;
-  const open = (member: StaffRow) => openStaffDrawer(member, data, { admin: ctx.admin, onChanged: reload });
+  const open = (member: StaffRow) => openStaffProfile(member, data, { admin: ctx.admin, onChanged: reload });
 
   const list = createList<StaffRow>({
     rows,

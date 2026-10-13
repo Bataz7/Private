@@ -21,7 +21,7 @@
 .brand-text small { font-size: 11.5px; color: var(--text-3); }
 .sb-close { display: none; }
 .guild-switch { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--border); text-align: start; transition: border-color var(--t-fast), background var(--t-fast); }
-.guild-switch:hover { border-color: var(--border-strong); background: var(--surface-3); }
+.guild-switch:not(.is-static):hover { border-color: var(--border-strong); background: var(--surface-3); }
 .guild-icon { border-radius: 10px !important; }
 .guild-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
 .guild-text b { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

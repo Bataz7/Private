@@ -8,7 +8,7 @@ import { destroySession, ensureSession, rotateSession } from '../web/server/sess
 import { readBodyText } from '../web/server/http.js';
 import { handleApplyCallback } from '../applications/dashboard.js';
 import { authorizeUrl, discordJson, exchangeCode } from './oauth.js';
-import type { DashboardContext, SessionGuild, SessionUser } from './context.js';
+import type { DashboardContext, SessionUser } from './context.js';
 
 // تسجيل الدخول بديسكورد (OAuth2): state عشوائي مربوط بجلسة المتصفح، رقم جلسة جديد بعد الدخول، وخروج يمسح الجلسة من السيرفر.
 
@@ -57,19 +57,13 @@ export function mountAuth(router: Router, ctx: DashboardContext) {
       const oauthGuilds = await discordJson<Array<{ id: string; name: string; icon: string | null; owner: boolean }>>('/users/@me/guilds', token.access_token);
       if (!Array.isArray(oauthGuilds)) return c.redirect('/login?error=oauth_guilds');
 
-      // نفحص فقط السيرفرات اللي فيها المستخدم والبوت معاً.
-      const available: SessionGuild[] = [];
-      for (const candidate of oauthGuilds.slice(0, 200)) {
-        if (!ctx.discord.guilds.cache.has(candidate.id)) continue;
-        const guild = await ctx.getGuild(candidate.id).catch(() => null);
-        if (!guild) continue;
-        const [member, settings] = await Promise.all([ctx.getMember(guild.id, user.id, 0), ctx.settingsRow(guild.id).catch(() => null)]);
-        if (!member || !settings?.staff_role_id || !member.roles.cache.has(settings.staff_role_id)) continue;
-        available.push({ id: guild.id, name: guild.name, icon: guild.icon ?? candidate.icon ?? null, owner: guild.ownerId === user.id });
-      }
-      const selected = (env.guildId && available.some(item => item.id === env.guildId) ? env.guildId : available[0]?.id) || '';
-      if (!selected) {
-        console.error(`OAuth login rejected: no compatible server (user in ${oauthGuilds.length}, bot in ${ctx.discord.guilds.cache.size}).`);
+      // سيرفر واحد فقط: لازم المستخدم عضو فيه وعنده رتبة الستاف.
+      const selected = ctx.mainGuildId();
+      if (!selected || !oauthGuilds.some(item => item.id === selected)) return c.redirect('/login?error=forbidden');
+      const settings = await ctx.settingsRow(selected).catch(() => null);
+      const staffMember = await ctx.getMember(selected, user.id, 0);
+      if (!staffMember || !settings?.staff_role_id || !staffMember.roles.cache.has(settings.staff_role_id)) {
+        console.error(`OAuth login rejected: ${user.username} has no staff role in ${selected}.`);
         return c.redirect('/login?error=forbidden');
       }
       const guild = await ctx.getGuild(selected);
@@ -77,7 +71,7 @@ export function mountAuth(router: Router, ctx: DashboardContext) {
       if (!member) return c.redirect('/login?error=member');
       const isOwner = guild.ownerId === user.id;
       const isAdministrator = member.permissions.has(PermissionFlagsBits.Administrator);
-      const sessionUser: SessionUser = { id: user.id, username: user.username, avatar: user.avatar, isOwner, isAdministrator, isManagement: isOwner || isAdministrator, isStaff: true, guilds: available };
+      const sessionUser: SessionUser = { id: user.id, username: user.username, avatar: user.avatar, isOwner, isAdministrator, isManagement: isOwner || isAdministrator, isStaff: true, guilds: [{ id: guild.id, name: guild.name, icon: guild.icon ?? null, owner: isOwner }] };
       // رقم جلسة جديد بعد الدخول: أي رقم قديم (مسروق أو مثبّت) ما يصير مسجّل.
       const session = rotateSession(c);
       session.data = { user: sessionUser, guildId: selected, discordAccessToken: token.access_token, staffOkUntil: Date.now() + 30_000 };

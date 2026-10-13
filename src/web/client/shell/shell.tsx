@@ -78,12 +78,12 @@ export function createShell(options: ShellOptions): Shell {
   });
 
   const guildButton = live(() => (
-    <button type="button" class="guild-switch" aria-haspopup="menu" aria-expanded="false" title="تبديل السيرفر" onClick={(event: Event) => openGuildMenu(event.currentTarget as HTMLElement)}>
+    <div class="guild-switch is-static" title={guild?.name ?? 'السيرفر'}>
       <Avatar src={guild?.icon ?? null} name={guild?.name ?? 'R'} size={34} class="guild-icon" />
-      <span class="guild-text"><b>{guild?.name ?? 'سيرفرك'}</b><small>{admin ? 'إدارة' : 'ستاف'} · مساحة العمل</small></span>
-      <Icon name="arrow-down-01" size={16} class="guild-chev" />
-    </button>
+      <span class="guild-text"><b>{guild?.name ?? 'السيرفر'}</b><small>{admin ? 'إدارة' : 'ستاف'} · مساحة العمل</small></span>
+    </div>
   ));
+
 
   const themeIcon = live(() => <Icon name={resolvedTheme() === 'dark' ? 'sun' : 'moon'} size={20} />, { class: 'contents' }, 'span');
   window.addEventListener('rift:theme', () => themeIcon.update());
@@ -180,24 +180,6 @@ export function createShell(options: ShellOptions): Shell {
       'sep',
       { label: 'تسجيل الخروج', icon: 'logout-01', danger: true, onClick: () => void logout() },
     ]);
-  }
-
-  async function openGuildMenu(anchor: HTMLElement) {
-    try {
-      const data = await api<{ guilds: Array<{ id: string; name: string; icon?: string | null }>; selectedGuildId: string }>('/api/guilds');
-      const icon = guildIcon;
-      if (!guild) { const found = data.guilds.find(item => item.id === data.selectedGuildId); if (found) { guild = { ...found, icon: icon(found) }; guildButton.update(); } }
-      openMenu(anchor, data.guilds.map(item => ({
-        label: item.name,
-        icon: item.id === data.selectedGuildId ? 'tick-circle' : 'global',
-        hint: item.id === data.selectedGuildId ? 'الحالي' : undefined,
-        onClick: async () => {
-          if (item.id === data.selectedGuildId) return;
-          try { await api('/api/guilds/select', { method: 'POST', body: { guildId: item.id } }); toast(`انتقلت إلى ${item.name}`); setTimeout(() => location.assign('/dashboard'), 400); }
-          catch (error) { toastError(error); }
-        },
-      })), 'start');
-    } catch (error) { toastError(error); }
   }
 
   // ───── صندوق الإشعارات ─────

@@ -1,5 +1,6 @@
 import { Client, Guild, PermissionFlagsBits, type GuildMember } from '../lib/djs/index.js';
 import { supabase } from '../supabase/client.js';
+import { env } from '../config/env.js';
 import { Context, HttpError } from '../web/server/http.js';
 import type { Mount } from '../web/server/router.js';
 import { destroySession } from '../web/server/session.js';
@@ -16,6 +17,8 @@ export type SessionUser = {
 
 export interface DashboardContext {
   discord: Client;
+  /** البوت لسيرفر واحد: GUILD_ID، أو سيرفر البوت الوحيد لو ناقص. فاضي لو ما نعرف. */
+  mainGuildId: () => string;
   supabase: typeof supabase;
   /** السيرفر المختار (لازم يكون من سيرفرات المستخدم والبوت فيه). يرمي 400/403 لو لا. */
   selectedGuildId: (c: Context) => string;
@@ -121,12 +124,24 @@ export function createContext(discord: Client): DashboardContext & { refreshGuil
 
   const sessionUser = (c: Context) => (c.session?.data.user as SessionUser | undefined) ?? null;
 
+  let warned = false;
+  function mainGuildId() {
+    if (env.guildId) return env.guildId;
+    const ids = [...discord.guilds.cache.keys()];
+    if (!warned && ids.length) {
+      warned = true;
+      console.warn(`[dashboard] GUILD_ID مو مضبوط في .env — ${ids.length === 1 ? `استخدمنا سيرفر البوت الوحيد ${ids[0]}` : 'البوت في أكثر من سيرفر، ما نقدر نختار. اضبط GUILD_ID'}.`);
+    }
+    return ids.length === 1 ? ids[0]! : '';
+  }
+
+  /** لوحة سيرفر واحد: كل المسارات على السيرفر الرئيسي، والجلسة لازم تكون لنفس السيرفر. */
   function selectedGuildId(c: Context) {
     const user = sessionUser(c);
-    const id = c.session?.data.guildId as string | undefined;
     if (!user) throw new HttpError(401, 'سجّل دخولك أول.');
-    if (!id) throw new HttpError(400, 'ما فيه سيرفر مختار.');
-    if (!user.guilds.some(guild => guild.id === id)) throw new HttpError(403, 'هذا السيرفر مو متاح لحسابك.');
+    const id = mainGuildId();
+    if (!id) throw new HttpError(503, 'السيرفر مو محدد. اضبط GUILD_ID في .env.');
+    if (c.session?.data.guildId && c.session.data.guildId !== id) throw new HttpError(403, 'هذا السيرفر مو متاح لحسابك.');
     return id;
   }
 
@@ -186,7 +201,7 @@ export function createContext(discord: Client): DashboardContext & { refreshGuil
   }
 
   return {
-    discord, supabase, selectedGuildId, requireAdministrator, requireManagement: requireAdministrator, isAdmin, sessionUser,
+    discord, supabase, mainGuildId, selectedGuildId, requireAdministrator, requireManagement: requireAdministrator, isAdmin, sessionUser,
     getGuild, getMember, settingsRow, invalidateSettings: guildId => { settingsCache.delete(guildId); }, refreshGuilds, checkStaff,
   };
 }

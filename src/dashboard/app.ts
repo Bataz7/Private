@@ -9,6 +9,7 @@ import { createContext } from './context.js';
 import { mountAuth } from './auth.js';
 import { mountPages } from './pages.js';
 import { mountStaffRoutes } from './staff-routes.js';
+import { mountStaffOverview } from './staff-overview.js';
 import { dashboard as extensions } from './extensions.js';
 
 // يركّب اللوحة: الراوتر، الحراس، الملفات الثابتة، الأخطاء الموحّدة، وهيدرات الأمان على كل رد.
@@ -31,6 +32,7 @@ export function createDashboard(discord: Client) {
   const api = router.scope('staff', [originGuard, rateLimit('api', 60_000, 600), ctx.checkStaff, csrfGuard]);
   for (const extension of extensions) extension.mountApi?.(ctx, api);
   mountStaffRoutes(api, ctx);
+  mountStaffOverview(api, ctx);
 
   assertProtected(router);
 

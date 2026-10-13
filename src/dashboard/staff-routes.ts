@@ -103,26 +103,16 @@ export function mountStaffRoutes(app: Mount, ctx: DashboardContext) {
   };
 
   // ---- السيرفرات ---------------------------------------------------------------------------------
-  app.get('/api/guilds', c => {
-    const user = userOf(c);
-    return c.json({ guilds: user.guilds, selectedGuildId: ctx.selectedGuildId(c) });
-  });
-
-  app.post('/api/guilds/select', async c => {
-    const user = userOf(c);
-    const guildId = String(c.body.guildId || '');
-    if (!isSnowflake(guildId) || !user.guilds.some(guild => guild.id === guildId) || !discord.guilds.cache.has(guildId)) return c.fail(403, 'ما تقدر تدخل هذا السيرفر.');
+  // لوحة سيرفر واحد: القائمة فيها السيرفر الرئيسي بس، والاختيار ما يغيّر شي.
+  app.get('/api/guilds', async c => {
+    const guildId = ctx.selectedGuildId(c);
     const guild = await ctx.getGuild(guildId);
-    const member = await ctx.getMember(guildId, user.id, 0);
-    const settings = await ctx.settingsRow(guildId).catch(() => null);
-    const isStaff = Boolean(member && settings?.staff_role_id && member.roles.cache.has(settings.staff_role_id));
-    if (!isStaff) return c.fail(403, 'تحتاج رتبة الستاف في هذا السيرفر.');
-    const isAdministrator = Boolean(member?.permissions.has(PermissionFlagsBits.Administrator));
-    const isOwner = guild.ownerId === user.id;
-    c.session!.data.guildId = guildId;
-    c.session!.data.staffOkUntil = Date.now() + 30_000;
-    c.session!.data.user = { ...user, isOwner, isAdministrator, isManagement: isOwner || isAdministrator, isStaff };
-    return c.json({ ok: true });
+    return c.json({ guilds: [{ id: guild.id, name: guild.name, icon: guild.icon ?? null, owner: guild.ownerId === userOf(c).id }], selectedGuildId: guildId });
+  });
+  app.post('/api/guilds/select', c => {
+    const guildId = ctx.selectedGuildId(c);
+    if (c.body.guildId && String(c.body.guildId) !== guildId) return c.fail(403, 'اللوحة لسيرفر واحد فقط.');
+    return c.json({ ok: true, guildId });
   });
 
   // ---- الإعداد --------------------------------------------------------------------------------------

@@ -10,17 +10,9 @@ import { BarChart, Ring } from '../ui/chart';
 import { Icon } from '../ui/Icon';
 import { Avatar, Badge, Button, Card, Empty, ErrorState, Kpi, PageSkeleton, Seg, Skeleton } from '../ui/kit';
 import { confirmDialog, toast, toastError } from '../ui/overlay';
-import { addStaffDialog, nameOf, openStaffDrawer, syncStaff, type StaffRow } from './staff-actions';
-
-const ACTION_LABEL: Record<string, string> = {
-  SHIFT_STARTED: 'بدأ شفت', SHIFT_STARTED_AUTOMATICALLY: 'بدأ شفت تلقائيًا', SHIFT_ENDED: 'أنهى شفت', SHIFT_AUTO_ENDED: 'انتهى شفته تلقائيًا', BREAK_STARTED: 'أخذ بريك', BREAK_RESUMED: 'رجع من البريك',
-  LEAVE_REQUESTED: 'طلب إجازة', LEAVE_APPROVED: 'انقبلت إجازته', RETURNED_FROM_LEAVE: 'رجع من الإجازة', RESIGNATION_REQUESTED: 'قدّم استقالة', COMPLAINT_REVIEWED: 'انراجعت شكوى عليه',
-  POINTS_ADJUSTED: 'تعديل نقاط', STAFF_DISMISSED: 'فصل', STAFF_REINSTATED: 'الغاء فصل', STAFF_SYNCED: 'مزامنة الستاف', STAFF_WIPED: 'مسح وإعادة تسجيل الستاف', SHIFT_PRESENCE_TIMEOUT: 'انتهى الشفت لعدم الرد على «هل انت موجود؟»', ASSISTANCE_RECORDED: 'ساعد عضو',
-  MOD_REPORT_SUBMITTED: 'قدّم تقرير مود', REPORTS_SENT: 'أرسل التقارير', STAFF_NOTE_ADDED: 'ملاحظة جديدة', PRESENCE_CHECK_FAILED: 'ما رد على التحقق من التواجد', WARNING_ISSUED: 'أخذ إنذار',
-};
-export const actionText = (action: string) => ACTION_LABEL[action] ?? String(action || '').toLowerCase().replace(/_/g, ' ');
-const ACTION_ICON: Record<string, string> = { SHIFT: 'alarm', BREAK: 'timer-pause', LEAVE: 'briefcase', RETURNED: 'briefcase', RESIGNATION: 'logout-01', REPORT: 'document-text', REPORTS: 'chart-2', MOD: 'shield-tick', COMPLAINT: 'danger', ASSISTANCE: 'people', POINTS: 'medal-star', STAFF: 'people', WARNING: 'warning-2', PRESENCE: 'radar' };
-export const actionIcon = (action: string) => ACTION_ICON[String(action).split('_')[0]!] ?? 'activity';
+import { addStaffDialog, nameOf, syncStaff, type StaffRow } from './staff-actions';
+import { openStaffProfile } from './staff-profile';
+import { actionIcon, actionText } from '../lib/actions';
 
 const dayLabel = (iso: string) => { const d = new Date(`${iso}T00:00:00Z`); return `${d.getUTCDate()}/${d.getUTCMonth() + 1}`; };
 const minutesSince = (value: string) => Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000));
@@ -116,7 +108,7 @@ export default async function overview(ctx: PageCtx) {
               const member = byId.get(shift.userId);
               const onBreak = Array.isArray(shift.breaks) && shift.breaks.length && !shift.breaks.at(-1)?.endedAt;
               return (
-                <button type="button" class="line-item is-link" onClick={() => member && openStaffDrawer(member, data, { admin: true, onChanged: reload })}>
+                <button type="button" class="line-item is-link" onClick={() => member && openStaffProfile(member, data, { admin: true, onChanged: reload })}>
                   <Avatar src={member?.avatar} name={nameOf(member, shift.userId)} size={36} ring={onBreak ? 'var(--warning)' : 'var(--success)'} />
                   <div class="row-main"><b>{nameOf(member, shift.userId)}</b><small>{onBreak ? 'في بريك' : 'شغّال'} · {num(shift.interactionMessageCount ?? 0)} رسالة</small></div>
                   <Badge tone={onBreak ? 'warning' : 'success'} dot>{duration(minutesSince(shift.startedAt))}</Badge>

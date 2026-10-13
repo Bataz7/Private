@@ -15,7 +15,7 @@ if (!process.env.RIFT_ISOLATED) {
     const [code, out, err] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
     if (code !== 0) console.error(out, err);
     expect(code).toBe(0);
-    expect(err).toMatch(/\b25 pass\b/);
+    expect(err).toMatch(/\b29 pass\b/);
   }, 120_000);
 } else registerSuite();
 
@@ -332,6 +332,36 @@ function registerSuite() {
       expect(res.status).toBe(200);
       expect(res.headers.get('set-cookie')).toContain('Max-Age=0');
       expect((await call('/api/guilds', { session })).status).toBe(401);
+    });
+  });
+
+  describe('single server + staff overview', () => {
+    test('/api/guilds returns only the configured guild', async () => {
+      const res = await call('/api/guilds', { session: sessionFor(STAFF) });
+      const body = await res.json() as any;
+      expect(body.guilds.map((g: any) => g.id)).toEqual([GUILD]);
+      expect(body.selectedGuildId).toBe(GUILD);
+    });
+
+    test('selecting another guild is refused', async () => {
+      const res = await call('/api/guilds/select', { method: 'POST', body: JSON.stringify({ guildId: '1399999999999999998' }), session: sessionFor(STAFF) });
+      expect(res.status).toBe(403);
+    });
+
+    test('staff can open their own overview but not someone else\'s', async () => {
+      const own = await call(`/api/staff/${STAFF}/overview`, { session: sessionFor(STAFF) });
+      expect(own.status).toBe(200);
+      const body = await own.json() as any;
+      expect(body.member.userId).toBe(STAFF);
+      expect(body.points.tier.current.key).toBeTruthy();
+      expect(body.days).toHaveLength(14);
+      expect(Array.isArray(body.shifts)).toBe(true);
+      expect((await call(`/api/staff/${ADMIN}/overview`, { session: sessionFor(STAFF) })).status).toBe(403);
+    });
+
+    test('admins can open anyone\'s overview; bad ids are rejected', async () => {
+      expect((await call(`/api/staff/${STAFF}/overview`, { session: sessionFor(ADMIN, true) })).status).toBe(200);
+      expect((await call('/api/staff/abc/overview', { session: sessionFor(ADMIN, true) })).status).toBe(400);
     });
   });
 }
