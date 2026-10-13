@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import type { Client } from 'discord.js';
+import type { Client } from '../lib/djs/index.js';
 import { env } from '../config/env.js';
 import { allCommands } from './definitions.js';
 

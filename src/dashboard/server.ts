@@ -1,6 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import session from 'express-session';
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, EmbedBuilder, GatewayIntentBits, PermissionFlagsBits } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, EmbedBuilder, GatewayIntentBits, PermissionFlagsBits } from '../lib/djs/index.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -18,7 +18,7 @@ import { StaffReport } from '../models/StaffReport.js';
 import { StaffDailyActivity } from '../models/StaffDailyActivity.js';
 import { StaffLog } from '../models/StaffLog.js';
 import { buildStaffCard } from '../utils/staff-card.js';
-import { AttachmentBuilder } from 'discord.js';
+import { AttachmentBuilder } from '../lib/djs/index.js';
 import { buildComplaintPanel } from '../utils/complaint-panel.js';
 import { buildRatingPanel } from '../utils/rating-panel.js';
 import { createComplaintOnce } from '../services/complaint.service.js';

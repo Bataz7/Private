@@ -1,4 +1,4 @@
-import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionFlagsBits, type Client, type Guild, type GuildMember, type Role } from 'discord.js';
+import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionFlagsBits, type Client, type Guild, type GuildMember, type Role } from '../lib/djs/index.js';
 import { env } from '../config/env.js';
 import { supabase } from '../supabase/client.js';
 import { DEFAULT_SETTINGS, formatAnswer, visibleQuestions, type FormSettings, type Language, type Question } from '../applications/questions.js';

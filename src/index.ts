@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ActivityType, ButtonBuilder, ButtonStyle, Client, EmbedBuilder, GatewayIntentBits, Partials, Events } from 'discord.js';
+import { ActionRowBuilder, ActivityType, ButtonBuilder, ButtonStyle, Client, EmbedBuilder, GatewayIntentBits, Partials, Events } from './lib/djs/index.js';
 import { env } from './config/env.js';
 import { handleCommand } from './commands/index.js';
 import { handleButton } from './interactions/buttons.js';
@@ -248,7 +248,7 @@ client.on(Events.MessageCreate, async message => {
 });
 
 /** Starts a shift for a staff member who joined voice. Returns nothing when they are not staff or auto shifts are off. */
-async function ensureVoiceShift(guild: import('discord.js').Guild, userId: string) {
+async function ensureVoiceShift(guild: import('./lib/djs/index.js').Guild, userId: string) {
   const settings = await GuildSettings.findOne({ guildId: guild.id }).catch(() => null);
   if (!settings) return;
   const member = await guild.members.fetch(userId).catch(() => null);

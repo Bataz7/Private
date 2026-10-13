@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type ModalSubmitInteraction } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type ModalSubmitInteraction } from '../lib/djs/index.js';
 import { saveSettings, requireSettings } from '../services/settings.service.js';
 import { LeaveRequest } from '../models/LeaveRequest.js';
 import { ResignationRequest } from '../models/ResignationRequest.js';

@@ -1,4 +1,4 @@
-import type { Guild } from 'discord.js';
+import type { Guild } from '../lib/djs/index.js';
 import { supabase } from '../supabase/client.js';
 import { StaffRating, type StaffRatingDoc } from '../models/StaffRating.js';
 import { getSettings } from '../services/settings.service.js';

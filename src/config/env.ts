@@ -1,4 +1,24 @@
-import 'dotenv/config';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+
+// قارئ .env بدون مكتبات (Bun يقرأ .env تلقائياً، وهذا للتشغيل كملف تنفيذي أو على txiki.js)
+function findRoot() {
+  const here = (import.meta as { dir?: string }).dir;
+  const script = process.argv[1] && /\.m?js$/.test(process.argv[1]) ? dirname(resolve(process.argv[1])) : '';
+  const candidates = [process.cwd(), dirname(process.execPath), here ? resolve(here, '../..') : '', script, script && dirname(script)].filter(Boolean);
+  return candidates.find(d => existsSync(join(d, '.env')) || existsSync(join(d, 'package.json'))) ?? process.cwd();
+}
+export const ROOT = findRoot();
+try {
+  for (const line of readFileSync(join(ROOT, '.env'), 'utf8').split(/\r?\n/)) {
+    const m = /^\s*(?:export\s+)?([\w.]+)\s*=\s*(.*)$/.exec(line);
+    if (!m || line.trim().startsWith('#')) continue;
+    let v = m[2]!.trim();
+    if (/^["'`]/.test(v) && v.indexOf(v[0]!, 1) > 0) v = v.slice(1, v.indexOf(v[0]!, 1));
+    else v = v.split(/\s#/)[0]!.trim();
+    if (v && !process.env[m[1]!]) process.env[m[1]!] = v;
+  }
+} catch { /* no .env: the host's environment variables are used */ }
 
 function required(name: string): string {
   const value = process.env[name]?.trim();

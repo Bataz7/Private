@@ -1,4 +1,4 @@
-import { AttachmentBuilder, EmbedBuilder, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder, type ChatInputCommandInteraction, type GuildMember, type User } from 'discord.js';
+import { AttachmentBuilder, EmbedBuilder, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder, type ChatInputCommandInteraction, type GuildMember, type User } from '../lib/djs/index.js';
 import { env } from '../config/env.js';
 import { supabase } from '../supabase/client.js';
 import { Staff } from '../models/Staff.js';
@@ -155,12 +155,12 @@ async function profile(ctx: Ctx) {
     StaffRating.find({ guildId, staffUserId: user.id }),
   ]);
   if (!staff) return void await i.editReply({ content: t('This member is not on the staff list yet.', 'هذا العضو مو في قائمة الستاف بعد.') });
-  const image = await buildStaffCard({
+  const image = buildStaffCard({
     name: user.username, avatar: user.displayAvatarURL({ extension: 'png', size: 256 }), points: staff.points ?? 0, complaints: complaints.length,
     shiftHours: shifts.reduce((sum, shift) => sum + activeMs(shift), 0) / 3_600_000, voiceHours: (staff.voiceMinutes ?? 0) / 60, messages: staff.messageCount ?? 0,
     helped: staff.claimed ?? 0, ratingAverage: ratings.length ? ratings.reduce((sum, row) => sum + row.rating, 0) / ratings.length : 0, ratingCount: ratings.length,
   });
-  return void await i.editReply({ files: [new AttachmentBuilder(image, { name: 'rift-profile.png' })] });
+  return void await i.editReply(image);
 }
 
 // ---- Assist ---------------------------------------------------------------------------------------

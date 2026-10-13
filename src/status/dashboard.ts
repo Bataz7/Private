@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Client } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Client } from '../lib/djs/index.js';
 import type { Request, Response } from 'express';
 import type { DashboardContext, DashboardExtension } from '../dashboard/extensions.js';
 import { env } from '../config/env.js';

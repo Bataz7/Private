@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { ChannelType, type Client } from 'discord.js';
+import { ChannelType, type Client } from '../lib/djs/index.js';
 import type { DashboardContext, DashboardExtension } from './extensions.js';
 import {
   StudioError, countComponents, fileRefs, importApi, renderDoc, sanitizeDoc, textLength, UUID,

@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder } from '../lib/djs/index.js';
 import { extensionCommands } from '../extensions/index.js';
 
 // Built-in commands. Feature modules add theirs through src/extensions (a module command replaces a built-in one with the same name).

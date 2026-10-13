@@ -1,4 +1,4 @@
-import { EmbedBuilder, type Client, type Guild, type GuildMember } from 'discord.js';
+import { EmbedBuilder, type Client, type Guild, type GuildMember } from '../lib/djs/index.js';
 import { Shift, type ShiftDoc } from '../models/Shift.js';
 import type { GuildSettingsDoc } from '../models/GuildSettings.js';
 import { createLog } from './log.service.js';

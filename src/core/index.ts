@@ -1,4 +1,4 @@
-import type { ModalSubmitInteraction } from 'discord.js';
+import type { ModalSubmitInteraction } from '../lib/djs/index.js';
 import type { BotExtension } from '../extensions/types.js';
 import { requireSettings } from '../services/settings.service.js';
 import { coreCommandJson, handleCoreCommand } from './commands.js';

@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
-import type { Guild } from 'discord.js';
-import { EmbedBuilder } from 'discord.js';
+import type { Guild } from '../lib/djs/index.js';
+import { EmbedBuilder } from '../lib/djs/index.js';
 import type { DashboardContext, DashboardExtension } from '../dashboard/extensions.js';
 import { supabase } from '../supabase/client.js';
 import { Staff } from '../models/Staff.js';

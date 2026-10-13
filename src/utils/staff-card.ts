@@ -1,33 +1,55 @@
-import sharp from 'sharp';
+import { BRAND_COLOR, e, progressBar } from './emoji.js';
+import { V2_FLAG, container, rtl, section, separator, text, thumbnail } from './v2.js';
 
-function escapeXml(value: string) {
-  return value.replace(/[<>&'"]/g, char => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[char] ?? char));
-}
-
-async function imageDataUri(url: string) {
-  if (!url) return '';
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return '';
-    const type = response.headers.get('content-type') || 'image/png';
-    const buffer = Buffer.from(await response.arrayBuffer());
-    return `data:${type};base64,${buffer.toString('base64')}`;
-  } catch {
-    return '';
-  }
-}
+// بطاقة الستاف: Components V2 (بدون صور ولا مكتبات رسم = ذاكرة صفر). تُرسل كرسالة عادية أو مخفية.
 
 export type StaffCardData = {
   name: string; avatar: string; points: number; complaints: number; shiftHours: number; voiceHours: number; messages: number;
-  /** People helped (from /assist). Optional so older callers keep working. */
+  /** الناس اللي ساعدهم (من /assist). */
   helped?: number;
   ratingAverage?: number; ratingCount?: number;
+  /** ترتيبه بين الستاف (1 = الأول). */
+  rank?: number | null;
+  /** أعلى نقاط في السيرفر (لشريط التقدّم). */
+  topPoints?: number;
+  /** نقاط هذا الأسبوع. */
+  weekPoints?: number;
+  /** الإنذارات النشطة / الحد. */
+  warnings?: number; warnLimit?: number;
+  /** في شفت الآن؟ ومن متى. */
+  onShiftSince?: Date | null;
+  /** اسم الرتبة الأعلى. */
+  roleName?: string;
+  dismissed?: boolean;
 };
 
-export async function buildStaffCard(data: StaffCardData) {
-  const avatarUri = await imageDataUri(data.avatar);
-  const avatarImage = avatarUri ? `<image href="${avatarUri}" x="56" y="54" width="112" height="112" clip-path="url(#avatar)" preserveAspectRatio="xMidYMid slice"/>` : '';
-  const rating = data.ratingCount ? `${(data.ratingAverage ?? 0).toFixed(1)}/5` : '-';
-  const svg = `<svg width="900" height="500" viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#241837"/><stop offset=".55" stop-color="#171220"/><stop offset="1" stop-color="#0f1015"/></linearGradient><clipPath id="avatar"><circle cx="112" cy="110" r="56"/></clipPath></defs><rect width="900" height="500" rx="28" fill="url(#bg)"/><path d="M720 0h180v260c-90-26-146-86-180-170Z" fill="#9474ff" opacity=".17"/><circle cx="112" cy="110" r="62" fill="#17161f" stroke="#9474ff" stroke-width="5"/>${avatarImage}<text x="210" y="96" fill="#b8a7ff" font-family="Arial" font-size="20" font-weight="700">RIFT STAFF REPORT</text><text x="210" y="143" fill="#fff" font-family="Arial" font-size="36" font-weight="700">${escapeXml(data.name)}</text><text x="210" y="174" fill="#c7bfd4" font-family="Arial" font-size="17">Private activity snapshot</text><rect x="50" y="220" width="800" height="210" rx="18" fill="#111218" stroke="#44335d"/><g font-family="Arial"><text x="82" y="270" fill="#b7afc3" font-size="16">RIFT POINTS</text><text x="82" y="315" fill="#fff" font-size="36" font-weight="700">${data.points}</text><text x="285" y="270" fill="#b7afc3" font-size="16">MESSAGES</text><text x="285" y="315" fill="#fff" font-size="36" font-weight="700">${data.messages}</text><text x="488" y="270" fill="#b7afc3" font-size="16">VOICE HOURS</text><text x="488" y="315" fill="#fff" font-size="36" font-weight="700">${data.voiceHours.toFixed(1)}h</text><text x="690" y="270" fill="#b7afc3" font-size="16">COMPLAINTS</text><text x="690" y="315" fill="#fff" font-size="36" font-weight="700">${data.complaints}</text><text x="82" y="370" fill="#b7afc3" font-size="16">SHIFT HOURS</text><text x="82" y="405" fill="#c8bcff" font-size="24" font-weight="700">${data.shiftHours.toFixed(1)}h</text><text x="285" y="370" fill="#b7afc3" font-size="16">HELPED</text><text x="285" y="405" fill="#c8bcff" font-size="24" font-weight="700">${data.helped ?? 0}</text><text x="488" y="370" fill="#b7afc3" font-size="16">RATING</text><text x="488" y="405" fill="#f5c451" font-size="24" font-weight="700">${escapeXml(rating)}</text><text x="690" y="370" fill="#b7afc3" font-size="16">REVIEWERS</text><text x="690" y="405" fill="#c8bcff" font-size="24" font-weight="700">${data.ratingCount ?? 0}</text></g></svg>`;
-  return sharp(Buffer.from(svg)).png().toBuffer();
+const n = (v: number) => Math.round(v).toLocaleString('en-US');
+const h = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-US');
+
+/** يرجّع رسالة جاهزة (flags + components). ephemeral=true يخليها مخفية. */
+export function buildStaffCard(data: StaffCardData, ephemeral = false) {
+  const status = data.dismissed
+    ? `${e('cross')} **مفصول**`
+    : data.onShiftSince
+      ? `${e('check')} **في الشفت الآن** · منذ <t:${Math.floor(data.onShiftSince.getTime() / 1000)}:R>`
+      : `${e('away')} خارج الشفت`;
+  const rating = data.ratingCount ? `**${(data.ratingAverage ?? 0).toFixed(1)}/5** (${n(data.ratingCount)})` : '—';
+  const top = Math.max(data.topPoints ?? data.points, data.points, 1);
+  const accent = data.dismissed ? 0xe9697b : data.onShiftSince ? 0x4fc08d : BRAND_COLOR;
+  const lines = [
+    `${e('chart')} ساعات الشفت: **${h(data.shiftHours)}** · ${e('voice')} الفويس: **${h(data.voiceHours)}** ساعة`,
+    `${e('chat')} الرسائل: **${n(data.messages)}** · ${e('engage')} ساعد: **${n(data.helped ?? 0)}**`,
+    `${e('star')} التقييم: ${rating} · ${e('blocked')} الشكاوى: **${n(data.complaints)}**`,
+  ];
+  if (data.warnings !== undefined) lines.push(`${e('warn')} الإنذارات: **${n(data.warnings)}${data.warnLimit ? `/${data.warnLimit}` : ''}**`);
+  if (data.weekPoints !== undefined) lines.push(`${e('calendar')} نقاط هذا الأسبوع: **${n(data.weekPoints)}**`);
+  const card = container([
+    section([rtl(`## ${e('crown')} ${data.name}`), rtl(`${data.roleName ? `${data.roleName} · ` : ''}ستاف Rift`), rtl(status)], thumbnail(data.avatar)),
+    separator(),
+    text(rtl(`### ${e('points')} النقاط: **${n(data.points)}**${data.rank ? ` · الترتيب **#${data.rank}**` : ''}\n${progressBar(data.points / top, 12)}`)),
+    text(rtl(lines.join('\n'))),
+    separator(false),
+    text(rtl('-# Rift Staff · بطاقة الأداء')),
+  ], accent);
+  return { flags: V2_FLAG | (ephemeral ? 64 : 0), components: [card], allowedMentions: { parse: [] } };
 }

@@ -1,4 +1,4 @@
-import type { Client, Guild } from 'discord.js';
+import type { Client, Guild } from '../lib/djs/index.js';
 import { supabase } from '../supabase/client.js';
 import { env } from '../config/env.js';
 import { BRAND_COLOR, e, emojisReady, progressBar } from '../utils/emoji.js';

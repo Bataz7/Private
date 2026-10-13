@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import type { Guild } from 'discord.js';
+import type { Guild } from '../lib/djs/index.js';
 import type { DashboardContext, DashboardExtension } from './extensions.js';
 import {
   addModReportNote, buildModPanel, buildReviewCard, decideModReport, deleteModReport, getModReport, getModSettings, isSetupError, listModReports, modReportHistory, modReportOverview,

@@ -1,4 +1,4 @@
-import type { ButtonInteraction, ChatInputCommandInteraction, Client, Message, ModalSubmitInteraction, RESTPostAPIChatInputApplicationCommandsJSONBody, StringSelectMenuInteraction } from 'discord.js';
+import type { ButtonInteraction, ChatInputCommandInteraction, Client, Message, ModalSubmitInteraction, RESTPostAPIChatInputApplicationCommandsJSONBody, StringSelectMenuInteraction } from '../lib/djs/index.js';
 
 /**
  * A feature module of the bot. Each ported Melyx feature exports one BotExtension and adds it to `bot` in

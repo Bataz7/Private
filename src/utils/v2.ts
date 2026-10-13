@@ -1,4 +1,4 @@
-import { MessageFlags } from 'discord.js';
+import { MessageFlags } from '../lib/djs/index.js';
 
 // Raw Discord Components V2 payload helpers. discord.js passes these API objects through unchanged.
 export const V2_FLAG = MessageFlags.IsComponentsV2 as MessageFlags.IsComponentsV2;

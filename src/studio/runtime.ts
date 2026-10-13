@@ -1,7 +1,7 @@
 import {
   LabelBuilder, ModalBuilder, TextInputBuilder, TextInputStyle,
   type ButtonInteraction, type GuildMember, type ModalSubmitInteraction, type StringSelectMenuInteraction,
-} from 'discord.js';
+} from '../lib/djs/index.js';
 import { getSettings } from '../services/settings.service.js';
 import { createLog } from '../services/log.service.js';
 import { BRAND_COLOR } from '../utils/emoji.js';

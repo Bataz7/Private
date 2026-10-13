@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Client } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Client } from '../lib/djs/index.js';
 import { supabase } from '../supabase/client.js';
 import { Staff } from '../models/Staff.js';
 import { LeaveRequest, type LeaveRequestDoc } from '../models/LeaveRequest.js';

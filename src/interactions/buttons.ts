@@ -1,7 +1,7 @@
 import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, StringSelectMenuBuilder,
   TextInputBuilder, TextInputStyle, type ButtonInteraction, type Guild
-} from 'discord.js';
+} from '../lib/djs/index.js';
 import { requireSettings } from '../services/settings.service.js';
 import { isAdministrator, isManagement, isStaff } from '../utils/permissions.js';
 import { Shift } from '../models/Shift.js';

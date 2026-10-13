@@ -1,5 +1,5 @@
 import type { Express, Request, RequestHandler, Response } from 'express';
-import type { Client } from 'discord.js';
+import type { Client } from '../lib/djs/index.js';
 import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { env } from '../config/env.js';

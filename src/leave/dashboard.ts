@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { MessageFlags, type Guild, type Message, type TextBasedChannel } from 'discord.js';
+import { MessageFlags, type Guild, type Message, type TextBasedChannel } from '../lib/djs/index.js';
 import type { DashboardContext, DashboardExtension } from '../dashboard/extensions.js';
 import { LeaveRequest, type LeaveRequestDoc } from '../models/LeaveRequest.js';
 import { RequestPanelSettings } from '../models/RequestPanelSettings.js';

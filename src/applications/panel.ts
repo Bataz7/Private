@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from '../lib/djs/index.js';
 import { answerable } from './questions.js';
 import { t } from './i18n.js';
 import { applyUrl, colorOf, formSettings } from '../services/application.service.js';

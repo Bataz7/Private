@@ -2,7 +2,7 @@ import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, StringSelectMenuBuilder,
   EmbedBuilder, ModalBuilder, PermissionFlagsBits,
   TextInputBuilder, TextInputStyle, AttachmentBuilder
-} from 'discord.js';
+} from '../lib/djs/index.js';
 import { requireSettings } from '../services/settings.service.js';
 import { Shift } from '../models/Shift.js';
 import { LeaveRequest } from '../models/LeaveRequest.js';
@@ -175,8 +175,8 @@ async function reportStats(i: ChatInputCommandInteraction) {
   const approvedComplaints = await Complaint.find({ guildId: i.guild!.id, staffUserId: user.id, status: 'approved' });
   const totalHours = shifts.reduce((total, shift) => total + activeMs(shift), 0) / 3600000;
   const points = staff?.points ?? 0;
-  const image = await buildStaffCard({ name: user.username, avatar: user.displayAvatarURL({ extension: 'png', size: 256 }), points, complaints: approvedComplaints.length, shiftHours: totalHours, voiceHours: (staff?.voiceMinutes ?? 0) / 60, messages: staff?.messageCount ?? 0 });
-  return i.reply({ files: [new AttachmentBuilder(image, { name: 'rift-staff-report.png' })] });
+  const image = buildStaffCard({ name: user.username, avatar: user.displayAvatarURL({ extension: 'png', size: 256 }), points, complaints: approvedComplaints.length, shiftHours: totalHours, voiceHours: (staff?.voiceMinutes ?? 0) / 60, messages: staff?.messageCount ?? 0 });
+  return i.reply(image);
 }
 
 async function staffSetup(i: ChatInputCommandInteraction) {

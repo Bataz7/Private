@@ -1,4 +1,4 @@
-import type { Client, GuildMember, Interaction } from 'discord.js';
+import type { Client, GuildMember, Interaction } from '../lib/djs/index.js';
 import { requireSettings, getSettings } from '../services/settings.service.js';
 
 // Who may do what. Two levels only:

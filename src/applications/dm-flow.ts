@@ -1,7 +1,7 @@
 import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle,
   type ButtonInteraction, type Client, type Message, type ModalSubmitInteraction, type StringSelectMenuInteraction,
-} from 'discord.js';
+} from '../lib/djs/index.js';
 import { answerable, formatAnswer, isVisible, LIMITS, validateAnswer, validateSubmission, visibleQuestions, type Language, type Question } from './questions.js';
 import { t } from './i18n.js';
 import { receivedEmbed } from './messages.js';

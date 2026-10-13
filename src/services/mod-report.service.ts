@@ -1,4 +1,4 @@
-import type { Client, GuildMember } from 'discord.js';
+import type { Client, GuildMember } from '../lib/djs/index.js';
 import { env } from '../config/env.js';
 import { supabase } from '../supabase/client.js';
 import { getSettings } from './settings.service.js';

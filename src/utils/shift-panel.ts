@@ -1,4 +1,4 @@
-import { ActionRowBuilder, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } from 'discord.js';
+import { ActionRowBuilder, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } from '../lib/djs/index.js';
 
 export interface ShiftPanelOptions { messages?: number; windowMinutes?: number; idleMinutes?: number; enabled?: boolean }
 

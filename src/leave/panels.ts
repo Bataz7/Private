@@ -1,4 +1,4 @@
-import { ActionRowBuilder, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, type Guild } from 'discord.js';
+import { ActionRowBuilder, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, type Guild } from '../lib/djs/index.js';
 import { V2_FLAG, button, container, row, rtl, section, separator, text, thumbnail, type Raw } from '../utils/v2.js';
 import { BRAND_COLOR } from '../utils/emoji.js';
 import { leaveHistory, resignationHistory } from './requests.js';

@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from 'express';
-import type { Client } from 'discord.js';
+import type { Client } from '../lib/djs/index.js';
 import type { supabase as SupabaseClient } from '../supabase/client.js';
 import { studioDashboard } from './studio.js';
 import { modReportsDashboard } from './modreports.js';

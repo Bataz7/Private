@@ -1,4 +1,4 @@
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder } from '../lib/djs/index.js';
 import type { Language } from './questions.js';
 
 // The three messages an applicant receives in DMs: received, accepted, rejected. Normal embeds (not panels).

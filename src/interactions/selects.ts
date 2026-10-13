@@ -1,4 +1,4 @@
-import { ActionRowBuilder, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, type StringSelectMenuInteraction } from 'discord.js';
+import { ActionRowBuilder, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, type StringSelectMenuInteraction } from '../lib/djs/index.js';
 import { requireSettings } from '../services/settings.service.js';
 import { isStaff } from '../utils/permissions.js';
 import { Shift } from '../models/Shift.js';

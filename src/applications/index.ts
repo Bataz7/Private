@@ -1,4 +1,4 @@
-import type { ButtonInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from 'discord.js';
+import type { ButtonInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from '../lib/djs/index.js';
 import type { BotExtension } from '../extensions/types.js';
 import { extensionTimer } from '../extensions/index.js';
 import { applicationsReady, ApplicationsSetupError } from '../services/application.service.js';

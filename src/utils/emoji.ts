@@ -1,4 +1,4 @@
-import { MessagePayload, type Client } from 'discord.js';
+import { setOutgoingTransform, type Client } from '../lib/djs/index.js';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { status } from './terminal.js';
@@ -116,16 +116,13 @@ let hooked = false;
 export function installEmojiHook() {
   if (hooked) return;
   hooked = true;
-  const original = MessagePayload.prototype.resolveBody;
-  MessagePayload.prototype.resolveBody = function patched(this: MessagePayload) {
-    const result = original.call(this);
+  setOutgoingTransform(body => {
     try {
       // Rift purple for every embed that has no colour of its own (red/green ones keep their meaning).
-      if (this.body && Array.isArray((this.body as any).embeds)) for (const embed of (this.body as any).embeds) if (embed && typeof embed === 'object' && embed.color === undefined) embed.color = BRAND_COLOR;
-      if (this.body) emojifyBody(this.body);
+      if (Array.isArray(body.embeds)) for (const embed of body.embeds) if (embed && typeof embed === 'object' && embed.color === undefined) embed.color = BRAND_COLOR;
+      emojifyBody(body);
     } catch (error) { console.error('Emoji swap failed:', error); }
-    return result;
-  };
+  });
 }
 
 // Local record of which design (hash) was uploaded, so rebuilding the set replaces changed emojis.

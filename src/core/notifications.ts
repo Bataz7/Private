@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Client, type GuildMember } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Client, type GuildMember } from '../lib/djs/index.js';
 import { env } from '../config/env.js';
 import { supabase } from '../supabase/client.js';
 import { StaffNotification, type NotificationDelivery, type NotificationLevel, type StaffNotificationRead } from '../models/StaffNotification.js';

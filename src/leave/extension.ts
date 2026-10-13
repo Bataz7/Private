@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Client } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Client } from '../lib/djs/index.js';
 import type { LeaveRequestDoc } from '../models/LeaveRequest.js';
 import { getSettings } from '../services/settings.service.js';
 import { createLog } from '../services/log.service.js';

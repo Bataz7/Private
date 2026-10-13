@@ -1,4 +1,4 @@
-import { REST, Routes } from 'discord.js';
+import { REST, Routes } from '../src/lib/djs/index.js';
 import { env } from '../src/config/env.js';
 import { allCommands } from '../src/commands/definitions.js';
 

@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import type { Guild } from 'discord.js';
+import type { Guild } from '../lib/djs/index.js';
 import type { DashboardContext, DashboardExtension } from '../dashboard/extensions.js';
 import { createLog } from '../services/log.service.js';
 import {

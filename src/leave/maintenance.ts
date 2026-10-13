@@ -1,4 +1,4 @@
-import type { Client } from 'discord.js';
+import type { Client } from '../lib/djs/index.js';
 import { supabase } from '../supabase/client.js';
 import { LeaveRequest } from '../models/LeaveRequest.js';
 import { ResignationRequest } from '../models/ResignationRequest.js';

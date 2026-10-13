@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Client } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Client } from '../lib/djs/index.js';
 import { getSettings } from '../services/settings.service.js';
 import { patchRow, type RequestTable } from './db.js';
 import { clip, seconds, type RequestKind } from './util.js';

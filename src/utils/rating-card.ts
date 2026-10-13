@@ -1,4 +1,4 @@
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder } from '../lib/djs/index.js';
 
 // The card posted to the ratings channel for every new (or updated) rating. A normal embed, one language only.
 const LABELS = {

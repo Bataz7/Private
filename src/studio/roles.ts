@@ -1,4 +1,4 @@
-import { PermissionFlagsBits, type Role } from 'discord.js';
+import { PermissionFlagsBits, type Role } from '../lib/djs/index.js';
 
 // Roles that must never be handed out by a self-service button or menu: each of these lets the
 // holder take over or wreck the server.

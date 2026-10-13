@@ -1,4 +1,4 @@
-import type { ButtonInteraction, ModalSubmitInteraction } from 'discord.js';
+import type { ButtonInteraction, ModalSubmitInteraction } from '../lib/djs/index.js';
 import { getSettings } from '../services/settings.service.js';
 import { createLog, sendLog } from '../services/log.service.js';
 import { isStaff } from '../utils/permissions.js';

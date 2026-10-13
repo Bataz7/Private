@@ -1,4 +1,4 @@
-import { ActivityType, type ActivitiesOptions, type Client, type PresenceStatusData } from 'discord.js';
+import { ActivityType, type ActivitiesOptions, type Client, type PresenceStatusData } from '../lib/djs/index.js';
 import { env } from '../config/env.js';
 import { supabase } from '../supabase/client.js';
 

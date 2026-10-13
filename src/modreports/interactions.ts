@@ -1,7 +1,7 @@
 import {
   LabelBuilder, ModalBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle,
   type ButtonInteraction, type ModalSubmitInteraction,
-} from 'discord.js';
+} from '../lib/djs/index.js';
 import {
   ACTIONS, L, actionLabel, actionOptions, addModReportNote, canReport, canReviewModReports, createModReport, decideModReport, getModReport, getModSettings, moderatorSummary, pad, reopenModReport,
   type ModAction, type ModLanguage, type PanelLanguage,

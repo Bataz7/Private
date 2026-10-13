@@ -1,4 +1,4 @@
-import type { ButtonInteraction, ChatInputCommandInteraction, Client, Message, ModalSubmitInteraction, StringSelectMenuInteraction } from 'discord.js';
+import type { ButtonInteraction, ChatInputCommandInteraction, Client, Message, ModalSubmitInteraction, StringSelectMenuInteraction } from '../lib/djs/index.js';
 import type { BotExtension } from './types.js';
 import { studioBot } from '../studio/index.js';
 import { modReportsExtension } from '../modreports/index.js';

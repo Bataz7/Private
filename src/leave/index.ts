@@ -1,4 +1,4 @@
-import { Events } from 'discord.js';
+import { Events } from '../lib/djs/index.js';
 import type { BotExtension } from '../extensions/types.js';
 import { extensionTimer } from '../extensions/index.js';
 import { leaveCommands } from './commands.js';

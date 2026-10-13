@@ -1,4 +1,4 @@
-import type { Client } from 'discord.js';
+import type { Client } from '../lib/djs/index.js';
 import { supabase } from '../supabase/client.js';
 import { PointsLedger } from '../models/PointsLedger.js';
 import { createLog } from '../services/log.service.js';

@@ -1,4 +1,4 @@
-﻿import { SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
+﻿import { SlashCommandBuilder, type ChatInputCommandInteraction } from '../lib/djs/index.js';
 import { getSettings } from '../services/settings.service.js';
 import { isStaff } from '../utils/permissions.js';
 import { MIGRATION_HINT, schemaReady } from './db.js';

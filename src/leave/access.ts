@@ -1,4 +1,4 @@
-import type { Client, GuildMember, Interaction } from 'discord.js';
+import type { Client, GuildMember, Interaction } from '../lib/djs/index.js';
 import { getSettings } from '../services/settings.service.js';
 
 // Two levels exist: staff (the Staff role) and administrator (the server owner, or anyone with the Administrator permission).

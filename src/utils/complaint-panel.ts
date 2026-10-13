@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from '../lib/djs/index.js';
 
 export function buildComplaintPanel(language: 'en' | 'ar' = 'en') {
   const ar = language === 'ar';
