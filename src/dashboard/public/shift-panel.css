@@ -1,1 +1,0 @@
-.shift-panel-form{display:flex;gap:10px}.shift-panel-form select{flex:1;background:#151419;border:1px solid var(--line);border-radius:9px;color:var(--text);padding:11px;outline:0}.shift-panel-form button{min-width:145px}@media(max-width:650px){.shift-panel-form{display:grid}.shift-panel-form button{width:100%}}
