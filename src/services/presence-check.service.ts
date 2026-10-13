@@ -1,11 +1,12 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type ButtonInteraction, type Client, type Guild, type GuildMember } from '../lib/djs/index.js';
+import { EmbedBuilder, type ButtonInteraction, type Client, type Guild, type GuildMember } from '../lib/djs/index.js';
 import { Shift, type ShiftDoc } from '../models/Shift.js';
 import type { GuildSettingsDoc } from '../models/GuildSettings.js';
 import { supabase } from '../supabase/client.js';
 import { createLog } from './log.service.js';
-import { activeMs, duration, endShift } from './shift.service.js';
+import { activeMs, duration, endShift, onShiftChange } from './shift.service.js';
 import { isMissingColumn, tolerantUpdate, warnMigration } from '../discipline/db.js';
 import { event } from '../utils/terminal.js';
+import { V2_FLAG, button, container, row, rtl, text, ts } from '../utils/v2.js';
 
 // تحقق التواجد في الفويس («هل انت موجود؟»):
 //   - الإداري في شفت وقاعد في الفويس، وصار له `ساعة` من آخر تفاعل مؤكد (رسالة، تفاعل، تأكيد، دخول الفويس) → نرسل له
@@ -53,6 +54,16 @@ type Pending = { guildId: string; userId: string; shiftId: number; channelId: st
 const pending = new Map<string, Pending>();
 const stopped = new Map<string, number>();
 const key = (guildId: string, userId: string) => `${guildId}:${userId}`;
+let boundClient: Client | null = null;
+
+// الشفت انتهى من أي مكان (يدوي، داشبورد، 12 ساعة): نشيل السؤال المعلّق ورسالته بصمت.
+onShiftChange((guildId, userId, kind) => {
+  if (kind !== 'end') return;
+  const entry = pending.get(key(guildId, userId));
+  if (!entry) return;
+  pending.delete(key(guildId, userId));
+  if (boundClient) void deleteMessage(boundClient, entry.channelId, entry.messageId);
+});
 
 function cap<K, V>(map: Map<K, V>, max: number) {
   while (map.size > max) { const first = map.keys().next(); if (first.done) break; map.delete(first.value); }
@@ -85,10 +96,29 @@ export async function loadRecentPresenceStops(now = Date.now()) {
 }
 
 // ---- الرسالة ---------------------------------------------------------------------------------------
-function confirmRow(guildId: string, shiftId: number) {
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId(`${PRESENCE_BUTTON}:${guildId}:${shiftId}`).setLabel('موجود ✅').setStyle(ButtonStyle.Success));
+/** رسالة «هل انت موجود؟»: حاوية CV2 صغيرة، السؤال، سطر توضيح، المهلة كوقت نسبي، وزر «موجود». */
+export function presenceMessage(guildId: string, shiftId: number, deadline: number, mention?: string) {
+  const card = container([
+    text(rtl(`### ${mention ? `${mention} ` : ''}${PRESENCE_QUESTION}`)),
+    text(rtl(`اضغط الزر عشان يستمر شفتك\n-# قبل ${ts(deadline, 'R')}`)),
+    row([button({ id: `${PRESENCE_BUTTON}:${guildId}:${shiftId}`, label: 'موجود', emoji: '✅', style: 'success' })]),
+  ], 0x5865f2);
+  return { flags: V2_FLAG, components: [card] };
 }
+
+/** متى يجي «هل انت موجود؟» القادم (أو مهلته لو انرسل). null = ما فيه تحقق (مو في الفويس، بريك، أو مقفل). */
+export function nextPresenceAt(input: Omit<PresenceInput, 'now'>, cfg: PresenceConfig): { kind: 'check' | 'deadline'; at: number } | null {
+  if (input.checkSentAt) return { kind: 'deadline', at: input.checkSentAt + cfg.timeoutMs };
+  if (!cfg.enabled || !input.inVoice || input.onBreak) return null;
+  return { kind: 'check', at: Math.max(input.lastActivityAt ?? 0, input.voiceJoinedAt ?? 0, input.startedAt) + cfg.afterMs };
+}
+
+// متى صار فويس كل عضو «فعّال» (يحطه index.ts)، عشان /الشفت حالة يعرف موعد التحقق القادم.
+const voiceJoined = new Map<string, number>();
+export function setVoiceJoined(guildId: string, userId: string, at: number | null) {
+  if (at === null) voiceJoined.delete(key(guildId, userId)); else { voiceJoined.set(key(guildId, userId), at); cap(voiceJoined, MAX_PENDING); }
+}
+export const voiceJoinedAt = (guildId: string, userId: string) => voiceJoined.get(key(guildId, userId)) ?? null;
 
 async function deleteMessage(client: Client, channelId: string | null, messageId: string | null) {
   if (!channelId || !messageId) return;
@@ -102,14 +132,15 @@ async function savePresence(shiftId: number, data: { checkSentAt: Date | null; l
 }
 
 /** يرسل «هل انت موجود؟» (خاص، وإلا شات روم الفويس) ويسجّل وقت الإرسال. */
-export async function sendPresenceCheck(client: Client, guild: Guild, member: GuildMember, shift: ShiftDoc, now = Date.now()) {
+export async function sendPresenceCheck(client: Client, guild: Guild, member: GuildMember, shift: ShiftDoc, now = Date.now(), settingsFor?: Partial<GuildSettingsDoc> | null) {
   const id = key(guild.id, member.id);
   if (pending.has(id)) return false;
-  const row = confirmRow(guild.id, shift.id);
-  let message = await member.send({ content: PRESENCE_QUESTION, components: [row] }).catch(() => null);
+  boundClient = client;
+  const deadline = now + presenceConfig(settingsFor ?? null).timeoutMs;
+  let message = await member.send(presenceMessage(guild.id, shift.id, deadline) as never).catch(() => null);
   if (!message && member.voice.channelId) {
     const channel = guild.channels.cache.get(member.voice.channelId);
-    if (channel?.isTextBased()) message = await channel.send({ content: `${member} ${PRESENCE_QUESTION}`, components: [row], allowedMentions: { users: [member.id] } }).catch(() => null);
+    if (channel?.isTextBased()) message = await channel.send({ ...presenceMessage(guild.id, shift.id, deadline, `<@${member.id}>`), allowedMentions: { users: [member.id] } } as never).catch(() => null);
   }
   const sentAt = new Date(now);
   const entry: Pending = { guildId: guild.id, userId: member.id, shiftId: shift.id, channelId: message?.channelId ?? null, messageId: message?.id ?? null, sentAt: now };
@@ -179,10 +210,16 @@ export async function handlePresenceButton(i: ButtonInteraction) {
   if (!guildId || !Number.isFinite(shiftId)) { await i.reply({ content: 'هذا الزر قديم.', flags: 64 }); return true; }
   const shift = await Shift.findOne({ id: shiftId }).catch(() => null);
   if (shift && shift.userId !== i.user.id) { await i.reply({ content: 'هذا الزر مو لك.', flags: 64 }); return true; }
+  // الشفت انتهى (توقف بصمت أو أنهاه): ما نقول شي، بس نشيل الرسالة.
+  if (!shift || shift.status !== 'active') {
+    await i.deferUpdate().catch(() => undefined);
+    if (i.message?.id) await deleteMessage(i.client, i.channelId, i.message.id);
+    return true;
+  }
   const confirmed = await confirmPresence(i.client, guildId, i.user.id, Date.now(), { keepMessage: true });
   // بعد إعادة التشغيل (قبل ما يرجع التحقق للذاكرة) نأكد من القاعدة مباشرة.
-  if (!confirmed && shift?.status === 'active' && shift.checkSentAt) await savePresence(shift.id, { checkSentAt: null, lastActivityAt: new Date(), channelId: null, messageId: null });
-  await i.update({ content: 'تم، شكراً ✅', components: [] }).catch(() => undefined);
+  if (!confirmed && shift.checkSentAt) await savePresence(shift.id, { checkSentAt: null, lastActivityAt: new Date(), channelId: null, messageId: null });
+  await i.update({ flags: V2_FLAG, components: [container([text(rtl('✅ تمام، شفتك مستمر. شكراً!'))], 0x4fc08d)] } as never).catch(() => undefined);
   // في شات روم الفويس نشيل الرسالة بعد شوي عشان ما تزحم الشات.
   if (i.guildId && i.message?.id) {
     const channelId = i.channelId;
@@ -218,7 +255,7 @@ export async function stopForPresence(client: Client, _guild: Guild | null, shif
   const channel = settings.logsChannelId ? await client.channels.fetch(settings.logsChannelId).catch(() => null) : null;
   if (channel?.isTextBased()) {
     await channel.send({ allowedMentions: { parse: [] }, embeds: [new EmbedBuilder().setColor(0xf0ad4e)
-      .setDescription(`### ⏱️ توقف شفت تلقائياً\n<@${shift.userId}> ما رد على «${PRESENCE_QUESTION}» خلال ${Math.round(cfg.timeoutMs / MINUTE)} دقيقة.\nانحسب الشفت لين وقت السؤال <t:${Math.floor(sentAt.getTime() / 1000)}:t> · الوقت المحسوب: **${worked}**`)] }).catch(() => undefined);
+      .setDescription(`⏱️ **شفت تلقائي توقف** · <@${shift.userId}>\n-# ما رد على «${PRESENCE_QUESTION}» خلال ${Math.round(cfg.timeoutMs / MINUTE)} دقيقة · انحسب لين ${ts(sentAt, 't')} · المحسوب **${worked}**`)] }).catch(() => undefined);
   }
   event('shiftEnd', `${member?.displayName ?? shift.userId} وقف شفته: ما رد على تحقق التواجد، المحسوب ${worked}`);
   return true;
@@ -233,4 +270,4 @@ export async function dropPresenceCheck(client: Client, guildId: string, userId:
 }
 
 /** للاختبارات. */
-export function _resetPresenceState() { pending.clear(); stopped.clear(); }
+export function _resetPresenceState() { pending.clear(); stopped.clear(); voiceJoined.clear(); }

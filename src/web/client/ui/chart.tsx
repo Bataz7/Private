@@ -13,9 +13,9 @@ function niceMax(max: number): number {
   return step * power;
 }
 
-type BarChartProps = { data: BarDatum[]; height?: number; format?: (value: number) => string; label: string; every?: number; highlightLast?: boolean };
+type BarChartProps = { data: BarDatum[]; height?: number; format?: (value: number) => string; axisFormat?: (value: number) => string; label: string; every?: number; highlightLast?: boolean };
 
-export function BarChart({ data, height = 220, format = value => num(value, 1), label, every, highlightLast = true }: BarChartProps) {
+export function BarChart({ data, height = 220, format = value => num(value, 1), axisFormat = value => num(value, 1), label, every, highlightLast = true }: BarChartProps) {
   const W = 640;
   const H = height;
   const pad = { top: 14, right: 8, bottom: 26, left: 40 };
@@ -52,7 +52,7 @@ export function BarChart({ data, height = 220, format = value => num(value, 1), 
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} preserveAspectRatio="xMidYMid meet">
         {grid.map(value => [
           <line class="chart-grid" x1={pad.left} x2={W - pad.right} y1={y(value)} y2={y(value)} />,
-          <text class="chart-axis" x={pad.left - 8} y={y(value) + 4} text-anchor="end">{format(value)}</text>,
+          <text class="chart-axis" x={pad.left - 8} y={y(value) + 4} text-anchor="end">{axisFormat(value)}</text>,
         ])}
         {data.map((item, index) => {
           const x = pad.left + index * band + (band - barW) / 2;

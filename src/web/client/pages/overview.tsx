@@ -128,7 +128,7 @@ export default async function overview(ctx: PageCtx) {
   let metric: 'shiftHours' | 'minutes' | 'messages' = 'shiftHours';
   let days: Array<{ date: string; minutes: number; messages: number; shiftHours: number }> | null = null;
   const paintChart = () => mount(chart.el!, days
-    ? (days.some(day => day[metric]) ? <BarChart label="نشاط الفريق آخر 14 يوم" data={days.map(day => ({ label: dayLabel(day.date), value: day[metric] || 0, tip: weekday(`${day.date}T12:00:00Z`) }))} format={value => metric === 'shiftHours' ? `${fixed(value)}س` : num(value)} /> : <Empty compact icon="chart-2" title="ما فيه نشاط مسجّل" text="يبدأ يظهر أول ما الستاف يشتغلون." />)
+    ? (days.some(day => day[metric]) ? <BarChart height={260} label="نشاط الفريق آخر 14 يوم" data={days.map(day => ({ label: dayLabel(day.date), value: day[metric] || 0, tip: weekday(`${day.date}T12:00:00Z`) }))} format={value => metric === 'shiftHours' ? `${fixed(value)}س` : num(value)} /> : <Empty compact icon="chart-2" title="ما فيه نشاط مسجّل" text="يبدأ يظهر أول ما الستاف يشتغلون." />)
     : <Skeleton lines={1} height={200} />);
   chart.update = paintChart;
   api<{ days: typeof days }>('/api/activity/weekly', { signal: ctx.signal }).then(result => { days = result.days ?? []; paintChart(); }).catch(error => { if (!ctx.signal.aborted && chart.el) mount(chart.el, <Empty compact icon="danger" title="بيانات النشاط مو متوفرة الحين" text={errorText(error)} />); });

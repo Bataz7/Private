@@ -4,7 +4,8 @@ import { activeMs } from '../services/shift.service.js';
 import { Staff } from '../models/Staff.js';
 import { Complaint } from '../models/Complaint.js';
 import { GuildSettings } from '../models/GuildSettings.js';
-import { weekPointsOf } from '../services/leaderboard.service.js';
+import { weekStartOf, weeklyTop } from '../services/leaderboard.service.js';
+import { env } from '../config/env.js';
 import { isDismissed } from '../discipline/dismissed.js';
 import { countActiveWarnings, warnLimitFrom } from './warnings.js';
 import type { StaffCardData } from '../utils/staff-card.js';
@@ -93,29 +94,49 @@ type ShiftLite = { started_at: string; ended_at: string | null; status: string; 
  * كل حقول بطاقة الستاف بأقل عدد استعلامات: الترتيب بعدّ (count head) بدل تحميل كل الستاف، ونقاط الأسبوع من السجل
  * لهذا العضو بس. يرجّع null لو العضو مو مسجل في الستاف أبداً.
  */
-export async function staffCardData(guild: Guild, user: User): Promise<StaffCardData | null> {
+export async function staffCardData(guild: Guild, user: User, now = Date.now()): Promise<StaffCardData | null> {
   const guildId = guild.id;
   const staff = await Staff.findOne({ guildId, userId: user.id }).catch(() => null);
   if (!staff) return null;
   const points = Number(staff.points) || 0;
-  const [shiftRows, complaints, ratings, settings, member, above, top, weekPoints, warnings, dismissed] = await Promise.all([
-    supabase.from('shifts').select('started_at,ended_at,status,breaks').eq('guild_id', guildId).eq('user_id', user.id).order('started_at', { ascending: false }).limit(5000).then(r => (r.data ?? []) as ShiftLite[]),
+  const weekStart = weekStartOf(now);
+  const lastWeekStart = new Date(weekStart.getTime() - 7 * DAY);
+  const safe = <T,>(promise: PromiseLike<T>, fallback: T) => Promise.resolve(promise).catch(() => fallback);
+  const [shiftRows, complaints, ratings, settings, member, above, total, top, ledger, weekTop, activity, warnings, dismissed, raw] = await Promise.all([
+    safe(supabase.from('shifts').select('started_at,ended_at,status,breaks').eq('guild_id', guildId).eq('user_id', user.id).order('started_at', { ascending: false }).limit(5000).then(r => (r.data ?? []) as ShiftLite[]), [] as ShiftLite[]),
     Complaint.countDocuments({ guildId, staffUserId: user.id, status: 'approved' }).catch(() => 0),
-    supabase.from('staff_ratings').select('rating').eq('guild_id', guildId).eq('staff_user_id', user.id).limit(5000).then(r => (r.data ?? []) as Array<{ rating: number }>),
+    safe(supabase.from('staff_ratings').select('rating').eq('guild_id', guildId).eq('staff_user_id', user.id).limit(5000).then(r => (r.data ?? []) as Array<{ rating: number }>), []),
     GuildSettings.findOne({ guildId }).catch(() => null),
     guild.members.fetch(user.id).catch(() => null),
-    supabase.from('staff').select('id', { count: 'exact', head: true }).eq('guild_id', guildId).eq('active', true).gt('points', points).then(r => r.count ?? 0),
-    supabase.from('staff').select('points').eq('guild_id', guildId).eq('active', true).order('points', { ascending: false }).limit(1).then(r => Number(r.data?.[0]?.points) || 0),
-    weekPointsOf(guildId, user.id).catch(() => 0),
-    countActiveWarnings(guildId, user.id),
+    safe(supabase.from('staff').select('id', { count: 'exact', head: true }).eq('guild_id', guildId).eq('active', true).gt('points', points).then(r => r.count ?? 0), 0),
+    safe(supabase.from('staff').select('id', { count: 'exact', head: true }).eq('guild_id', guildId).eq('active', true).then(r => r.count ?? 0), 0),
+    safe(supabase.from('staff').select('points').eq('guild_id', guildId).eq('active', true).order('points', { ascending: false }).limit(1).then(r => Number(r.data?.[0]?.points) || 0), 0),
+    // نقاط هذا الأسبوع والماضي باستعلام واحد محدود.
+    safe(supabase.from('points_ledger').select('delta,created_at').eq('guild_id', guildId).eq('user_id', user.id).gte('created_at', lastWeekStart.toISOString()).order('id', { ascending: false }).limit(5000).then(r => (r.data ?? []) as Array<{ delta: number; created_at: string }>), []),
+    staff.active ? safe(weeklyTop(guildId, { since: weekStart, limit: 3, hours: false }).then(r => r.top), [] as Array<{ userId: string; points: number }>) : Promise.resolve([] as Array<{ userId: string; points: number }>),
+    // أيام النشاط (للسلسلة): آخر 30 يوم بس.
+    safe(supabase.from('staff_daily_activity').select('activity_date,message_count').eq('guild_id', guildId).eq('user_id', user.id).gte('activity_date', new Date(now - 30 * DAY).toISOString().slice(0, 10)).limit(60).then(r => (r.data ?? []) as Array<{ activity_date: string; message_count: number }>), []),
+    countActiveWarnings(guildId, user.id).catch(() => 0),
     staff.active ? Promise.resolve(false) : isDismissed(guildId, user.id).catch(() => false),
+    // بانر ديسكورد: يجي بس من GET /users/:id.
+    safe(guild.client.rest.get(`/users/${user.id}`) as Promise<{ banner?: string | null }>, null),
   ]);
+  const dismissReason = dismissed
+    ? await safe(supabase.from('staff_logs').select('details').eq('guild_id', guildId).eq('user_id', user.id).eq('action', 'STAFF_DISMISSED').order('created_at', { ascending: false }).limit(1).then(r => String((r.data?.[0] as any)?.details?.reason ?? '') || null), null)
+    : null;
   const shifts = shiftRows.map(row => ({ startedAt: new Date(row.started_at), endedAt: row.ended_at ? new Date(row.ended_at) : null, status: row.status, breaks: (row.breaks ?? []).map(b => ({ startedAt: new Date(b.startedAt), endedAt: b.endedAt ? new Date(b.endedAt) : null })) }));
   const current = shifts.find(shift => shift.status === 'active');
   const highest = member?.roles.highest;
+  let weekPoints = 0; let lastWeekPoints = 0;
+  for (const row of ledger) (Date.parse(row.created_at) >= weekStart.getTime() ? (weekPoints += Number(row.delta) || 0) : (lastWeekPoints += Number(row.delta) || 0));
+  const days = buildDays(activity.map(row => ({ activityDate: row.activity_date, messageCount: Number(row.message_count) || 0 })), shifts.slice(0, 200), now);
+  const weekIndex = weekTop.findIndex(entry => entry.userId === user.id && entry.points > 0);
+  const banner = raw?.banner ? `https://cdn.discordapp.com/banners/${user.id}/${raw.banner}.${raw.banner.startsWith('a_') ? 'gif' : 'png'}?size=1024` : null;
   return {
+    userId: user.id,
     name: member?.displayName ?? user.globalName ?? user.username,
     avatar: (member ?? user).displayAvatarURL({ extension: 'png', size: 256 }),
+    banner,
     points, complaints,
     shiftHours: shifts.reduce((sum, shift) => sum + activeMs(shift), 0) / 3_600_000,
     voiceHours: (Number(staff.voiceMinutes) || 0) / 60,
@@ -124,11 +145,17 @@ export async function staffCardData(guild: Guild, user: User): Promise<StaffCard
     ratingAverage: ratings.length ? ratings.reduce((sum, row) => sum + (Number(row.rating) || 0), 0) / ratings.length : 0,
     ratingCount: ratings.length,
     rank: staff.active ? above + 1 : null,
+    totalStaff: total || undefined,
     topPoints: Math.max(top, points),
-    weekPoints,
+    weekPoints, lastWeekPoints,
+    weekRank: weekIndex >= 0 ? weekIndex + 1 : null,
+    streak: streakOf(days),
     warnings, warnLimit: warnLimitFrom(settings?.warnLimit) || undefined,
     onShiftSince: current ? current.startedAt : null,
+    onBreak: current ? Boolean(current.breaks.at(-1) && !current.breaks.at(-1)!.endedAt) : false,
     roleName: highest && highest.id !== guild.id ? highest.name : undefined,
-    dismissed,
+    dismissed, dismissReason,
+    dashboardUrl: process.env.DASHBOARD_URL?.trim() ? env.dashboardUrl : null,
+    updatedAt: new Date(now),
   };
 }

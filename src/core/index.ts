@@ -4,6 +4,7 @@ import { requireSettings } from '../services/settings.service.js';
 import { coreCommandJson, handleCoreCommand } from './commands.js';
 import { submitStaffRating } from './ratings.js';
 import { SetupMissingError } from './db.js';
+import { handleCardButton } from './card-buttons.js';
 
 export { changePoints, adjustStaffPoints, pointsBreakdown, registerPointRule, ratingPoints } from './points.js';
 
@@ -43,4 +44,5 @@ export const coreExtension: BotExtension = {
   name: 'core',
   commands: coreCommandJson.map(json => ({ json, handle: handleCoreCommand })),
   modal: ratingPanelModal,
+  button: handleCardButton,
 };

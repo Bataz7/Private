@@ -32,7 +32,7 @@
 .queue-item { align-items: flex-start; }
 .queue-item .row-end { align-self: center; }
 .leaderboard { list-style: none; margin: 0; padding: 4px 0; }
-.lb-row { display: flex; align-items: center; gap: 10px; padding: 8px 18px; color: inherit; text-decoration: none !important; transition: background var(--t-fast); }
+.lb-row { display: flex; align-items: center; gap: 10px; padding: 6px 18px; color: inherit; text-decoration: none !important; transition: background var(--t-fast); }
 .lb-row:hover { background: var(--surface-2); }
 .lb-row.is-me { background: var(--brand-softer); }
 .lb-place { display: grid; place-items: center; width: 26px; height: 26px; flex: none; border-radius: 8px; font-size: 12.5px; font-weight: 700; color: var(--text-3); background: var(--surface-3); font-variant-numeric: tabular-nums; }
@@ -79,7 +79,7 @@
 .sp-close { position: absolute; top: 10px; inset-inline-end: 10px; z-index: 1; color: #fff !important; background: rgb(0 0 0 / 0.22) !important; }
 .sp-id { display: flex; align-items: flex-end; gap: 14px; padding: 0 20px; margin-top: -58px; position: relative; z-index: 1; }
 .sp-avatar { border: 4px solid var(--elev); box-shadow: 0 0 0 3px var(--avatar-ring, transparent), var(--sh-2) !important; }
-.sp-name { min-width: 0; padding-bottom: 2px; }
+.sp-name { min-width: 0; padding-top: 62px; }
 .sp-name h2 { font-size: 20px; }
 .sp-name > small { color: var(--text-3); }
 .sp-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }

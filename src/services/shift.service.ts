@@ -9,7 +9,7 @@ export { DismissedError };
 type ShiftChange = (guildId: string, userId: string, kind: 'start' | 'end') => void;
 const shiftListeners: ShiftChange[] = [];
 export function onShiftChange(listener: ShiftChange) { shiftListeners.push(listener); }
-function notifyShift(guildId: string, userId: string, kind: 'start' | 'end') { for (const listener of shiftListeners) { try { listener(guildId, userId, kind); } catch { /* ignore */ } } }
+export function notifyShift(guildId: string, userId: string, kind: 'start' | 'end') { for (const listener of shiftListeners) { try { listener(guildId, userId, kind); } catch { /* ignore */ } } }
 
 /** يسجّل الإداري أو يرجّع سجله. المفصول ما يرجع نشط تلقائياً: يرمي DismissedError لين أحد يلغي فصله. */
 export async function ensureStaff(guildId: string, userId: string) {

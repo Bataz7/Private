@@ -16,7 +16,8 @@ import { activeMs, breakMs, duration, getActiveShift, isOnBreak, resumeShift, st
 import { getPendingReports } from '../services/report.service.js';
 import { discordDate } from '../utils/format.js';
 import { buildShiftPanel } from '../utils/shift-panel.js';
-import { autoShiftConfig } from '../services/auto-shift.service.js';
+import { autoShiftConfig, shiftAutoKind } from '../services/auto-shift.service.js';
+import { nextPresenceAt, presenceConfig, voiceJoinedAt } from '../services/presence-check.service.js';
 import { buildLeavePanel } from '../utils/leave-panel.js';
 import { buildStaffCard } from '../utils/staff-card.js';
 import { staffCardData } from '../core/profile-stats.js';
@@ -266,7 +267,7 @@ async function shiftPanel(i: ChatInputCommandInteraction) {
   if (!await isStaff(await i.guild!.members.fetch(i.user.id))) return i.reply({ content: 'هذا الأمر للستاف فقط.', flags: 64 });
   const active = await Shift.findOne({ guildId: i.guild!.id, userId: i.user.id, status: 'active' });
   const auto = autoShiftConfig(settings);
-  return i.reply(buildShiftPanel({ messages: auto.messages, windowMinutes: Math.round(auto.windowMs / 60_000), idleMinutes: Math.round(auto.idleMs / 60_000), enabled: auto.enabled }));
+  return i.reply(buildShiftPanel({ messages: auto.messages, windowMinutes: Math.round(auto.windowMs / 60_000), idleMinutes: Math.round(auto.idleMs / 60_000), enabled: auto.enabled, voiceSeconds: Math.round(auto.voiceDwellMs / 1000), presenceMinutes: Math.round(presenceConfig(settings).afterMs / 60_000), presenceEnabled: presenceConfig(settings).enabled }));
 }
 
 async function shiftBreak(i: ChatInputCommandInteraction) {
@@ -291,6 +292,14 @@ async function shiftStatus(i: ChatInputCommandInteraction) {
     ? Math.max(0, 30 - Math.floor((Date.now() - new Date(currentBreak.startedAt).getTime()) / 60000))
     : 0;
   const messages = Number(shift.interactionMessageCount ?? 0);
+  const settings = await requireSettings(i.guild!.id).catch(() => null);
+  const kind = await shiftAutoKind(shift).catch(() => null);
+  const member = await i.guild!.members.fetch(i.user.id).catch(() => null);
+  const voice = member?.voice;
+  const inVoice = Boolean(voice?.channelId && !voice.selfDeaf && !voice.serverDeaf && voice.channelId !== i.guild!.afkChannelId);
+  const next = nextPresenceAt({ startedAt: shift.startedAt.getTime(), lastActivityAt: shift.lastActivityAt?.getTime() ?? null, voiceJoinedAt: voiceJoinedAt(i.guild!.id, i.user.id), checkSentAt: shift.checkSentAt?.getTime() ?? null, inVoice, onBreak }, presenceConfig(settings));
+  const startType = kind === 'voice' ? '🤖 تلقائي (فويس)' : kind === 'messages' ? '🤖 تلقائي (رسائل)' : '✋ يدوي';
+  const presenceLine = !next ? (inVoice ? '—' : 'ما فيه (مو في الفويس)') : next.kind === 'deadline' ? `⏳ بانتظار تأكيدك · قبل <t:${Math.floor(next.at / 1000)}:R>` : `<t:${Math.floor(Math.max(next.at, Date.now()) / 1000)}:R>`;
   const messagesToNextReward = messages % 100 === 0 ? 100 : 100 - (messages % 100);
   return i.reply({
     embeds: [new EmbedBuilder()
@@ -298,6 +307,8 @@ async function shiftStatus(i: ChatInputCommandInteraction) {
       .setTitle('⏱️ حالتك الحالية في الشفت')
       .addFields(
         { name: 'الحالة', value: onBreak ? `⏸️ بريك — متبقي تقريبًا ${breakRemaining} دقيقة` : '🟢 الشفت يعمل', inline: false },
+        { name: 'نوع البداية', value: startType, inline: true },
+        { name: 'تحقق التواجد القادم', value: presenceLine, inline: true },
         { name: 'مدة الشفت', value: duration(activeMs(shift)), inline: true },
         { name: 'رسائل الشفت', value: String(messages), inline: true },
         { name: 'نقاط الوقت', value: String(shift.pointsAwarded ?? 0), inline: true },

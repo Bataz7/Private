@@ -2,11 +2,12 @@ import { ActionRowBuilder, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInp
 import { requireSettings } from '../services/settings.service.js';
 import { isStaff } from '../utils/permissions.js';
 import { Shift } from '../models/Shift.js';
-import { suppressAutoStart } from '../services/auto-shift.service.js';
+import { shiftAutoKind, suppressAutoStart } from '../services/auto-shift.service.js';
 import { activeMs, duration, endShift, ensureStaff, getActiveShift, resumeShift, startBreak, startShift } from '../services/shift.service.js';
 import { createLog, sendLog } from '../services/log.service.js';
 import { Staff } from '../models/Staff.js';
 import { rtl } from '../utils/v2.js';
+import { slashName } from '../i18n/commands.js';
 
 export async function handleSelectMenu(i: StringSelectMenuInteraction) {
   if (!i.guild) return;
@@ -69,7 +70,11 @@ export async function handleSelectMenu(i: StringSelectMenuInteraction) {
   if (action === 'stats') {
     const rows = await Shift.find({ guildId: i.guild.id, userId: i.user.id }).sort({ startedAt: -1 }).limit(10);
     const total = rows.reduce((sum, shift) => sum + activeMs(shift), 0);
-    return i.reply({ embeds: [new EmbedBuilder().setColor(0x8175f5).setTitle('📊 إحصائيات شفتاتي').setDescription(rtl(`مجموع الوقت المحسوب: **${duration(total)}**\nعدد الشفتات: **${rows.length}**\nحالتك الحين: **${rows.some(row => row.status === 'active') ? 'في الشفت' : 'متاح'}**`))], flags: 64 });
+    const current = rows.find(row => row.status === 'active');
+    const kind = current ? await shiftAutoKind(current).catch(() => null) : null;
+    const pendingLine = current?.checkSentAt ? `\n⏳ «هل انت موجود؟» ينتظر تأكيدك` : '';
+    const state = current ? `في الشفت · ${kind ? '🤖 تلقائي' : '✋ يدوي'}` : 'متاح';
+    return i.reply({ embeds: [new EmbedBuilder().setColor(0x8175f5).setTitle('📊 إحصائيات شفتاتي').setDescription(rtl(`مجموع الوقت المحسوب: **${duration(total)}**\nعدد الشفتات: **${rows.length}**\nحالتك الحين: **${state}**${pendingLine}\n-# التفاصيل وموعد التحقق القادم: \`${slashName('shift status')}\``))], flags: 64 });
   }
   if (action === 'active') {
     const rows = await Shift.find({ guildId: i.guild.id, status: 'active' }).limit(50);

@@ -1,7 +1,8 @@
 import { ActionRowBuilder, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } from '../lib/djs/index.js';
 import { rtl } from './v2.js';
+import { slashName } from '../i18n/commands.js';
 
-export interface ShiftPanelOptions { messages?: number; windowMinutes?: number; idleMinutes?: number; enabled?: boolean }
+export interface ShiftPanelOptions { messages?: number; windowMinutes?: number; idleMinutes?: number; enabled?: boolean; voiceSeconds?: number; presenceMinutes?: number; presenceEnabled?: boolean }
 
 export function buildShiftPanel(options: ShiftPanelOptions = {}) {
   const messages = options.messages ?? 20;
@@ -20,9 +21,11 @@ export function buildShiftPanel(options: ShiftPanelOptions = {}) {
   const automatic = options.enabled === false
     ? '⏸️ الشفت التلقائي مقفل في هذا السيرفر. ابدأ شفتك وأنهه من القائمة.'
     : [
-      `▶️ **يبدأ تلقائيًا** لما ترسل **${messages} رسالة** خلال **${windowMinutes} دقيقة**، أو تدخل روم صوتي وأنت مو ميوت.`,
-      `⏹️ **ينتهي تلقائيًا** بعد **${idleMinutes} دقيقة** بدون رسائل أو نشاط صوتي. وقت الخمول ما ينحسب أبد.`,
-    ].join('\n');
+      `▶️ **يبدأ تلقائيًا** لما ترسل **${messages} رسالة** خلال **${windowMinutes} دقيقة**، أو تقعد **${options.voiceSeconds ?? 60} ثانية** في روم صوتي (مو ديفن ومو AFK).`,
+      `⏹️ **شفت الرسائل** ينتهي بعد **${idleMinutes} دقيقة** بدون نشاط. وقت الخمول ما ينحسب أبد.`,
+      options.presenceEnabled === false ? '' : `🎧 **في الفويس** يسألك البوت «هل انت موجود؟» كل **${options.presenceMinutes ?? 60} دقيقة** بدون تفاعل، اضغط الزر وكمّل.`,
+      `-# حالة شفتك وموعد التحقق القادم: \`${slashName('shift status')}\``,
+    ].filter(Boolean).join('\n');
   return {
     embeds: [new EmbedBuilder()
       .setColor(0x8175f5)
