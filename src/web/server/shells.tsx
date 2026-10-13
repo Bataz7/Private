@@ -122,3 +122,33 @@ export function LoginPage(props: { error?: string; configured: boolean }) {
     </main>
   );
 }
+
+// ---- صفحة الحالة العامة ------------------------------------------------------------------------------
+export type StatusMetaData = { title: string; description: string; url: string; themeColor: string };
+
+function StatusHead(props: { meta: StatusMetaData }) {
+  const { meta } = props;
+  return (
+    <>
+      <meta property="og:type" content="website" />
+      <meta property="og:site_name" content="ستاف Rift" />
+      <meta property="og:title" content={meta.title} />
+      <meta property="og:description" content={meta.description} />
+      {meta.url ? <meta property="og:url" content={meta.url} /> : null}
+      {meta.url ? <link rel="canonical" href={meta.url} /> : null}
+      <meta name="twitter:card" content="summary" />
+      <meta name="twitter:title" content={meta.title} />
+      <meta name="twitter:description" content={meta.description} />
+      <link rel="alternate" type="application/rss+xml" title="حالة Rift" href="/status.rss" />
+    </>
+  );
+}
+
+export function renderStatusPage(meta: StatusMetaData, boot: unknown) {
+  return renderShell({ title: 'حالة Rift', entry: 'status', description: meta.description, themeColor: meta.themeColor, head: <StatusHead meta={meta} />, boot, bodyClass: 'page-status' });
+}
+
+/** صفحة نموذج التقديم العام: توكن CSRF لو فيه جلسة (المتقدّم يسجل دخول بديسكورد أول). */
+export function renderApplyPage(formId: string, csrf: string | undefined) {
+  return renderShell({ title: 'نموذج التقديم · Rift', entry: 'apply', csrf, boot: { formId }, bodyClass: 'page-apply' });
+}

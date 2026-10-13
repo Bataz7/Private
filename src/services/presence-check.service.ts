@@ -117,7 +117,7 @@ export async function sendPresenceCheck(client: Client, guild: Guild, member: Gu
   cap(pending, MAX_PENDING);
   shift.checkSentAt = sentAt;
   await savePresence(shift.id, { checkSentAt: sentAt, channelId: entry.channelId, messageId: entry.messageId });
-  event('voice', `${member.displayName}: presence check sent${message ? '' : ' (no DM / voice chat)'}`);
+  event('voice', `${member.displayName}: انرسل «هل انت موجود؟»${message ? '' : ' (ما وصل لا خاص ولا شات الفويس)'}`);
   return true;
 }
 
@@ -151,7 +151,7 @@ export async function confirmPresence(client: Client, guildId: string, userId: s
   pending.delete(id);
   await savePresence(entry.shiftId, { checkSentAt: null, lastActivityAt: new Date(now), channelId: null, messageId: null });
   if (!keepMessage) await deleteMessage(client, entry.channelId, entry.messageId);
-  event('voice', `${userId}: presence confirmed`);
+  event('voice', `${userId}: أكّد تواجده`);
   return true;
 }
 
@@ -220,7 +220,7 @@ export async function stopForPresence(client: Client, _guild: Guild | null, shif
     await channel.send({ allowedMentions: { parse: [] }, embeds: [new EmbedBuilder().setColor(0xf0ad4e)
       .setDescription(`### ⏱️ توقف شفت تلقائياً\n<@${shift.userId}> ما رد على «${PRESENCE_QUESTION}» خلال ${Math.round(cfg.timeoutMs / MINUTE)} دقيقة.\nانحسب الشفت لين وقت السؤال <t:${Math.floor(sentAt.getTime() / 1000)}:t> · الوقت المحسوب: **${worked}**`)] }).catch(() => undefined);
   }
-  event('shiftEnd', `${member?.displayName ?? shift.userId} stopped: no answer to the presence check, counted ${worked}`);
+  event('shiftEnd', `${member?.displayName ?? shift.userId} وقف شفته: ما رد على تحقق التواجد، المحسوب ${worked}`);
   return true;
 }
 

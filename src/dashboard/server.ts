@@ -32,13 +32,19 @@ const server = Bun.serve({
 });
 console.log(`  ${status('ok', 'Dashboard', `listening on ${env.dashboardUrl} (port ${server.port})`)}`);
 
-discord.login(env.token)
-  .then(() => {
+// تسجيل دخول REST؛ لو فشل (شبكة، ديسكورد واقف) نعيد المحاولة كل 30 ثانية بدل ما تبقى اللوحة بدون سيرفرات.
+async function connect(attempt = 1): Promise<void> {
+  try {
+    await discord.login(env.token);
     console.log(`  ${status('ok', 'Discord', `REST client ready (${discord.guilds.cache.size} server(s))`)}`);
     void waitForEmojis(discord).catch(() => undefined);
     setInterval(() => { void ctx.refreshGuilds().catch(() => undefined); }, 5 * 60_000).unref?.();
-  })
-  .catch(error => console.error('Dashboard Discord login failed:', error instanceof Error ? error.message : error));
+  } catch (error) {
+    console.error(`Dashboard Discord login failed (attempt ${attempt}):`, error instanceof Error ? error.message : error);
+    setTimeout(() => { void connect(attempt + 1); }, Math.min(300_000, 30_000 * attempt)).unref?.();
+  }
+}
+void connect();
 
 const stop = () => { server.stop(true); process.exit(0); };
 process.on('SIGINT', stop);

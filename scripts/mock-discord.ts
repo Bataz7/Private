@@ -37,7 +37,23 @@ for (let i = 0; i < GUILDS; i++) {
     shift_channel_id: g.text[0], leave_channel_id: g.text[1], resignation_channel_id: g.text[2], logs_channel_id: g.text[3], report_channel_id: g.text[4],
     bot_language: "ar", auto_shift_enabled: true, auto_shift_messages: 5, auto_shift_window_minutes: 10, auto_shift_idle_minutes: 30,
     custom_statuses: ["Rift {staff} ستاف"], custom_status_interval: 30, bot_status: "online", weekly_enabled: false,
+    ...(process.env.MOCK_SCENARIO && !process.env.MOCK_MISSING_COLUMNS ? { leaderboard_channel_id: g.text[5], leaderboard_week: "2020-01-03T21:00:00.000Z", presence_check_minutes: 60, presence_check_timeout_minutes: 30, warn_limit: 3 } : {}),
   }]);
+}
+// MOCK_SCENARIO=1: ستاف في الفويس بشفتات قديمة (تحقق التواجد يرسل/يوقف) + نقاط هذا الأسبوع (لوحة المتصدرين).
+if (process.env.MOCK_SCENARIO) {
+  const ago = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
+  for (const g of guilds) {
+    const staffInVoice = g.users.slice(0, VOICE).filter((u) => Number(u.slice(-1)) % 2 === 0).slice(0, 6);
+    staffInVoice.forEach((u, i) => {
+      sb.seed("staff", [{ id: 900000 + Number(u.slice(-5)), guild_id: g.id, user_id: u, active: true, points: 10 * i, message_count: 0, voice_minutes: 0, claimed: 0, joined_at: ago(9999) }]);
+      // 0-2: آخر تفاعل قبل ساعتين → يرسل السؤال · 3-4: سؤال قبل 40 دقيقة → يوقف · 5: نشط
+      const row: Record<string, unknown> = { id: 800000 + Number(u.slice(-5)), guild_id: g.id, user_id: u, status: "active", started_at: ago(180), last_activity_at: ago(i < 3 ? 120 : i < 5 ? 110 : 5), breaks: [], points_awarded: 0 };
+      if (i === 3 || i === 4) row.check_sent_at = ago(40);
+      sb.seed("shifts", [row]);
+      sb.seed("points_ledger", [{ id: 700000 + Number(u.slice(-5)), guild_id: g.id, user_id: u, delta: 5 + i, source: "shift", created_at: ago(30) }]);
+    });
+  }
 }
 const user = (uid: string) => ({ id: uid, username: `user${uid.slice(-4)}`, global_name: `مستخدم ${uid.slice(-4)}`, avatar: null, discriminator: "0" });
 // نص الأعضاء ستاف (رتبة الستاف = أول رتبة)
@@ -101,7 +117,7 @@ function flood() {
     }
     for (let i = 0; i < INT_RATE; i++) {
       const g = pick(guilds);
-      send(ws, "INTERACTION_CREATE", interaction(pick(["points", "staff leaderboard", "shift status", "shift stats", "profile"]), g));
+      send(ws, "INTERACTION_CREATE", interaction(pick(["points", "staff leaderboard", "shift status", "shift stats", "profile", "weekly-top", "report stats"]), g));
       stats.interactions++;
     }
   }
@@ -130,6 +146,7 @@ Bun.serve({
     }
     if (p === "/users/@me/channels") return Response.json({ id: id(), type: 1 });
     if (/\/channels\/\d+\/messages$/.test(p) && m === "POST") return Response.json({ id: id(), channel_id: p.split("/")[2] });
+    if (/\/channels\/\d+\/messages\/\d+$/.test(p) && (m === "PATCH" || m === "GET")) return Response.json({ id: p.split("/")[4], channel_id: p.split("/")[2] });
     if (/\/interactions\/\d+\/[^/]+\/callback/.test(p)) return new Response(null, { status: 204 });
     if (/\/webhooks\//.test(p)) return Response.json({ id: id(), channel_id: id() });
     const mm = /^\/guilds\/(\d+)\/members\/(\d+)$/.exec(p);

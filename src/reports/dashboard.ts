@@ -2,27 +2,20 @@ import type { Context } from '../web/server/http.js';
 import type { Guild } from '../lib/djs/index.js';
 import type { DashboardContext, DashboardExtension } from '../dashboard/extensions.js';
 import { createLog } from '../services/log.service.js';
+import type { Mount } from '../web/server/router.js';
+import { publicMessage } from '../web/server/errors.js';
+import { rateLimit } from '../web/server/security.js';
 import {
   COMPLAINT_PENALTY, GRADE_STEPS, NO_RATING_DEFAULT, SCORE_WEIGHTS, computeWeek, loadWeeklySettings, nextGrade, previewForMember, rowFromSettings, scoreParts, sendReportsNow, weekBounds, weeklySettings, type Metrics,
 } from '../services/weekly-report.service.js';
 
 const DAY = 86_400_000;
 const sending = new Set<string>();
-const migrationHint = 'Weekly report settings need database migration 034_reports_status.sql. Run it in the Supabase SQL editor, then try again.';
+const migrationHint = 'إعدادات التقارير الأسبوعية تحتاج تحديث قاعدة البيانات 034_reports_status.sql. شغّله في محرر SQL في Supabase وحاول مرة ثانية.';
 const isSchemaError = (error: { message?: string; code?: string } | null | undefined) => Boolean(error && (/column|schema cache|does not exist/i.test(error.message || '') || ['42703', 'PGRST204', 'PGRST205'].includes(error.code || '')));
 
-/** Owner or Administrator of the selected server. Unlike requireAdministrator it never sends a 403 by itself. */
-async function isAdmin(ctx: DashboardContext, req: Request) {
-  const user = ctx.sessionUser(c);
-  if (!user) return false;
-  if (user.isOwner || user.isAdministrator) return true;
-  try {
-    const guild = await ctx.getGuild(ctx.selectedGuildId(c));
-    if (guild.ownerId === user.id) return true;
-    const member = guild.members.cache.get(user.id) ?? await guild.members.fetch(user.id).catch(() => null);
-    return Boolean(member?.permissions.has('Administrator'));
-  } catch { return false; }
-}
+/** Owner or Administrator of the selected server (live check, no 403 by itself). */
+const isAdmin = (ctx: DashboardContext, c: Context) => ctx.isAdmin(c).catch(() => false);
 
 type Person = { userId: string; displayName: string; username: string; avatar: string };
 /** Display info for many user ids: guild cache first, then one bulk fetch for whoever is missing. */
@@ -61,15 +54,16 @@ const breakdown = (m: Metrics, targets: ReturnType<typeof weeklySettings>['targe
 
 export const reportsDashboard: DashboardExtension = {
   name: 'reports',
-  styles: ['reports-status'],
-  mountApi(ctx) {
-    const { app, supabase, discord } = ctx;
+  mountApi(ctx, app: Mount) {
+    const { supabase, discord } = ctx;
+    const writeLimit = rateLimit('reports-writes', 60_000, 20);
+    const sendLimit = rateLimit('reports-send', 60_000, 4, 'إرسال التقارير محدود. انتظر دقيقة.');
 
     // Report history: administrators see everyone's, staff only their own.
     app.get('/api/staff-reports', async (c: Context) => {
       try {
         const guildId = ctx.selectedGuildId(c);
-        const admin = await isAdmin(ctx, req);
+        const admin = await isAdmin(ctx, c);
         const me = ctx.sessionUser(c);
         let query = supabase.from('staff_reports').select('*').eq('guild_id', guildId).order('created_at', { ascending: false }).limit(200);
         if (!admin) query = query.eq('staff_user_id', me?.id ?? '-');
@@ -78,7 +72,7 @@ export const reportsDashboard: DashboardExtension = {
         const guild = await ctx.getGuild(guildId);
         const map = await people(guild, (data ?? []).map((row: any) => String(row.staff_user_id)));
         c.json({ reports: (data ?? []).map((row: any) => reportView(row, map.get(String(row.staff_user_id)))), canCreate: admin });
-      } catch (error) { c.status(400).json({ error: error instanceof Error ? error.message : 'Could not load reports.' }); }
+      } catch (error) { c.status(400).json({ error: publicMessage(error, 'تعذّر تنفيذ العملية.') }); }
     });
 
     app.get('/api/weekly-reports/settings', async (c: Context) => {
@@ -96,7 +90,7 @@ export const reportsDashboard: DashboardExtension = {
           migrated: Boolean(row) && 'weekly_dm_staff' in row!,
           staff, channels: [...channels.values()].filter(channel => channel?.isTextBased() && !channel.isThread()).map(channel => ({ id: channel!.id, name: channel!.name })),
         });
-      } catch (error) { c.status(400).json({ error: error instanceof Error ? error.message : 'Could not load the weekly report settings.' }); }
+      } catch (error) { c.status(400).json({ error: publicMessage(error, 'تعذّر تنفيذ العملية.') }); }
     });
 
     app.put('/api/weekly-reports/settings', async (c: Context) => {
@@ -107,21 +101,21 @@ export const reportsDashboard: DashboardExtension = {
         const next = weeklySettings(c.body, '', 'en');
         if (next.channelId) {
           const channel = guild.channels.cache.get(next.channelId) ?? await guild.channels.fetch(next.channelId).catch(() => null);
-          if (!channel?.isTextBased()) return c.status(400).json({ error: 'Choose a text channel in this server.' });
+          if (!channel?.isTextBased()) return c.status(400).json({ error: 'اختر روم كتابي في هذا السيرفر.' });
         }
         // Only people who are active staff can be chosen.
         const active = new Set(await activeStaffIds(ctx, guildId));
         next.staffIds = next.staffIds.filter(id => active.has(id));
-        if (next.recipients === 'selected' && !next.staffIds.length) return c.status(400).json({ error: 'Choose at least one staff member, or switch to all active staff.' });
+        if (next.recipients === 'selected' && !next.staffIds.length) return c.status(400).json({ error: 'اختر ستاف واحد على الأقل، أو حوّل لكل الستاف النشطين.' });
         const { data, error } = await supabase.from('guild_settings').update(rowFromSettings(next)).eq('guild_id', guildId).select('guild_id');
         if (error) {
           if (isSchemaError(error)) { console.error(`[reports] ${migrationHint} (${error.message})`); return c.status(400).json({ error: migrationHint }); }
           throw new Error(error.message);
         }
-        if (!data?.length) return c.status(404).json({ error: 'Set up this server first (Server settings).' });
+        if (!data?.length) return c.status(404).json({ error: 'اضبط السيرفر أول (إعدادات السيرفر).' });
         c.json({ settings: next });
-      } catch (error) { c.status(400).json({ error: error instanceof Error ? error.message : 'Could not save the weekly report settings.' }); }
-    });
+      } catch (error) { c.status(400).json({ error: publicMessage(error, 'تعذّر تنفيذ العملية.') }); }
+    }, { guards: [writeLimit] });
 
     // Preview to yourself: this week so far, for you or for a chosen staff member.
     app.post('/api/weekly-reports/preview', async (c: Context) => {
@@ -130,44 +124,45 @@ export const reportsDashboard: DashboardExtension = {
         const guild = await ctx.getGuild(ctx.selectedGuildId(c));
         const viewerId = ctx.sessionUser(c)?.id ?? '';
         const target = String(c.body?.staffUserId || viewerId);
+        if (!/^\d{15,22}$/.test(target)) return c.status(400).json({ error: 'اختر ستاف صحيح.' });
         const metrics = await previewForMember(discord, guild, target, viewerId);
         c.json({ ok: true, metrics: { score: metrics.score, grade: metrics.grade, rank: metrics.rank, of: metrics.of } });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Could not send the preview.';
-        c.status(400).json({ error: /Cannot send messages to this user/i.test(message) ? 'Rift could not DM you. Open your DMs for this server and try again.' : message });
+        c.status(400).json({ error: /Cannot send messages to this user/i.test(message) ? 'ما قدر Rift يرسل لك خاص. افتح الخاص لهذا السيرفر وحاول مرة ثانية.' : publicMessage(error, 'تعذّر إرسال المعاينة.') });
       }
-    });
+    }, { guards: [writeLimit] });
 
     // Send now: the chosen staff for any period, measured exactly like the weekly report.
     app.post('/api/staff-reports/send', async (c: Context) => {
       if (!await ctx.requireAdministrator(c)) return;
       const guildId = ctx.selectedGuildId(c);
-      if (sending.has(guildId)) return c.status(429).json({ error: 'Reports are already being sent. Wait for them to finish.' });
+      if (sending.has(guildId)) return c.status(429).json({ error: 'التقارير تنرسل الحين. انتظر لين تخلص.' });
       sending.add(guildId);
       try {
         const guild = await ctx.getGuild(guildId);
         const raw = c.body?.staffUserIds;
         const userIds = raw === 'all' ? 'all' as const : [...new Set((Array.isArray(raw) ? raw : []).map(String).filter((id: string) => /^\d{15,22}$/.test(id)))].slice(0, 200);
-        if (userIds !== 'all' && !userIds.length) return c.status(400).json({ error: 'Choose at least one staff member.' });
+        if (userIds !== 'all' && !userIds.length) return c.status(400).json({ error: 'اختر ستاف واحد على الأقل.' });
         const start = new Date(`${String(c.body?.periodStart || '').slice(0, 10)}T00:00:00.000Z`);
         const end = new Date(`${String(c.body?.periodEnd || '').slice(0, 10)}T23:59:59.999Z`);
-        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return c.status(400).json({ error: 'Choose a valid report period.' });
-        if (end.getTime() - start.getTime() > 92 * DAY) return c.status(400).json({ error: 'A report can cover at most 92 days.' });
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return c.status(400).json({ error: 'اختر فترة تقرير صحيحة.' });
+        if (end.getTime() - start.getTime() > 92 * DAY) return c.status(400).json({ error: 'التقرير يغطي 92 يوم كحد أقصى.' });
         const actor = ctx.sessionUser(c)!;
         const note = String(c.body?.note || '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim().slice(0, 1500);
         const result = await sendReportsNow(discord, guild, { userIds, start, end, note, summary: Boolean(c.body?.summary), dmSummary: c.body?.dmSummary === undefined ? undefined : Boolean(c.body.dmSummary), authorId: actor.id });
         await createLog(guildId, 'REPORTS_SENT', actor.id, actor.id, { staff: result.staff, dms: result.dms, periodStart: start.toISOString().slice(0, 10), periodEnd: end.toISOString().slice(0, 10) }).catch(() => undefined);
         c.json({ ok: true, ...result });
-      } catch (error) { c.status(400).json({ error: error instanceof Error ? error.message : 'Could not send the reports.' }); }
+      } catch (error) { c.status(400).json({ error: publicMessage(error, 'تعذّر تنفيذ العملية.') }); }
       finally { sending.delete(guildId); }
-    });
+    }, { guards: [sendLimit] });
 
     // The Grades page: the rules for everyone, each staff member's own score so far this week, and the whole team for administrators.
     app.get('/api/grades', async (c: Context) => {
       try {
         const guildId = ctx.selectedGuildId(c);
         const user = ctx.sessionUser(c);
-        const admin = await isAdmin(ctx, req);
+        const admin = await isAdmin(ctx, c);
         const { settings } = await loadWeeklySettings(guildId);
         const { start } = weekBounds(new Date(), 0);
         const now = new Date();
@@ -195,7 +190,7 @@ export const reportsDashboard: DashboardExtension = {
           });
         }
         c.json({ grades: GRADE_STEPS, weights: SCORE_WEIGHTS, penalty: COMPLAINT_PENALTY, targets: settings.targets, noRatingDefault: NO_RATING_DEFAULT, me, team, admin });
-      } catch (error) { c.status(400).json({ error: error instanceof Error ? error.message : 'Could not load grades.' }); }
+      } catch (error) { c.status(400).json({ error: publicMessage(error, 'تعذّر تنفيذ العملية.') }); }
     });
   },
 };

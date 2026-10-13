@@ -98,9 +98,9 @@ export async function dismissStaff(guild: Guild, userId: string, opts: { by: str
     let dmSent = false;
     const user = member?.user ?? await guild.client.users.fetch(userId).catch(() => null);
     if (user) {
-      dmSent = Boolean(await user.send({ embeds: [new EmbedBuilder().setColor(0xe9697b).setTitle('تم فصلك من الستاف')
+      dmSent = await user.send({ embeds: [new EmbedBuilder().setColor(0xe9697b).setTitle('تم فصلك من الستاف')
         .setDescription(`تم فصلك من فريق الستاف في **${guild.name}**.\n\n**السبب:** ${reason}${pointsReset ? `\n**النقاط:** تم تصفير نقاطك (${pointsReset}).` : ''}\n\nلو عندك اعتراض تواصل مع الإدارة.`)
-        .setTimestamp()] }).catch(() => null));
+        .setTimestamp()] }).then(() => true, () => false);
     }
 
     // 7) روم اللوق.
@@ -128,7 +128,7 @@ export async function reinstateStaff(guild: Guild, userId: string, opts: { by: s
 
   let roleRestored = false;
   if (restore && member && settings.staffRoleId && !member.roles.cache.has(settings.staffRoleId)) {
-    roleRestored = Boolean(await member.roles.add(settings.staffRoleId, `إلغاء فصل${opts.reason ? `: ${opts.reason}` : ''}`.slice(0, 400)).catch(() => null));
+    roleRestored = await member.roles.add(settings.staffRoleId, `إلغاء فصل${opts.reason ? `: ${opts.reason}` : ''}`.slice(0, 400)).then(() => true, () => false);
   }
   const reason = String(opts.reason || '').trim().slice(0, 500);
   await createLog(guild.id, 'STAFF_REINSTATED', userId, opts.by, { reason, source: opts.source ?? 'command', roleRestored }).catch(error => console.error('Reinstate log failed:', error));

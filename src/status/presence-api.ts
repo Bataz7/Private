@@ -4,18 +4,21 @@ import { env } from '../config/env.js';
 import { supabase } from '../supabase/client.js';
 import { PRESENCE_TYPES, cleanEntries, presenceConfig, presenceVariables, validStreamUrl } from '../services/presence.service.js';
 import { isSchemaError } from './shared.js';
+import type { Mount } from '../web/server/router.js';
+import { rateLimit } from '../web/server/security.js';
 
 const STATUSES = ['online', 'idle', 'dnd', 'invisible'];
 
 /** The presence is shared by every server, so only the main server (GUILD_ID) can change it. */
-function ownsPresence(ctx: DashboardContext, req: Request, res: Response) {
+function ownsPresence(ctx: DashboardContext, c: Context) {
   if (!env.guildId || ctx.selectedGuildId(c) === env.guildId) return true;
-  c.status(403).json({ error: 'The bot status is shared by all servers and can only be changed from the main server.' });
+  c.status(403).json({ error: 'حالة البوت مشتركة بين كل السيرفرات، وتتغيّر من السيرفر الرئيسي بس.' });
   return false;
 }
 
-export function mountPresenceRoutes(ctx: DashboardContext) {
-  const { app, discord } = ctx;
+export function mountPresenceRoutes(ctx: DashboardContext, app: Mount) {
+  const { discord } = ctx;
+  const writeLimit = rateLimit('presence-writes', 60_000, 20);
 
   app.get('/api/bot/status', async (c: Context) => {
     if (!await ctx.requireAdministrator(c)) return;
@@ -29,21 +32,21 @@ export function mountPresenceRoutes(ctx: DashboardContext) {
         botStatus: config.status, config, vars, bot, editable: !env.guildId || guildId === env.guildId, online: discord.isReady(),
         settings: { customStatusUrl: config.url }, configured: Boolean(data), migrated: Boolean(data) && 'presence_entries' in data,
       });
-    } catch (error) { c.status(400).json({ error: error instanceof Error ? error.message : 'Could not load the bot status.' }); }
+    } catch (error) { c.status(400).json({ error: 'تعذّر تحميل حالة البوت.' }); }
   });
 
   app.patch('/api/bot/status', async (c: Context) => {
-    if (!await ctx.requireAdministrator(c) || !ownsPresence(ctx, req, res)) return;
+    if (!await ctx.requireAdministrator(c) || !ownsPresence(ctx, c)) return;
     const status = String(c.body?.status || '');
-    if (!STATUSES.includes(status)) return c.status(400).json({ error: 'Choose a valid Discord presence status.' });
+    if (!STATUSES.includes(status)) return c.status(400).json({ error: 'اختر حالة ديسكورد صحيحة.' });
     const { error } = await supabase.from('guild_settings').update({ bot_status: status }).eq('guild_id', ctx.selectedGuildId(c));
-    if (error) return c.status(400).json({ error: 'Could not save the bot status.' });
+    if (error) return c.status(400).json({ error: 'تعذّر حفظ حالة البوت.' });
     c.json({ ok: true, status });
-  });
+  }, { guards: [writeLimit] });
 
   // The bot process notices the change within a few seconds and applies it.
   app.patch('/api/bot/custom-status', async (c: Context) => {
-    if (!await ctx.requireAdministrator(c) || !ownsPresence(ctx, req, res)) return;
+    if (!await ctx.requireAdministrator(c) || !ownsPresence(ctx, c)) return;
     const guildId = ctx.selectedGuildId(c);
     const body = (typeof c.body === 'object' && c.body ? c.body : {}) as Record<string, any>;
     const updates: Record<string, unknown> = {};
@@ -62,11 +65,11 @@ export function mountPresenceRoutes(ctx: DashboardContext) {
       const streaming = Boolean(entries?.some(entry => entry.type === 'streaming'));
       // The link only matters for Streaming lines; an old saved link must not block saving anything else.
       if (!validStreamUrl(url)) {
-        if (streaming) return c.status(400).json({ error: 'The streaming link must be a Twitch or YouTube link, for example https://twitch.tv/yourchannel.' });
+        if (streaming) return c.status(400).json({ error: 'رابط البث لازم يكون من Twitch أو YouTube، مثل https://twitch.tv/yourchannel.' });
       } else updates.custom_status_url = url;
     }
     if (body.status !== undefined) {
-      if (!STATUSES.includes(String(body.status))) return c.status(400).json({ error: 'Choose a valid Discord presence status.' });
+      if (!STATUSES.includes(String(body.status))) return c.status(400).json({ error: 'اختر حالة ديسكورد صحيحة.' });
       updates.bot_status = String(body.status);
     }
     if (!Object.keys(updates).length) return c.json({ ok: true });
@@ -76,10 +79,10 @@ export function mountPresenceRoutes(ctx: DashboardContext) {
       // Migration 034 is missing: save what the old columns can hold (lines share the first line's type).
       console.warn('[status] Per-line bot status types need migration 034_reports_status.sql; saved the lines without them.');
       delete updates.presence_entries; delete updates.custom_status_mode;
-      warning = 'Saved, but per-line types and random order need migration 034_reports_status.sql.';
+      warning = 'انحفظ، بس نوع لكل سطر والترتيب العشوائي يحتاجون تحديث قاعدة البيانات 034_reports_status.sql.';
       ({ error } = await supabase.from('guild_settings').update(updates).eq('guild_id', guildId));
     }
-    if (error) return c.status(400).json({ error: 'Could not save the bot status.' });
+    if (error) return c.status(400).json({ error: 'تعذّر حفظ حالة البوت.' });
     c.json({ ok: true, warning });
-  });
+  }, { guards: [writeLimit] });
 }

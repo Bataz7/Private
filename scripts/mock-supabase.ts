@@ -153,6 +153,12 @@ function rpc(name: string, args: Row): any {
     return { before, after: staff.points };
   }
   if (name === "staff_points_breakdown") return {};
+  if (name === "weekly_points" && process.env.MOCK_MISSING_COLUMNS) return { __missing: true };
+  if (name === "weekly_points") {
+    const sums = new Map<string, number>();
+    for (const r of db.table("points_ledger")) if (r.guild_id === args.p_guild && r.created_at >= args.p_since && (!args.p_until || r.created_at < args.p_until)) sums.set(r.user_id, (sums.get(r.user_id) ?? 0) + Number(r.delta || 0));
+    return [...sums].map(([user_id, points]) => ({ user_id, points })).sort((a, b) => b.points - a.points);
+  }
   return [];
 }
 
@@ -164,11 +170,26 @@ export async function handleSupabase(req: Request, url: URL): Promise<Response |
   const single = (req.headers.get("accept") ?? "").includes("vnd.pgrst.object");
   if (path.startsWith("rpc/")) {
     const args = req.method === "GET" ? Object.fromEntries(url.searchParams) : await req.json().catch(() => ({}));
-    return Response.json(rpc(path.slice(4), args));
+    const out = rpc(path.slice(4), args);
+    if (out && out.__missing) return Response.json({ code: "PGRST202", message: "Could not find the function public.weekly_points in the schema cache", details: null, hint: null }, { status: 404 });
+    return Response.json(out);
   }
   const table = db.table(path);
   const params = url.searchParams;
   const select = params.get("select");
+  // MOCK_MISSING_COLUMNS=a,b: يتصرف كأن ملف التحديث ما انطبق (PGRST204 عند الكتابة، 42703 عند القراءة/الفلترة).
+  const missing = (process.env.MOCK_MISSING_COLUMNS ?? "").split(",").filter(Boolean);
+  if (missing.length) {
+    const named = [...url.searchParams.keys(), ...(url.searchParams.get("select") ?? "").split(","), ...(url.searchParams.get("order") ?? "").split(",").map((o) => o.split(".")[0]!)];
+    const hitRead = missing.find((c) => named.includes(c));
+    if (hitRead) return Response.json({ code: "42703", message: `column ${path}.${hitRead} does not exist`, details: null, hint: null }, { status: 400 });
+    if (req.method === "POST" || req.method === "PATCH") {
+      const peek = await req.clone().json().catch(() => null);
+      const keys = (Array.isArray(peek) ? peek : [peek]).flatMap((r) => (r && typeof r === "object" ? Object.keys(r) : []));
+      const hit = missing.find((c) => keys.includes(c));
+      if (hit) return Response.json({ code: "PGRST204", message: `Could not find the '${hit}' column of '${path}' in the schema cache`, details: null, hint: null }, { status: 400 });
+    }
+  }
   const ret = (rows: Row[], status = 200) => {
     const headers: Record<string, string> = { "content-type": "application/json" };
     if (prefer.includes("count=")) headers["content-range"] = `0-${Math.max(0, rows.length - 1)}/${rows.length}`;

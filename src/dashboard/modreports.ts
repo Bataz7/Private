@@ -101,31 +101,31 @@ function registerModReportRoutes({ discord, selectedGuildId, requireAdministrato
     if (report.moderatorId === user?.id && !user?.isOwner) return fail(c, 403, 'ما تقدر تراجع تقريرك بنفسك.');
     const result = await decideModReport(discord, report.id, decision, actor(c), String(c.body?.note || ''));
     c.json({ ok: true, dmSent: result.dmSent });
-  }));
+  }), { guards: [writeLimit] });
 
   app.post('/api/mod-reports/:id/notes', route(async (c, guildId) => {
     const report = await own(c, guildId); if (!report) return;
     await addModReportNote(discord, report.id, actor(c), String(c.body?.text || ''));
     c.json({ ok: true });
-  }));
+  }), { guards: [writeLimit] });
 
   app.post('/api/mod-reports/:id/reopen', route(async (c, guildId) => {
     const report = await own(c, guildId); if (!report) return;
     await reopenModReport(discord, report.id, actor(c).id);
     c.json({ ok: true });
-  }));
+  }), { guards: [writeLimit] });
 
   app.delete('/api/mod-reports/:id', route(async (c, guildId) => {
     const report = await own(c, guildId); if (!report) return;
     await deleteModReport(report.id);
     await createLog(guildId, 'MOD_REPORT_DELETED', report.moderatorId, actor(c).id, { number: report.number }).catch(() => undefined);
     c.json({ ok: true });
-  }));
+  }), { guards: [writeLimit] });
 
   app.put('/api/mod-reports-settings', route(async (c, guildId) => {
     const settings = await saveModSettings(guildId, c.body);
     c.json({ settings, panelUpdated: await refreshModPanel(discord, guildId) });
-  }));
+  }), { guards: [writeLimit] });
 
   // Renders both panels and a sample review card from unsaved settings, with the same builders the bot uses.
   app.post('/api/mod-reports-preview', route(async (c, guildId) => {
@@ -139,12 +139,12 @@ function registerModReportRoutes({ discord, selectedGuildId, requireAdministrato
       createdAt: new Date(), updatedAt: new Date(), version: '',
     };
     c.json({ panelAr: buildModPanel(s, guildName, 'ar'), panelEn: buildModPanel(s, guildName, 'en'), card: buildReviewCard(sample, s) });
-  }));
+  }), { guards: [writeLimit] });
 
   app.post('/api/mod-reports-panel', route(async (c, guildId) => {
     const channelId = String(c.body?.channelId || '');
     if (!channelId) return fail(c, 400, 'اختر روم أول.');
     const lang = c.body?.lang === 'ar' ? 'ar' : 'en';
     c.json({ ok: true, lang, ...(await publishModPanel(discord, guildId, channelId, lang)) });
-  }));
+  }), { guards: [writeLimit] });
 }

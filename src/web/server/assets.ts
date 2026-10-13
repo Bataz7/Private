@@ -105,14 +105,14 @@ export async function serveAsset(c: Context, access: () => Promise<AssetAccess>)
   if (COMPRESSIBLE.has(extension)) {
     headers.set('vary', 'Accept-Encoding');
     if (/\bgzip\b/.test(c.req.headers.get('accept-encoding') || '') && file.size <= GZIP_MAX_FILE) {
-      let packed = gzipCache.get(path);
+      let packed = gzipCache.get(path) as Uint8Array<ArrayBuffer> | undefined;
       if (!packed) {
         packed = new Uint8Array(gzipSync(new Uint8Array(await file.arrayBuffer())));
         if (gzipCache.size >= GZIP_MAX_ENTRIES) gzipCache.delete(gzipCache.keys().next().value!);
         gzipCache.set(path, packed);
       }
       headers.set('content-encoding', 'gzip');
-      return c.send(new Response(c.method === 'HEAD' ? null : packed, { headers }));
+      return c.send(new Response(c.method === 'HEAD' ? null : (packed as Uint8Array<ArrayBuffer>), { headers }));
     }
   }
   return c.send(new Response(c.method === 'HEAD' ? null : file, { headers }));

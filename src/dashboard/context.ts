@@ -1,4 +1,4 @@
-import { Client, PermissionFlagsBits, type Guild, type GuildMember } from '../lib/djs/index.js';
+import { Client, Guild, PermissionFlagsBits, type GuildMember } from '../lib/djs/index.js';
 import { supabase } from '../supabase/client.js';
 import { Context, HttpError } from '../web/server/http.js';
 import type { Mount } from '../web/server/router.js';
@@ -67,8 +67,7 @@ export function createContext(discord: Client): DashboardContext & { refreshGuil
       pending = (async () => {
         const data = await discord.rest.get(`/guilds/${guildId}`, { query: { with_counts: true } });
         const channels = await discord.rest.get(`/guilds/${guildId}/channels`).catch(() => []);
-        const { Guild: GuildClass } = await import('../lib/djs/index.js');
-        const guild = new GuildClass(discord, { ...data, channels });
+        const guild = new Guild(discord, { ...data, channels });
         discord.guilds.cache.set(guild.id, guild);
         for (const channel of channels) discord._indexChannel(channel.id, guild.id);
         return guild;

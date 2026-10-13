@@ -43,30 +43,30 @@ if (process.env.RIFT_MEMDEBUG) setInterval(() => {
 setInterval(() => { (globalThis as { Bun?: { gc?: (sync?: boolean) => void } }).Bun?.gc?.(true); }, Number(process.env.GC_INTERVAL_MS) || 30_000);
 
 bootBanner();
-bootStep('BOOT', 'Loading Rift staff operations');
+bootStep('BOOT', 'تشغيل نظام ستاف Rift');
 // صوت كل إداري: آخر مرة انحسبت دقائقه + متى دخل (لتحقق التواجد). ينحذف لما يطلع، فحجمه = اللي في الفويس.
 const voiceSessions = new Map<string, { lastAt: number; remainderMs: number; joinedAt?: number }>();
 // Presence (status, rotating lines, per-line types, {servers} {members} {staff} {onshift} {server}): src/services/presence.service.ts
 
 client.once(Events.ClientReady, async ready => {
   try {
-    bootStep('DISCORD', `Connected as ${ready.user.tag}`);
+    bootStep('DISCORD', `متصل باسم ${ready.user.tag}`);
     await syncEmojis(client, { upload: true }).catch(error => console.error('Emoji sync failed:', error));
     setInterval(() => { void syncEmojis(client, { quiet: true }).catch(() => undefined); }, 30 * 60_000);
-    await registerCommandsIfChanged(client).then(changed => { if (changed) bootStep('COMMANDS', 'Slash commands updated'); }).catch(error => console.error('Command registration failed:', error));
+    await registerCommandsIfChanged(client).then(changed => { if (changed) bootStep('COMMANDS', 'تحدّثت أوامر السلاش'); }).catch(error => console.error('Command registration failed:', error));
     const { error } = await supabase.from('guild_settings').select('guild_id').limit(1);
     if (error) {
       bootFailure(`Supabase schema unavailable: ${error.message}`);
       if (error.code === 'PGRST205') {
-        bootStep('ACTION', 'Open Supabase SQL Editor and run migrations 001 through 005.');
-        bootStep('CHECK', 'Confirm .env SUPABASE_URL points to the same Supabase project.');
+        bootStep('ACTION', 'افتح Supabase SQL Editor وشغّل ملفات التحديث من 001 لآخر ملف.');
+        bootStep('CHECK', 'تأكد إن SUPABASE_URL في .env يأشر لنفس مشروع Supabase.');
       } else {
-        bootStep('ACTION', 'Check Supabase URL/key and apply migrations 001 through 005.');
+        bootStep('ACTION', 'راجع رابط/مفتاح Supabase وطبّق ملفات التحديث.');
       }
       await client.destroy();
       return;
     }
-    bootStep('DATABASE', 'Supabase connected and schema verified');
+    bootStep('DATABASE', 'Supabase متصل والجداول سليمة');
     await deduplicateRatings();
 
     await reconcileShiftRoles(client);
@@ -88,7 +88,7 @@ client.once(Events.ClientReady, async ready => {
     await readyExtensions(client);
     bootReady({
       tag: ready.user.tag, guilds: client.guilds.cache.size, staff: staffCount, onShift: onShiftCount, pingMs: Math.max(0, Math.round(client.ws.ping)),
-      autoShift: auto.enabled ? `${auto.messages} msgs / ${Math.round(auto.windowMs / 60_000)}m starts · ${Math.round(auto.idleMs / 60_000)}m idle ends` : 'off',
+      autoShift: auto.enabled ? `يبدأ بـ ${auto.messages} رسالة خلال ${Math.round(auto.windowMs / 60_000)} دقيقة · ينتهي بعد ${Math.round(auto.idleMs / 60_000)} دقيقة خمول` : 'متوقف',
       emojis: `${emojiList().filter(item => item.id).length}/${emojiList().length} ready`,
       dashboardUrl: env.dashboardUrl,
     });
@@ -98,7 +98,7 @@ client.once(Events.ClientReady, async ready => {
     setInterval(() => { void tracked('weekly', () => runWeeklyReports(client)).catch(error => console.error('Weekly reports failed:', error)); }, 15 * 60_000);
     setTimeout(() => { void tracked('weekly', () => runWeeklyReports(client)).catch(error => console.error('Weekly reports failed:', error)); }, 20_000);
   } catch (error) {
-    bootFailure(error instanceof Error ? error.message : 'Unknown startup error');
+    bootFailure(error instanceof Error ? error.message : 'خطأ غير معروف وقت التشغيل');
     await client.destroy();
   }
 });
@@ -135,8 +135,8 @@ async function reconcileShiftRoles(bot: Client) {
     for (const member of members.values()) {
       const hasShiftRole = member.roles.cache.has(settings.onShiftRoleId);
       const shouldHaveRole = activeUserIds.has(member.id);
-      if (shouldHaveRole && !hasShiftRole) await member.roles.add(settings.onShiftRoleId, 'Active shift role synchronization').catch(() => undefined);
-      if (!shouldHaveRole && hasShiftRole) await member.roles.remove(settings.onShiftRoleId, 'No active shift found').catch(() => undefined);
+      if (shouldHaveRole && !hasShiftRole) await member.roles.add(settings.onShiftRoleId, 'مزامنة رتبة الشفت النشط').catch(() => undefined);
+      if (!shouldHaveRole && hasShiftRole) await member.roles.remove(settings.onShiftRoleId, 'ما عنده شفت نشط').catch(() => undefined);
     }
   }
   } finally {
@@ -196,7 +196,7 @@ async function monitorShifts(bot: Client) {
     if (activeMs(shift) >= 12 * 60 * 60 * 1000) {
       const ended = await endShift(shift.guildId, shift.userId).catch(() => null);
       if (ended) forgetShift(shift.guildId, shift.userId);
-      if (ended && member) { await member.roles.remove(settings.onShiftRoleId, 'وصل الحد الأقصى للشفت (12 ساعة)').catch(() => undefined); await member.send({ content: 'انتهى شفتك تلقائياً لأنه وصل الحد الأقصى (12 ساعة).' }).catch(() => undefined); }
+      if (ended && member) { await member.roles.remove(settings.onShiftRoleId, 'وصل الحد الأقصى للشفت (12 ساعة)').catch(() => undefined); } // بصمت: ما يوصل العضو أي رسالة
       continue;
     }
     // تحديث جزئي: حفظ كامل ممكن يرجّع check_sent_at قديم فوق تأكيد صار في نفس اللحظة.

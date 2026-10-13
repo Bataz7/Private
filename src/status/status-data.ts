@@ -244,23 +244,23 @@ const STATE_COLOR: Record<State, string> = { operational: '#4fc08d', degraded: '
 
 /** Small SVG badge ("rift | operational") for READMEs and websites. */
 export function statusBadge(state: State) {
-  const label = 'rift'; const value = state;
+  const label = 'rift'; const value = xml(STATE_COLOR[state] ? state : 'outage');
+  if (!STATE_COLOR[state]) state = 'outage';
   const w1 = 12 + label.length * 6.4; const w2 = 14 + value.length * 6.4; const width = Math.round(w1 + w2);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="20" role="img" aria-label="${label}: ${value}"><title>${label}: ${value}</title><clipPath id="r"><rect width="${width}" height="20" rx="4" fill="#fff"/></clipPath><g clip-path="url(#r)"><rect width="${Math.round(w1)}" height="20" fill="#2b2540"/><rect x="${Math.round(w1)}" width="${width - Math.round(w1)}" height="20" fill="${STATE_COLOR[state]}"/></g><g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11"><text x="${(w1 / 2).toFixed(1)}" y="14">${label}</text><text x="${(w1 + w2 / 2).toFixed(1)}" y="14" font-weight="bold">${value}</text></g></svg>`;
 }
 
-/** Link-preview tags (Discord, chat apps, search) carrying the live status, added to the page as it is served. */
-export function statusMetaTags(overall: { state: State; title: string; text: string } | null, baseUrl: string) {
-  const state = overall?.state || 'operational';
-  const title = overall ? `${overall.title} · حالة Rift` : 'حالة Rift';
-  const description = overall?.text || 'الحالة المباشرة لبوت ستاف Rift: هل هو شغّال، وش نشر الفريق، وكيف كان أداؤه.';
-  const url = /^https?:\/\//.test(baseUrl) ? `${baseUrl.replace(/\/$/, '')}/status` : '';
-  return [
-    `<meta property="og:type" content="website">`, `<meta property="og:site_name" content="ستاف Rift">`, `<meta property="og:title" content="${xml(title)}">`, `<meta property="og:description" content="${xml(description)}">`,
-    ...(url ? [`<meta property="og:url" content="${xml(url)}">`, `<link rel="canonical" href="${xml(url)}">`] : []),
-    `<meta name="twitter:card" content="summary">`, `<meta name="twitter:title" content="${xml(title)}">`, `<meta name="twitter:description" content="${xml(description)}">`,
-    `<meta name="theme-color" content="${STATE_COLOR[state]}">`,
-  ].join('\n  ');
+export type StatusMeta = { title: string; description: string; url: string; themeColor: string };
+
+/** بيانات وسوم المعاينة (ديسكورد، تطبيقات المحادثة، محركات البحث) بالحالة الحالية. الصفحة (TSX) تهرّبها بنفسها. */
+export function statusMeta(overall: { state: State; title: string; text: string } | null, baseUrl: string): StatusMeta {
+  const state = overall?.state && STATE_COLOR[overall.state] ? overall.state : 'operational';
+  return {
+    title: overall ? `${overall.title} · حالة Rift` : 'حالة Rift',
+    description: overall?.text || 'الحالة المباشرة لبوت ستاف Rift: هل هو شغّال، وش نشر الفريق، وكيف كان أداؤه.',
+    url: /^https?:\/\//.test(baseUrl) ? `${baseUrl.replace(/\/$/, '')}/status` : '',
+    themeColor: STATE_COLOR[state],
+  };
 }
 
 const MAINT_AR: Record<string, string> = { scheduled: 'مجدولة', in_progress: 'شغّالة', completed: 'مكتملة' };

@@ -6,9 +6,10 @@ import { applications } from '../applications/index.js';
 import { leaveExtension } from '../leave/index.js';
 import { coreExtension } from '../core/index.js';
 import { statusBot } from '../status/index.js';
+import { disciplineExtension } from '../discipline/index.js';
 
 // Register feature modules here, one import and one array entry each.
-export const bot: BotExtension[] = [studioBot, modReportsExtension, applications, coreExtension, leaveExtension, statusBot];
+export const bot: BotExtension[] = [studioBot, modReportsExtension, applications, coreExtension, leaveExtension, statusBot, disciplineExtension];
 
 export const extensionCommands = () => bot.flatMap(extension => extension.commands ?? []);
 

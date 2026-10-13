@@ -4,7 +4,7 @@ import { Context, HttpError } from '../web/server/http.js';
 import { Router } from '../web/server/router.js';
 import { applySecurityHeaders, clientIp, csrfGuard, originGuard, rateLimit } from '../web/server/security.js';
 import { loadSession } from '../web/server/session.js';
-import { isExpected, publicMessage } from '../web/server/errors.js';
+import { isExpected, publicMessage, statusFor } from '../web/server/errors.js';
 import { createContext } from './context.js';
 import { mountAuth } from './auth.js';
 import { mountPages } from './pages.js';
@@ -57,8 +57,9 @@ export function createDashboard(discord: Client) {
     } catch (error) {
       c.res = null;
       if (error instanceof HttpError) return c.fail(error.status, error.message, error.extra);
-      if (!isExpected(error)) console.error(`[dashboard] ${c.method} ${c.path}:`, error instanceof Error ? error.stack || error.message : error);
-      return c.fail(500, publicMessage(error, 'صار خطأ في السيرفر. حاول مرة ثانية بعد لحظات.'));
+      if (isExpected(error)) return c.fail(statusFor(error), publicMessage(error));
+      console.error(`[dashboard] ${c.method} ${c.path}:`, error instanceof Error ? error.stack || error.message : error);
+      return c.fail(500, 'صار خطأ في السيرفر. حاول مرة ثانية بعد لحظات.');
     }
   }
 

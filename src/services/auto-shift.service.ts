@@ -108,7 +108,7 @@ async function begin(guild: Guild, member: GuildMember, settings: GuildSettingsD
     await createLog(guild.id, 'SHIFT_STARTED_AUTOMATICALLY', member.id, member.id, { shiftId: String(shift._id), reason, ...detail });
     await announce(guild.client, settings, new EmbedBuilder().setColor(BRAND_COLOR)
       .setDescription(`### ${e('shiftstart')} بدأ شفت تلقائياً\n${member} — ${reason}\nبدأ <t:${Math.floor(startedAt.getTime() / 1000)}:R>`));
-    event('shiftStart', `${member.displayName} started automatically (${detail.voice ? 'voice' : `${detail.messages} messages`})`);
+    event('shiftStart', `${member.displayName} بدأ شفته تلقائياً (${detail.voice ? 'فويس' : `${detail.messages} رسالة`})`);
     return shift as ShiftDoc;
   } finally {
     starting.delete(id);
@@ -160,7 +160,7 @@ export async function endIfIdle(client: Client, shift: ShiftDoc, settings: Guild
   shiftCache.delete(id); bursts.delete(id); lastTouch.delete(id);
   if (member && settings.onShiftRoleId) await member.roles.remove(settings.onShiftRoleId, 'انتهى الشفت تلقائياً بسبب عدم النشاط').catch(() => undefined);
   const worked = duration(activeMs(ended));
-  event('shiftEnd', `${member?.displayName ?? shift.userId} ended automatically after ${Math.round(cfg.idleMs / 60_000)}m idle, counted ${worked}`);
+  event('shiftEnd', `${member?.displayName ?? shift.userId} انتهى شفته تلقائياً بعد ${Math.round(cfg.idleMs / 60_000)} دقيقة خمول، المحسوب ${worked}`);
   await createLog(shift.guildId, 'SHIFT_AUTO_ENDED', shift.userId, null, { shiftId: String(ended._id), duration: worked, idleMinutes: Math.round(cfg.idleMs / 60_000) });
   await announce(client, settings, new EmbedBuilder().setColor(BRAND_COLOR)
     .setDescription(`### ${e('shiftend')} انتهى شفت تلقائياً\n<@${shift.userId}> — ما فيه نشاط من ${Math.round(cfg.idleMs / 60_000)} دقيقة\nالوقت المحسوب: **${worked}**`));

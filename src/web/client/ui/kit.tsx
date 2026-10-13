@@ -59,7 +59,7 @@ export const Spinner = ({ size = 18 }: { size?: number }) => <span class="spinne
 export function Avatar({ src, name, size = 36, class: cls, ring }: { src?: string | null; name?: string | null; size?: number; class?: string; ring?: string }) {
   const letter = initial(name);
   return (
-    <span class={cx('avatar', cls)} style={{ width: `${size}px`, height: `${size}px`, fontSize: `${Math.round(size * 0.4)}px`, '--ring': ring || undefined }} aria-hidden="true">
+    <span class={cx('avatar', cls)} style={{ width: `${size}px`, height: `${size}px`, fontSize: `${Math.round(size * 0.4)}px`, '--avatar-ring': ring || undefined }} aria-hidden="true">
       {src
         ? <img src={src} alt="" loading="lazy" referrerpolicy="no-referrer" onError={(event: Event) => (event.currentTarget as HTMLElement).replaceWith(document.createTextNode(letter))} />
         : letter}

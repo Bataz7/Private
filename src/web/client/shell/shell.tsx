@@ -49,7 +49,7 @@ export function createShell(options: ShellOptions): Shell {
   const badges = new Map<BadgeKey, number>();
   let current = options.current;
   let crumb: string | null = null;
-  let guild = options.boot.guild ?? null;
+  let guild = options.boot.guild ?? bootGuild(options.boot);
   const visible = (route: Route) => !route.admin || admin;
 
   const navLink = (route: Route) => (
@@ -185,7 +185,7 @@ export function createShell(options: ShellOptions): Shell {
   async function openGuildMenu(anchor: HTMLElement) {
     try {
       const data = await api<{ guilds: Array<{ id: string; name: string; icon?: string | null }>; selectedGuildId: string }>('/api/guilds');
-      const icon = (item: { id: string; icon?: string | null }) => (item.icon ? (item.icon.startsWith('http') ? item.icon : `https://cdn.discordapp.com/icons/${item.id}/${item.icon}.png?size=64`) : null);
+      const icon = guildIcon;
       if (!guild) { const found = data.guilds.find(item => item.id === data.selectedGuildId); if (found) { guild = { ...found, icon: icon(found) }; guildButton.update(); } }
       openMenu(anchor, data.guilds.map(item => ({
         label: item.name,
@@ -291,3 +291,13 @@ export function createShell(options: ShellOptions): Shell {
   return { view, setActive, setCrumb: text => { crumb = text; crumbs.update(); }, setBadge, refreshInbox, closeDrawer, setGuild: next => { if (next && (next.id !== guild?.id || next.name !== guild?.name || next.icon !== guild?.icon)) { guild = next; guildButton.update(); } } };
 }
 
+
+const guildIcon = (item: { id: string; icon?: string | null }) => (item.icon ? (/^https?:/.test(item.icon) ? item.icon : `https://cdn.discordapp.com/icons/${item.id}/${item.icon}.png?size=64`) : null);
+
+function bootGuild(boot: BootData): { id: string; name: string; icon?: string | null } | null {
+  const found = (boot.guilds ?? []).find(item => item.id === boot.guildId) ?? (boot.guilds?.length === 1 ? boot.guilds[0] : undefined);
+  return found ? { id: found.id, name: found.name, icon: guildIcon(found) } : null;
+}
+
+/** معلومات السيرفر من أي رد فيه guild. */
+export const guildOf = (data: any): { id: string; name: string; icon?: string | null } | null => (data?.guild && typeof data.guild === 'object' && data.guild.name ? data.guild : null);

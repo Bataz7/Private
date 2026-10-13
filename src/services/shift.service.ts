@@ -156,6 +156,6 @@ export function duration(ms: number) {
   const days = Math.floor(totalMinutes / 1440);
   const hours = Math.floor((totalMinutes % 1440) / 60);
   const minutes = totalMinutes % 60;
-  if (days) return `${days}ي ${hours}س ${minutes}د`;
-  return `${hours}س ${minutes}د`;
+  if (days) return `${days} يوم ${hours} ساعة ${minutes} دقيقة`;
+  return hours ? `${hours} ساعة ${minutes} دقيقة` : `${minutes} دقيقة`;
 }

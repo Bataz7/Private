@@ -8,6 +8,7 @@ import { activeMs, duration, isOnBreak } from '../services/shift.service.js';
 import { isAdministrator, isStaff } from '../utils/permissions.js';
 import { buildStaffCard } from '../utils/staff-card.js';
 import { staffCardData } from './profile-stats.js';
+import { slashName } from '../i18n/commands.js';
 import { pointRules, pointsBreakdown } from './points.js';
 import { AssistanceLimitError, createAssistance, RepeatAssistanceError } from './assistance.js';
 import { submitStaffRating } from './ratings.js';
@@ -65,14 +66,7 @@ export const coreCommandJson = [
   guildOnly(new SlashCommandBuilder().setName('help').setDescription('وش تقدر تسوي مع Rift')),
 ].map(command => command.toJSON());
 
-/** الاسم اللي يشوفه العضو في Discord (من القاموس العربي)، مثل «شفت حالة» بدل «shift status». */
-function shownName(path: string) {
-  const [command, sub] = path.split(' ');
-  const entry = commandLocalization()[command!];
-  const name = entry?.name || command!;
-  if (!sub) return name;
-  return `${name} ${entry?.options?.[sub]?.name || sub}`;
-}
+const shownName = (path: string) => slashName(path).replace(/^\//, '');
 
 export async function handleCoreCommand(i: ChatInputCommandInteraction) {
   if (!i.inCachedGuild()) return void await i.reply({ content: 'هذا الأمر يشتغل في السيرفر بس.', flags: 64 });
