@@ -18,7 +18,7 @@ const RULES: PointRule[] = [
   { key: 'shift', points: '+1', en: 'every 30 minutes on shift (breaks do not count)', ar: 'كل 30 دقيقة في الشفت (البريك ما ينحسب)' },
   { key: 'messages', points: '+3', en: 'every 100 messages you send while on shift', ar: 'كل 100 رسالة ترسلها وأنت في الشفت' },
   { key: 'voice', points: '+1', en: 'every 30 minutes in voice while on shift', ar: 'كل 30 دقيقة فويس وأنت في الشفت' },
-  { key: 'assist', points: '+1', en: 'every time you log that you helped a member (/assist)', ar: 'كل مرة تسجّل إنك ساعدت عضو (/assist)' },
+  { key: 'assist', points: '+1', en: 'every time you log that you helped a member (/assist)', ar: 'كل مرة تسجّل إنك ساعدت عضو (/ساعدت_عضو)' },
   { key: 'rating', points: '+1 to +3', en: 'a rating from a member: 5★ = +3, 4★ = +2, 3★ = +1', ar: 'تقييم من عضو: 5★ = +3، 4★ = +2، 3★ = +1' },
   { key: 'modreport', points: '±', en: 'a mod report that management approves or rejects (set in the mod report settings)', ar: 'تقرير مود توافق عليه الإدارة أو ترفضه (حسب إعدادات تقارير المود)' },
   { key: 'complaint', points: '−', en: 'an approved complaint against you (management chooses how many)', ar: 'شكوى عليك تنقبل (الإدارة تحدد كم نقطة)' },
@@ -59,7 +59,7 @@ export async function changePoints(input: ChangePointsInput): Promise<ChangePoin
     const row = data as { before?: number; after?: number } | null;
     return row && row.before !== undefined ? { before: Number(row.before) || 0, after: Number(row.after) || 0 } : null;
   }
-  if (!isMissing(error)) throw new Error(`Points update failed: ${error.message}`);
+  if (!isMissing(error)) throw new Error(`ما قدرنا نحدّث النقاط: ${error.message}`);
   warnOnce('points-rpc', `change_staff_points() is missing, so points are changed without the ledger. ${MIGRATION_HINT}`);
   return legacyChange({ ...input, delta, claimed });
 }
@@ -67,7 +67,7 @@ export async function changePoints(input: ChangePointsInput): Promise<ChangePoin
 async function legacyChange(input: ChangePointsInput & { delta: number; claimed: number }): Promise<ChangePointsResult | null> {
   for (let attempt = 0; attempt < 5; attempt++) {
     const { data: row, error } = await supabase.from('staff').select('id, points, claimed').eq('guild_id', input.guildId).eq('user_id', input.userId).maybeSingle();
-    if (error) throw new Error(`Points update failed: ${error.message}`);
+    if (error) throw new Error(`ما قدرنا نحدّث النقاط: ${error.message}`);
     if (!row) return null;
     const before = Number(row.points) || 0;
     const after = Math.max(0, before + input.delta);
@@ -75,7 +75,7 @@ async function legacyChange(input: ChangePointsInput & { delta: number; claimed:
     const { data: updated, error: updateError } = await supabase.from('staff')
       .update({ points: after, claimed: Math.max(0, (Number(row.claimed) || 0) + input.claimed) })
       .eq('id', row.id).eq('points', before).select('id');
-    if (updateError) throw new Error(`Points update failed: ${updateError.message}`);
+    if (updateError) throw new Error(`ما قدرنا نحدّث النقاط: ${updateError.message}`);
     if (!updated?.length) continue;
     if (after !== before) {
       await PointsLedger.create({ guildId: input.guildId, userId: input.userId, delta: after - before, pointsBefore: before, pointsAfter: after, source: input.source, reason: String(input.reason || '').slice(0, 300), actorId: input.actorId ?? null, ref: input.ref === undefined || input.ref === null ? null : String(input.ref) })
@@ -83,13 +83,13 @@ async function legacyChange(input: ChangePointsInput & { delta: number; claimed:
     }
     return { before, after };
   }
-  throw new Error('Points changed at the same moment too many times. Try again.');
+  throw new Error('النقاط تغيّرت بنفس اللحظة أكثر من مرة. جرّب مرة ثانية.');
 }
 
 /** A change made by an administrator (dashboard or command): checks the administrator again, applies it, and logs it. */
 export async function adjustStaffPoints(client: Client, input: { guildId: string; userId: string; delta: number; actorId: string; reason: string }) {
   await assertAdministrator(client, input.guildId, input.actorId);
-  if (input.actorId === input.userId) throw new Error('You cannot change your own staff points.');
+  if (input.actorId === input.userId) throw new Error('ما تقدر تعدّل نقاطك بنفسك.');
   const result = await changePoints({ guildId: input.guildId, userId: input.userId, delta: input.delta, source: 'manual', reason: input.reason, actorId: input.actorId });
   if (!result) return null;
   await createLog(input.guildId, 'POINTS_ADJUSTED', input.userId, input.actorId, { delta: input.delta, before: result.before, after: result.after, reason: input.reason }).catch(() => undefined);
@@ -109,7 +109,7 @@ async function rawBreakdown(guildId: string, userId: string): Promise<RawBreakdo
     const raw = data as RawBreakdown | null;
     return raw && raw.total !== null && raw.total !== undefined ? raw : null;
   }
-  if (!isMissing(error)) throw new Error(`Points breakdown failed: ${error.message}`);
+  if (!isMissing(error)) throw new Error(`ما قدرنا نجيب تفاصيل النقاط: ${error.message}`);
   warnOnce('points-breakdown-rpc', `staff_points_breakdown() is missing, so the breakdown is counted slowly. ${MIGRATION_HINT}`);
   const { data: staff } = await supabase.from('staff').select('points, claimed').eq('guild_id', guildId).eq('user_id', userId).maybeSingle();
   if (!staff) return null;

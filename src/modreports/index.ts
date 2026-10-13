@@ -23,7 +23,7 @@ export const modReportsExtension: BotExtension = {
     if (!error) return;
     const missing = error.code === 'PGRST205' || error.code === '42P01' || /schema cache|does not exist/i.test(error.message);
     console.warn(missing
-      ? '[modreports] Table mod_reports is missing. Run supabase/migrations/032_mod_reports.sql in the Supabase SQL Editor; moderation reports stay unavailable until then.'
-      : `[modreports] Could not check the mod_reports table: ${error.message}`);
+      ? '[modreports] جدول mod_reports ناقص. شغّل supabase/migrations/032_mod_reports.sql في محرر SQL في Supabase؛ تقارير الإدارة تبقى متوقفة لين ذاك الوقت.'
+      : `[modreports] ما قدرنا نتحقق من جدول mod_reports: ${error.message}`);
   },
 };

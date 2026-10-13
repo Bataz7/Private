@@ -53,7 +53,7 @@ export function buildRequestCard(kind: RequestKind, request: RequestLike, opts: 
   const statusText = status === 'approved' && kind === 'resignation' ? say(ar, 'approvedResignation') : say(ar, status as Key);
   const embed = new EmbedBuilder().setTitle(say(ar, kind === 'leave' ? 'leaveTitle' : 'resignationTitle'))
     .setDescription(`**${say(ar, 'staff')}:** <@${request.userId}>\n**${say(ar, 'status')}:** ${statusText}`)
-    .setFooter({ text: `Rift ${say(ar, kind === 'leave' ? 'footerLeave' : 'footerResignation')} #${String(request.id).slice(-6)}` })
+    .setFooter({ text: `${say(ar, kind === 'leave' ? 'footerLeave' : 'footerResignation')} Rift #${String(request.id).slice(-6)}` })
     .setTimestamp(request.createdAt ? new Date(request.createdAt) : new Date());
   if (opts.staffName) embed.setAuthor({ name: clip(opts.staffName, 256), iconURL: opts.staffAvatar || undefined });
   if (opts.staffAvatar) embed.setThumbnail(opts.staffAvatar);
@@ -83,12 +83,12 @@ export function buildRequestCard(kind: RequestKind, request: RequestLike, opts: 
 const DM = {
   leaveTitle: { ar: '🏖️ تم استلام طلب إجازتك', en: '🏖️ Leave request received' },
   resignationTitle: { ar: '🚪 تم استلام طلب استقالتك', en: '🚪 Resignation request received' },
-  body: { ar: 'وصل طلبك إلى الإدارة وهو الآن قيد المراجعة. ستصلك النتيجة هنا في الخاص، ولا حاجة لإرسال الطلب مرة أخرى.', en: 'Your request reached the management team and is under review. The result will be sent to you here, so there is no need to send it again.' },
+  body: { ar: 'وصل طلبك للإدارة وهو الحين تحت المراجعة. بتوصلك النتيجة هنا في الخاص، وما يحتاج ترسل الطلب مرة ثانية.', en: 'Your request reached the management team and is under review. The result will be sent to you here, so there is no need to send it again.' },
   ref: { ar: '🔖 رقم الطلب', en: '🔖 Reference' },
-  keepDm: { ar: '💡 أبقِ رسائل الخاص مفتوحة حتى تصلك النتيجة.', en: '💡 Keep your DMs open so the result can reach you.' },
+  keepDm: { ar: '💡 خلّ الخاص مفتوح عشان توصلك النتيجة.', en: '💡 Keep your DMs open so the result can reach you.' },
 } as const;
 // Once a decision is made the same message is edited: status changes and the text points to the newer message.
-const DECIDED = { ar: 'صدر القرار في طلبك. التفاصيل في الرسالة الأحدث بالأسفل.', en: 'A decision was made on your request. See the newest message below.' } as const;
+const DECIDED = { ar: 'طلع القرار في طلبك. التفاصيل في الرسالة الأحدث تحت.', en: 'A decision was made on your request. See the newest message below.' } as const;
 
 export function requestSubmittedEmbed(kind: RequestKind, request: RequestLike, ar: boolean) {
   const decided = request.status !== 'pending';
@@ -143,7 +143,7 @@ export async function refreshRequestCard(client: Client, kind: RequestKind, requ
 }
 
 /** Sends a NEW DM (that is what notifies the member) and turns the old "request received" message into a "decided" one. */
-export async function sendDecisionDm(client: Client, request: RequestLike & { dmMessageId?: string | null }, payload: any, kind: RequestKind = 'leave', ar = false) {
+export async function sendDecisionDm(client: Client, request: RequestLike & { dmMessageId?: string | null }, payload: any, kind: RequestKind = 'leave', ar = true) {
   const user = await client.users.fetch(request.userId).catch(() => null);
   if (!user) return false;
   if (request.dmMessageId) {
@@ -156,9 +156,9 @@ export async function sendDecisionDm(client: Client, request: RequestLike & { dm
 
 const RES = {
   approvedTitle: { ar: '🚪 تمت الموافقة على استقالتك', en: '🚪 Your resignation was approved' },
-  approvedBody: { ar: 'وافقت الإدارة على استقالتك. في آخر يوم عمل ({day}) ستصلك رسالة تأكيد قبل إزالة رتبة الستاف.', en: 'Management approved your resignation. On your last working day ({day}) you will get a confirmation message before your staff role is removed.' },
-  rejectedTitle: { ar: '🚪 لم تتم الموافقة على استقالتك', en: '🚪 Your resignation was not approved' },
-  rejectedBody: { ar: 'اطلعت الإدارة على طلبك ولم توافق عليه هذه المرة. تقدر تتواصل معهم للتفاصيل.', en: 'Management reviewed your request and did not approve it this time. You can talk to them for details.' },
+  approvedBody: { ar: 'وافقت الإدارة على استقالتك. في آخر يوم عمل ({day}) بتوصلك رسالة تأكيد قبل ما تنشال رتبة الستاف.', en: 'Management approved your resignation. On your last working day ({day}) you will get a confirmation message before your staff role is removed.' },
+  rejectedTitle: { ar: '🚪 ما تمت الموافقة على استقالتك', en: '🚪 Your resignation was not approved' },
+  rejectedBody: { ar: 'راجعت الإدارة طلبك وما وافقت عليه هالمرة. تقدر تتواصل معهم للتفاصيل.', en: 'Management reviewed your request and did not approve it this time. You can talk to them for details.' },
 } as const;
 
 export function resignationDecisionPayload(request: RequestLike, approved: boolean, ar: boolean) {

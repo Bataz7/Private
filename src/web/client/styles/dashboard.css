@@ -1,0 +1,10 @@
+/* حزمة اللوحة (للستاف المسجّلين): النظام + الهيكل + الصفحات + البروفايل. */
+@import './tokens.css';
+@import './base.css';
+@import './components.css';
+@import './shell.css';
+@import './discord.css';
+@import './pages.css';
+@import './features.css';
+@import './apply-form.css';
+@import './profile.css';

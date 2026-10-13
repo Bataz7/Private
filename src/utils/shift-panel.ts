@@ -1,6 +1,8 @@
 import { ActionRowBuilder, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } from '../lib/djs/index.js';
+import { rtl } from './v2.js';
+import { slashName } from '../i18n/commands.js';
 
-export interface ShiftPanelOptions { messages?: number; windowMinutes?: number; idleMinutes?: number; enabled?: boolean }
+export interface ShiftPanelOptions { messages?: number; windowMinutes?: number; idleMinutes?: number; enabled?: boolean; voiceSeconds?: number; presenceMinutes?: number; presenceEnabled?: boolean }
 
 export function buildShiftPanel(options: ShiftPanelOptions = {}) {
   const messages = options.messages ?? 20;
@@ -8,31 +10,33 @@ export function buildShiftPanel(options: ShiftPanelOptions = {}) {
   const idleMinutes = options.idleMinutes ?? 30;
   const menu = new StringSelectMenuBuilder()
     .setCustomId('shift_panel_action')
-    .setPlaceholder('Take control of your shift…')
+    .setPlaceholder('تحكّم في شفتك…')
     .addOptions(
-      new StringSelectMenuOptionBuilder().setLabel('Start shift').setDescription('Clock in right now').setEmoji('▶️').setValue('start'),
-      new StringSelectMenuOptionBuilder().setLabel('End shift').setDescription('Clock out and finish your session').setEmoji('⏹️').setValue('end'),
-      new StringSelectMenuOptionBuilder().setLabel('Break / resume').setDescription('Pause or resume the current shift').setEmoji('⏸️').setValue('break'),
-      new StringSelectMenuOptionBuilder().setLabel('My stats').setDescription('Your current shift and recent hours').setEmoji('📊').setValue('stats'),
-      new StringSelectMenuOptionBuilder().setLabel('Who is on shift').setDescription('See the staff currently on duty').setEmoji('🛡️').setValue('active')
+      new StringSelectMenuOptionBuilder().setLabel('ابدأ الشفت').setDescription('سجّل دخولك الحين').setEmoji('▶️').setValue('start'),
+      new StringSelectMenuOptionBuilder().setLabel('أنهِ الشفت').setDescription('سجّل خروجك وخلّص شفتك').setEmoji('⏹️').setValue('end'),
+      new StringSelectMenuOptionBuilder().setLabel('استراحة / استئناف').setDescription('وقّف شفتك مؤقتًا أو كمّله').setEmoji('⏸️').setValue('break'),
+      new StringSelectMenuOptionBuilder().setLabel('إحصائياتي').setDescription('شفتك الحالي وساعاتك الأخيرة').setEmoji('📊').setValue('stats'),
+      new StringSelectMenuOptionBuilder().setLabel('مين في الشفت').setDescription('شوف الستاف اللي في الشفت الحين').setEmoji('🛡️').setValue('active')
     );
   const automatic = options.enabled === false
-    ? '⏸️ Automatic shifts are turned off on this server. Start and end your shift with the menu.'
+    ? '⏸️ الشفت التلقائي مقفل في هذا السيرفر. ابدأ شفتك وأنهه من القائمة.'
     : [
-      `▶️ **Starts by itself** when you send **${messages} messages** within **${windowMinutes} minutes**, or join an unmuted voice channel.`,
-      `⏹️ **Ends by itself** after **${idleMinutes} minutes** without a message or voice activity. The idle wait is never counted.`,
-    ].join('\n');
+      `▶️ **يبدأ تلقائيًا** لما ترسل **${messages} رسالة** خلال **${windowMinutes} دقيقة**، أو تقعد **${options.voiceSeconds ?? 60} ثانية** في روم صوتي (مو ديفن ومو AFK).`,
+      `⏹️ **شفت الرسائل** ينتهي بعد **${idleMinutes} دقيقة** بدون نشاط. وقت الخمول ما ينحسب أبد.`,
+      options.presenceEnabled === false ? '' : `🎧 **في الفويس** يسألك البوت «هل انت موجود؟» كل **${options.presenceMinutes ?? 60} دقيقة** بدون تفاعل، اضغط الزر وكمّل.`,
+      `-# حالة شفتك وموعد التحقق القادم: \`${slashName('shift status')}\``,
+    ].filter(Boolean).join('\n');
   return {
     embeds: [new EmbedBuilder()
       .setColor(0x8175f5)
-      .setTitle('⏱️ Staff Shift Panel')
-      .setDescription(`Your shifts run on their own. Use the menu only when you want to take control.\n\n${automatic}`)
+      .setTitle('⏱️ لوحة شفتات الستاف')
+      .setDescription(rtl(`شفتاتك تشتغل لحالها. استخدم القائمة بس لما تبي تتحكم بنفسك.\n\n${automatic}`))
       .addFields(
-        { name: '🕒 Manual end', value: 'After at least 30 minutes', inline: true },
-        { name: '⌛ Longest shift', value: '12 hours', inline: true },
-        { name: '💎 Points', value: '1 per 30 min on shift · 3 per 100 messages · 1 per 30 min in voice', inline: false }
+        { name: '🕒 الإنهاء اليدوي', value: 'بعد 30 دقيقة على الأقل', inline: true },
+        { name: '⌛ أطول شفت', value: '12 ساعة', inline: true },
+        { name: '💎 النقاط', value: 'نقطة لكل 30 دقيقة شفت · 3 نقاط لكل 100 رسالة · نقطة لكل 30 دقيقة في الفويس', inline: false }
       )
-      .setFooter({ text: 'Rift Staff Operations' })],
+      .setFooter({ text: 'عمليات ستاف Rift' })],
     components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)]
   };
 }

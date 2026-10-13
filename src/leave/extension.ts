@@ -17,9 +17,9 @@ const extensionCard = (request: LeaveRequestDoc, asked: Date, ar: boolean, decis
   const embed = new EmbedBuilder()
     .setTitle(decision ? (ar ? (decision.approved ? '✅ تم قبول طلب التمديد' : '❌ تم رفض طلب التمديد') : (decision.approved ? '✅ Extension approved' : '❌ Extension rejected')) : (ar ? '🔁 طلب تمديد إجازة' : '🔁 Leave extension request'))
     .setDescription(decision ? (ar ? `القرار من <@${decision.by}>` : `Decided by <@${decision.by}>`)
-      : (ar ? `<@${request.userId}> يطلب تمديد إجازته. تبقى الإجازة كما هي حتى يوافق أدمن.` : `<@${request.userId}> asks to extend their leave. The leave stays as it is until an administrator approves.`))
+      : (ar ? `<@${request.userId}> يطلب تمديد إجازته. الإجازة تبقى مثل ما هي لين يوافق أدمن.` : `<@${request.userId}> asks to extend their leave. The leave stays as it is until an administrator approves.`))
     .addFields({ name: ar ? 'تنتهي حاليًا' : 'Ends now', value: gregorianDate(request.endDate), inline: true }, { name: ar ? 'المطلوب' : 'Asked to end', value: gregorianDate(asked), inline: true })
-    .setFooter({ text: `Rift Leave #${String(request.id).slice(-6)}` });
+    .setFooter({ text: `إجازة Rift #${String(request.id).slice(-6)}` });
   const components = decision ? [] : [new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setCustomId(`leave_ext_approve:${request.id}:${asked.getTime()}`).setLabel(ar ? 'موافقة' : 'Approve').setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId(`leave_ext_reject:${request.id}:${asked.getTime()}`).setLabel(ar ? 'رفض' : 'Reject').setStyle(ButtonStyle.Danger))];
@@ -27,16 +27,16 @@ const extensionCard = (request: LeaveRequestDoc, asked: Date, ar: boolean, decis
 };
 
 export async function requestLeaveExtension(client: Client, request: LeaveRequestDoc, endDate: Date) {
-  if (endDate.getTime() > Date.now() + MAX_AHEAD_MS) throw new Error('That date is too far away. Choose a date within one year.');
+  if (endDate.getTime() > Date.now() + MAX_AHEAD_MS) throw new Error('التاريخ بعيد مرة. اختر تاريخ خلال سنة.');
   // Only the request is stored here. `endDate` itself is not touched.
   const previousCard = { channelId: request.extensionChannelId, messageId: request.extensionMessageId };
   const saved = await claim('leave_requests', request.id, { status: 'approved' }, { extensionEndDate: endDate, extensionRequestedAt: new Date() });
-  if (!saved) throw new Error('This leave is not active.');
+  if (!saved) throw new Error('هذي الإجازة مو فعّالة.');
   // The member changed the date: the older card must not stay clickable, or approving it would approve the new date.
   if (previousCard.channelId && previousCard.messageId) {
     const oldChannel: any = await client.channels.fetch(previousCard.channelId).catch(() => null);
     const oldMessage = oldChannel?.messages ? await oldChannel.messages.fetch(previousCard.messageId).catch(() => null) : null;
-    await oldMessage?.edit({ content: '↪️ Replaced by a newer request from the member.', components: [], allowedMentions: { parse: [] } }).catch(() => undefined);
+    await oldMessage?.edit({ content: '↪️ انستبدل بطلب أحدث من العضو.', components: [], allowedMentions: { parse: [] } }).catch(() => undefined);
   }
   await createLog(request.guildId, 'LEAVE_EXTENSION_REQUESTED', request.userId, request.userId, { leaveId: String(request.id), from: gregorianDate(request.endDate), to: gregorianDate(endDate) });
   const settings = await getSettings(request.guildId).catch(() => null);
@@ -63,18 +63,18 @@ async function tellMember(client: Client, userId: string, payload: any) {
 
 export async function decideLeaveExtension(client: Client, id: number | string, decision: 'approved' | 'rejected', actor: { id: string }, guildId?: string, expectedAt?: number) {
   const request = await findLeave(id);
-  if (!request || (guildId && request.guildId !== guildId)) throw new Error('Leave request not found.');
+  if (!request || (guildId && request.guildId !== guildId)) throw new Error('ما لقينا طلب الإجازة.');
   // The second lock, before anything changes.
   await assertAdministrator(client, request.guildId, actor.id);
   const asked: Date | null = request.extensionEndDate ? new Date(request.extensionEndDate) : null;
-  if (!asked || request.status !== 'approved') throw new Error('There is no extension waiting for a decision.');
+  if (!asked || request.status !== 'approved') throw new Error('ما فيه طلب تمديد ينتظر قرار.');
   // A card is bound to the date it shows: if the member asked again, an older card cannot approve the newer date.
-  if (expectedAt && asked.getTime() !== expectedAt) throw new Error('This card is out of date: the member asked for a different date. Use their newest request.');
+  if (expectedAt && asked.getTime() !== expectedAt) throw new Error('هذي البطاقة قديمة: العضو طلب تاريخ ثاني. استخدم طلبه الأحدث.');
   // Atomic: only the request that was read can be decided, and only once.
   const cleared = { extensionEndDate: null, extensionRequestedAt: null, endReminderAt: null, endReminderTriedAt: null, endReminderCount: 0 };
   const won = await claim('leave_requests', request.id, { status: 'approved', extensionEndDate: asked }, decision === 'approved' ? { endDate: asked, ...cleared } : cleared);
   const done = won ? await findLeave(request.id) : null;
-  if (!done) throw new Error('This request was already decided.');
+  if (!done) throw new Error('هذا الطلب انحسم من قبل.');
   await createLog(request.guildId, decision === 'approved' ? 'LEAVE_EXTENDED' : 'LEAVE_EXTENSION_REJECTED', request.userId, actor.id, { leaveId: String(request.id), endDate: gregorianDate(asked) });
   const ar = (await getSettings(request.guildId).catch(() => null))?.botLanguage === 'ar';
   await editExtensionCard(client, request, asked, ar, { approved: decision === 'approved', by: actor.id });
@@ -87,17 +87,17 @@ export async function decideLeaveExtension(client: Client, id: number | string, 
 /** An administrator moves the end of a running leave directly. No request is needed. */
 export async function adminExtendLeave(client: Client, id: number | string, newEnd: Date, actor: { id: string }, note = '', guildId?: string) {
   const request = await findLeave(id);
-  if (!request || (guildId && request.guildId !== guildId)) throw new Error('Leave request not found.');
+  if (!request || (guildId && request.guildId !== guildId)) throw new Error('ما لقينا طلب الإجازة.');
   await assertAdministrator(client, request.guildId, actor.id);
-  if (request.status !== 'approved') throw new Error('Only a running (approved) leave can be extended.');
-  if (Number.isNaN(newEnd.getTime())) throw new Error('Choose a valid date.');
-  if (newEnd.getTime() <= new Date(request.endDate).getTime()) throw new Error('The new end date must be after the current end date.');
-  if (newEnd.getTime() > Date.now() + MAX_AHEAD_MS) throw new Error('That date is too far away. Choose a date within one year.');
+  if (request.status !== 'approved') throw new Error('ما ينمدد إلا إجازة شغّالة (موافق عليها).');
+  if (Number.isNaN(newEnd.getTime())) throw new Error('اختر تاريخ صحيح.');
+  if (newEnd.getTime() <= new Date(request.endDate).getTime()) throw new Error('التاريخ الجديد لازم يكون بعد تاريخ الانتهاء الحالي.');
+  if (newEnd.getTime() > Date.now() + MAX_AHEAD_MS) throw new Error('التاريخ بعيد مرة. اختر تاريخ خلال سنة.');
   // A leave that already ended still needs a date that has not ended yet, otherwise the member is asked again at once.
-  if (newEnd.getTime() + DAY_MS - 1 < Date.now()) throw new Error('The new end date is already in the past.');
+  if (newEnd.getTime() + DAY_MS - 1 < Date.now()) throw new Error('التاريخ الجديد فات وقته.');
   const won = await claim('leave_requests', request.id, { status: 'approved' }, { endDate: newEnd, decisionNote: note ? note.slice(0, 1000) : request.decisionNote || '', extensionEndDate: null, extensionRequestedAt: null, endReminderAt: null, endReminderTriedAt: null, endReminderCount: 0 });
   const done = won ? await findLeave(request.id) : null;
-  if (!done) throw new Error('This leave is not active.');
+  if (!done) throw new Error('هذي الإجازة مو فعّالة.');
   await createLog(request.guildId, 'LEAVE_EXTENDED', request.userId, actor.id, { leaveId: String(request.id), endDate: gregorianDate(newEnd), byAdministrator: true });
   const ar = (await getSettings(request.guildId).catch(() => null))?.botLanguage === 'ar';
   // If the member had asked for more time, that request is settled by this extension.

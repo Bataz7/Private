@@ -22,7 +22,7 @@ export const studioBot: BotExtension = {
     return true;
   },
   ready: async () => {
-    if (!await studioTableReady().catch(() => true)) console.error('[studio] Embed Studio is off: the studio_messages table is missing. Run supabase/migrations/033_embed_studio.sql in Supabase.');
+    if (!await studioTableReady().catch(() => true)) console.error('[studio] استوديو الرسائل متوقف: جدول studio_messages ناقص. شغّل supabase/migrations/033_embed_studio.sql في Supabase.');
   },
 };
 

@@ -96,7 +96,7 @@ export const DEFAULT_SETTINGS: FormSettings = {
 export function sanitizeForm(input: any): FormDefinition {
   const raw = input && typeof input === 'object' ? input : {};
   const title = text(raw.title, LIMITS.title);
-  if (!title) throw new Error('Give the form a title.');
+  if (!title) throw new Error('اكتب عنوان للنموذج.');
   const rawQuestions = Array.isArray(raw.questions) ? raw.questions.slice(0, LIMITS.questions) : [];
   const seen = new Set<string>();
   const questions: Question[] = [];
@@ -106,10 +106,10 @@ export function sanitizeForm(input: any): FormDefinition {
     if (!ID_RE.test(id) || seen.has(id)) id = newQuestionId();
     seen.add(id);
     const label = text(item?.label, LIMITS.label);
-    if (!label) throw new Error(`Question ${questions.length + 1} needs a title.`);
+    if (!label) throw new Error(`السؤال ${questions.length + 1} يحتاج عنوان.`);
     const choiceType = type === 'choice' || type === 'dropdown' || type === 'checkbox';
     const options = choiceType ? [...new Set((Array.isArray(item?.options) ? item.options : []).map((option: unknown) => text(option, 100)).filter(Boolean))].slice(0, LIMITS.options) as string[] : [];
-    if (choiceType && options.length < 2) throw new Error(`"${label.slice(0, 40)}" needs at least two options.`);
+    if (choiceType && options.length < 2) throw new Error(`"${label.slice(0, 40)}" يحتاج خيارين على الأقل.`);
     let min = optionalNumber(item?.min);
     let max = optionalNumber(item?.max);
     if (type === 'scale') { min = int(min ?? 1, 1, 0, 1); max = int(max ?? 5, 5, 2, 10); }
@@ -141,7 +141,7 @@ export function sanitizeForm(input: any): FormDefinition {
     const values = question.showIf.values.filter(value => allowed.includes(value));
     question.showIf = target && values.length ? { questionId: target.id, values } : null;
   });
-  if (!questions.some(question => question.type !== 'section')) throw new Error('Add at least one question.');
+  if (!questions.some(question => question.type !== 'section')) throw new Error('أضف سؤال واحد على الأقل.');
   const s = raw.settings && typeof raw.settings === 'object' ? raw.settings : {};
   const color = /^#[0-9a-f]{6}$/i.test(String(s.color || '')) ? String(s.color).toLowerCase() : DEFAULT_SETTINGS.color;
   let bannerUrl = text(s.bannerUrl, 500);
@@ -206,9 +206,9 @@ const toLatinDigits = (value: string) => value.replace(/[٠-٩]/g, digit => Stri
 export type Validation = { ok: true; value: unknown } | { ok: false; error: string };
 
 // Validates one raw answer. `empty` answers are allowed for optional questions and come back as null.
-export function validateAnswer(question: Question, raw: unknown, lang: Language = 'ar'): Validation {
-  const ar = lang === 'ar';
-  const fail = (arText: string, enText: string): Validation => ({ ok: false, error: ar ? arText : enText });
+// البوت عربي دائمًا: رسائل التحقق بالعربي مهما كانت اللغة الممرّرة.
+export function validateAnswer(question: Question, raw: unknown, _lang: Language = 'ar'): Validation {
+  const fail = (arText: string, _enText: string): Validation => ({ ok: false, error: arText });
   const isEmpty = raw === undefined || raw === null || (typeof raw === 'string' && !raw.trim()) || (Array.isArray(raw) && !raw.length);
   if (isEmpty) return question.required ? fail('هذا السؤال مطلوب.', 'This question is required.') : { ok: true, value: null };
   switch (question.type) {
@@ -218,27 +218,27 @@ export function validateAnswer(question: Question, raw: unknown, lang: Language 
       const cap = question.type === 'short' ? LIMITS.short : LIMITS.paragraph;
       const value = String(raw).replace(/\r\n/g, '\n').trim();
       const max = Math.min(cap, question.max ?? cap);
-      if (value.length > max) return fail(`الإجابة طويلة جدًا (الحد الأقصى ${max} حرف).`, `Answer is too long (max ${max} characters).`);
-      if (question.min && value.length < question.min) return fail(`الإجابة قصيرة جدًا (الحد الأدنى ${question.min} حرف).`, `Answer is too short (min ${question.min} characters).`);
+      if (value.length > max) return fail(`الإجابة طويلة مرة (الحد الأقصى ${max} حرف).`, `Answer is too long (max ${max} characters).`);
+      if (question.min && value.length < question.min) return fail(`الإجابة قصيرة مرة (الحد الأدنى ${question.min} حرف).`, `Answer is too short (min ${question.min} characters).`);
       return { ok: true, value: question.type === 'short' ? value.replace(/\s*\n\s*/g, ' ') : value };
     }
     case 'number': {
       const value = Number(toLatinDigits(String(raw)).replace(/,/g, '').trim());
-      if (!Number.isFinite(value)) return fail('اكتب رقمًا صحيحًا.', 'Enter a valid number.');
-      if (question.min !== null && value < question.min) return fail(`الرقم يجب أن يكون ${question.min} أو أكثر.`, `Number must be at least ${question.min}.`);
-      if (question.max !== null && value > question.max) return fail(`الرقم يجب أن يكون ${question.max} أو أقل.`, `Number must be at most ${question.max}.`);
+      if (!Number.isFinite(value)) return fail('اكتب رقم صحيح.', 'Enter a valid number.');
+      if (question.min !== null && value < question.min) return fail(`الرقم لازم يكون ${question.min} أو أكثر.`, `Number must be at least ${question.min}.`);
+      if (question.max !== null && value > question.max) return fail(`الرقم لازم يكون ${question.max} أو أقل.`, `Number must be at most ${question.max}.`);
       return { ok: true, value };
     }
     case 'url': {
       const value = String(raw).trim();
       try { const url = new URL(value); if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error(); return { ok: true, value: url.toString().slice(0, 500) }; }
-      catch { return fail('اكتب رابطًا صحيحًا يبدأ بـ https://', 'Enter a valid link starting with https://'); }
+      catch { return fail('اكتب رابط صحيح يبدأ بـ https://', 'Enter a valid link starting with https://'); }
     }
     case 'date': {
       const value = toLatinDigits(String(raw)).trim().replace(/\//g, '-');
       const match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value);
       const date = match ? new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))) : null;
-      if (!match || !date || date.getUTCDate() !== Number(match[3])) return fail('اكتب التاريخ بصيغة YYYY-MM-DD مثل 2026-09-28.', 'Use YYYY-MM-DD, for example 2026-09-28.');
+      if (!match || !date || date.getUTCDate() !== Number(match[3])) return fail('اكتب التاريخ بصيغة سنة-شهر-يوم مثل 2026-09-28.', 'Use YYYY-MM-DD, for example 2026-09-28.');
       return { ok: true, value: date.toISOString().slice(0, 10) };
     }
     case 'choice':
@@ -262,7 +262,7 @@ export function validateAnswer(question: Question, raw: unknown, lang: Language 
     case 'scale': {
       const value = Math.round(Number(toLatinDigits(String(raw))));
       const min = question.min ?? 1; const max = question.max ?? 5;
-      if (!Number.isFinite(value) || value < min || value > max) return fail(`اختر رقمًا من ${min} إلى ${max}.`, `Choose a number from ${min} to ${max}.`);
+      if (!Number.isFinite(value) || value < min || value > max) return fail(`اختر رقم من ${min} إلى ${max}.`, `Choose a number from ${min} to ${max}.`);
       return { ok: true, value };
     }
   }
@@ -281,9 +281,9 @@ export function validateSubmission(questions: Question[], raw: Answers, lang: La
   return { answers, errors, ok: !Object.keys(errors).length };
 }
 
-export function formatAnswer(question: Pick<Question, 'type' | 'max'>, value: unknown, lang: Language = 'ar') {
-  if (value === undefined || value === null || value === '') return lang === 'ar' ? '— لم تتم الإجابة' : '— No answer';
-  if (question.type === 'yesno') return value === 'yes' ? (lang === 'ar' ? 'نعم' : 'Yes') : (lang === 'ar' ? 'لا' : 'No');
+export function formatAnswer(question: Pick<Question, 'type' | 'max'>, value: unknown, _lang: Language = 'ar') {
+  if (value === undefined || value === null || value === '') return '— ما فيه إجابة';
+  if (question.type === 'yesno') return value === 'yes' ? 'نعم' : 'لا';
   if (question.type === 'checkbox' && Array.isArray(value)) return value.map(item => `• ${item}`).join('\n');
   if (question.type === 'scale') return `${value} / ${question.max ?? 5}`;
   return String(value);

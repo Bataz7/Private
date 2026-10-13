@@ -22,7 +22,7 @@ try {
 
 function required(name: string): string {
   const value = process.env[name]?.trim();
-  if (!value) throw new Error(`Missing environment variable: ${name}. Create a .env file from .env.example and fill in the required value.`);
+  if (!value) throw new Error(`متغير البيئة ${name} ناقص. سوّ ملف .env من .env.example وعبّ القيمة المطلوبة.`);
   return value;
 }
 

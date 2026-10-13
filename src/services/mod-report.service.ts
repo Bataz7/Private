@@ -55,15 +55,16 @@ const REPORTS = 'mod_reports';
 const SETTINGS = 'mod_report_settings';
 
 export class ModReportsSetupError extends Error {
-  constructor() { super('Moderation reports are not set up yet. Run supabase/migrations/032_mod_reports.sql in the Supabase SQL Editor.'); }
+  constructor() { super('تقارير الإدارة ما انضبطت للحين. شغّل supabase/migrations/032_mod_reports.sql في محرر SQL في Supabase.'); }
 }
 export const isSetupError = (error: unknown): error is ModReportsSetupError => error instanceof ModReportsSetupError;
 const isMissing = (error: { code?: string; message?: string }) => ['PGRST205', '42P01', 'PGRST202', '42883'].includes(String(error.code)) || /schema cache|does not exist/i.test(String(error.message));
 
+const WHAT_AR: Record<string, string> = { read: 'القراءة', count: 'العد', list: 'القائمة', stats: 'الإحصائيات', history: 'السجل', delete: 'الحذف', insert: 'الحفظ', decision: 'القرار', reopen: 'إعادة الفتح', note: 'الملاحظة', 'settings save': 'حفظ الإعدادات' };
 function check<T>(result: { data: T; error: { code?: string; message: string } | null }, what: string): T {
   if (result.error) {
     if (isMissing(result.error)) throw new ModReportsSetupError();
-    throw new Error(`Mod reports ${what} failed: ${result.error.message}`);
+    throw new Error(`تقارير الإدارة: فشل ${WHAT_AR[what] || what}: ${result.error.message}`);
   }
   return result.data;
 }
@@ -78,7 +79,7 @@ function fromRow(r: any): ModReportDoc {
     status: r.status, reviewedBy: r.reviewed_by || null, reviewedAt: r.reviewed_at ? new Date(r.reviewed_at) : null, pointsApplied: Number(r.points_applied) || 0,
     notes: list(r.notes).map(note => ({ text: String(note?.text || ''), userId: String(note?.userId || ''), name: String(note?.name || ''), createdAt: new Date(note?.createdAt || r.created_at) })),
     reviewChannelId: r.review_channel_id || '', reviewMessageId: r.review_message_id || '',
-    lang: r.lang === 'ar' ? 'ar' : 'en',
+    lang: 'ar',
     createdAt: new Date(r.created_at), updatedAt: new Date(r.updated_at), version: String(r.updated_at),
   };
 }
@@ -88,7 +89,7 @@ function fromRow(r: any): ModReportDoc {
 const SNOWFLAKE = /^\d{15,22}$/;
 const emptyPanel = (): PanelRef => ({ channelId: '', messageId: '' });
 export const DEFAULT_MOD_SETTINGS: ModReportSettings = {
-  enabled: true, language: 'en', color: '#8175f5', reviewChannelId: '', pingRoleId: '', reporterRoleIds: [],
+  enabled: true, language: 'ar', color: '#8175f5', reviewChannelId: '', pingRoleId: '', reporterRoleIds: [],
   actionRoles: { mute: [], kick: [], ban: [] }, requireEvidence: ['ban'], approvePoints: 1, rejectPoints: 0, dmModerator: true,
   panels: { ar: emptyPanel(), en: emptyPanel() },
 };
@@ -101,7 +102,8 @@ export function modSettings(raw: unknown): ModReportSettings {
   const roles = s.actionRoles && typeof s.actionRoles === 'object' ? s.actionRoles : {};
   return {
     enabled: s.enabled !== false,
-    language: s.language === 'ar' ? 'ar' : 'en',
+    // البوت عربي دائمًا.
+    language: 'ar',
     color: /^#[0-9a-f]{6}$/i.test(String(s.color || '')) ? String(s.color).toLowerCase() : DEFAULT_MOD_SETTINGS.color,
     reviewChannelId: SNOWFLAKE.test(String(s.reviewChannelId || '')) ? String(s.reviewChannelId) : '',
     pingRoleId: SNOWFLAKE.test(String(s.pingRoleId || '')) ? String(s.pingRoleId) : '',
@@ -118,7 +120,7 @@ export function modSettings(raw: unknown): ModReportSettings {
 /** Settings of a server. Without the migration this quietly returns the defaults so the panel preview keeps working. */
 export async function getModSettings(guildId: string) {
   const { data, error } = await supabase.from(SETTINGS).select('settings').eq('guild_id', guildId).maybeSingle();
-  if (error && !isMissing(error)) throw new Error(`Mod reports settings failed: ${error.message}`);
+  if (error && !isMissing(error)) throw new Error(`ما قدرنا نقرأ إعدادات تقارير الإدارة: ${error.message}`);
   return modSettings(data?.settings);
 }
 
@@ -147,33 +149,25 @@ const ACTION_META: Record<ModAction, { emoji: string; ar: string; en: string }> 
   unban: { emoji: '🔓', ar: 'فك باند', en: 'Unban' },
   other: { emoji: '📌', ar: 'إجراء آخر', en: 'Other' },
 };
-export const actionLabel = (action: ModAction, lang: ModLanguage) => `${ACTION_META[action].emoji} ${lang === 'ar' ? ACTION_META[action].ar : lang === 'en' ? ACTION_META[action].en : `${ACTION_META[action].en} • ${ACTION_META[action].ar}`}`;
+// البوت عربي دائمًا: التسميات والنصوص ترجع بالعربي مهما كانت اللغة الممرّرة.
+export const actionLabel = (action: ModAction, _lang?: ModLanguage) => `${ACTION_META[action].emoji} ${ACTION_META[action].ar}`;
 export const actionOptions = (lang: ModLanguage) => ACTIONS.map(action => ({ value: action, label: actionLabel(action, lang).slice(0, 100), emoji: ACTION_META[action].emoji }));
-// Picks the Arabic, English or combined string for the configured language.
-export const L = (lang: ModLanguage, ar: string, en: string) => (lang === 'ar' ? ar : lang === 'en' ? en : `${en} • ${ar}`);
+export const L = (_lang: ModLanguage, ar: string, _en: string) => ar;
 export const pad = (n: number) => `#${String(n).padStart(4, '0')}`;
 const hex = (color: string) => parseInt(color.replace('#', ''), 16);
 const COLORS = { pending: 0x8175f5, approved: 0x4fc08d, rejected: 0xe9697b };
 
 // ---- Panel -------------------------------------------------------------------------------------
 
-function panelBlock(lang: PanelLanguage, s: ModReportSettings, guildName: string) {
+function panelBlock(_lang: PanelLanguage, s: ModReportSettings, guildName: string) {
   const roles = (items: string[], fallback: string) => (items.length ? items.map(id => `<@&${id}>`).join(' ') : fallback);
-  if (lang === 'ar') return [
+  return [
     `# 🛡️ ${guildName} • تقارير الإدارة`,
-    'أهلًا بفريق الإدارة! 👋\nعند اتخاذ أي إجراء إداري **يجب عليك توثيقه هنا** ليراجعه الطاقم الأعلى.',
+    'هلا بفريق الإدارة! 👋\nأي إجراء إداري تسويه **لازم توثّقه هنا** عشان تراجعه الإدارة العليا.',
     `### ⚠️ متى تقدّم تقرير\n> 🔇 **ميوت / تايم أوت** — ${roles(s.actionRoles.mute, 'جميع الإداريين')}\n> 👢 **طرد** — ${roles(s.actionRoles.kick, 'الإدارة الرئيسية فما فوق')}\n> 🔨 **باند** — ${roles(s.actionRoles.ban, 'الإدارة العليا والأدمن')}`,
     '### 📝 محتوى التقرير\n**آيدي العضو** · **الإجراء** · **السبب** · **المدة** *(للميوت فقط)* · **الدليل**',
-    '### ✅ مراجعة الطاقم\n> ✅ **مقبول** — الإجراء والتقرير صحيحين.\n> ❌ **مرفوض** — يوجد خطأ أو يحتاج الإجراء لمراجعة.',
-    '-# 💡 لا يمكن تعديل التقرير بعد إرساله. اكتب تقريرك بوضوح ودقة وأمانة.',
-  ];
-  return [
-    `# 🛡️ ${guildName} • Moderation Reports`,
-    'Hey Mods! 👋\nWhenever you take a moderation action, **you must report it** here so the Higher Staff can review it.',
-    `### ⚠️ When to report\n> 🔇 **Mute / Timeout** — ${roles(s.actionRoles.mute, 'All moderators')}\n> 👢 **Kick** — ${roles(s.actionRoles.kick, 'Main mods & higher')}\n> 🔨 **Ban** — ${roles(s.actionRoles.ban, 'Higher mods & administrators')}`,
-    '### 📝 Report format\n**User ID** · **Action** · **Reason** · **Duration** *(mutes only)* · **Evidence**',
-    '### ✅ Staff review\n> ✅ **Approved** — the action and report are correct.\n> ❌ **Rejected** — something is incorrect or the action needs to be reviewed.',
-    '-# 💡 Reports cannot be edited after submitting. Keep every report clear, accurate and honest.',
+    '### ✅ مراجعة الإدارة العليا\n> ✅ **مقبول** — الإجراء والتقرير صحيحين.\n> ❌ **مرفوض** — فيه خطأ أو الإجراء يحتاج مراجعة.',
+    '-# 💡 التقرير ما يتعدّل بعد ما ترسله. اكتب تقريرك بوضوح ودقة وأمانة.',
   ];
 }
 
@@ -181,13 +175,13 @@ export function buildModPanel(s: ModReportSettings, guildName: string, lang: Pan
   const parts: Raw[] = [];
   panelBlock(lang, s, guildName).forEach((line, index) => {
     if (index > 1) parts.push(separator(index === 2));
-    parts.push(text(lang === 'ar' ? rtl(line) : line));
+    parts.push(text(rtl(line)));
   });
   parts.push(separator(true, true));
   // The panel's language travels in the custom id, so the form and the moderator's DM use the same language.
   parts.push(row([
-    button({ id: `mr_open:${lang}`, label: lang === 'ar' ? 'تقديم تقرير' : 'Submit report', style: 'primary', emoji: '📝', disabled: !s.enabled }),
-    button({ id: `mr_mine:${lang}`, label: lang === 'ar' ? 'تقاريري' : 'My reports', style: 'secondary', emoji: '📋' }),
+    button({ id: `mr_open:${lang}`, label: 'تقديم تقرير', style: 'primary', emoji: '📝', disabled: !s.enabled }),
+    button({ id: `mr_mine:${lang}`, label: 'تقاريري', style: 'secondary', emoji: '📋' }),
   ]));
   return { components: [container(parts, hex(s.color))], flags: V2_FLAG, allowedMentions: { parse: [] as never[] } };
 }
@@ -199,7 +193,7 @@ const lines = (value: string, max: number) => String(value || '').split(/\r?\n/)
 
 export function buildReviewCard(report: ModReportDoc, s: ModReportSettings, forDm = false, language?: PanelLanguage) {
   const lang: PanelLanguage = language || s.language;
-  const t = (value: string) => (lang === 'ar' ? rtl(value) : value);
+  const t = (value: string) => rtl(value);
   const status = report.status === 'pending'
     ? `🕒 **${L(lang, 'بانتظار المراجعة', 'Pending review')}**`
     : `${report.status === 'approved' ? '✅' : '❌'} **${report.status === 'approved' ? L(lang, 'مقبول', 'Approved') : L(lang, 'مرفوض', 'Rejected')}** · <@${report.reviewedBy}> ${report.reviewedAt ? ts(report.reviewedAt) : ''}`;
@@ -221,7 +215,7 @@ export function buildReviewCard(report: ModReportDoc, s: ModReportSettings, forD
   if (report.notes.length) parts.push(text(`📝 **${L(lang, 'ملاحظات', 'Notes')}**\n${report.notes.slice(-5).map(note => `> <@${note.userId}> ${ts(note.createdAt)}\n> ${clip(lines(note.text, 4), 200).replace(/\n/g, '\n> ')}`).join('\n')}`));
   parts.push(text(t(`-# ${L(lang, 'أُرسل', 'Submitted')} ${ts(report.createdAt, 'f')} · ${pad(report.number)}`)));
   if (!forDm) {
-    const link = /^https?:\/\//.test(env.dashboardUrl) ? [button({ url: `${env.dashboardUrl}/dashboard/modreports?id=${report.id}`, label: 'Dashboard' })] : [];
+    const link = /^https?:\/\//.test(env.dashboardUrl) ? [button({ url: `${env.dashboardUrl}/dashboard/modreports?id=${report.id}`, label: 'لوحة التحكم' })] : [];
     const note = button({ id: `mr_note:${report.id}`, label: L(lang, 'ملاحظة', 'Note'), emoji: '📝' });
     parts.push(row(report.status === 'pending'
       ? [button({ id: `mr_approve:${report.id}`, label: L(lang, 'قبول', 'Approve'), style: 'success', emoji: '✅' }), button({ id: `mr_reject:${report.id}`, label: L(lang, 'رفض', 'Reject'), style: 'danger', emoji: '✖️' }), note, ...link]
@@ -255,10 +249,10 @@ export function canReviewModReports(member: GuildMember) {
 
 async function assertAdministrator(client: Client, guildId: string, userId: string) {
   const guild = await client.guilds.fetch(guildId).catch(() => null);
-  if (!guild) throw new Error('Server not found.');
+  if (!guild) throw new Error('ما لقينا السيرفر.');
   if (guild.ownerId === userId) return;
   const member = await guild.members.fetch(userId).catch(() => null);
-  if (!member?.permissions.has('Administrator')) throw new Error('Administrator permission is required.');
+  if (!member?.permissions.has('Administrator')) throw new Error('تحتاج صلاحية أدمن.');
 }
 
 // ---- Reads -------------------------------------------------------------------------------------
@@ -342,11 +336,11 @@ export async function createModReport(client: Client, member: GuildMember, input
   const target = await client.users.fetch(input.targetUserId).catch(() => null);
   const flags: string[] = [];
   const allowedRoles = (s.actionRoles as Record<string, string[]>)[input.action] || [];
-  if (allowedRoles.length && !allowedRoles.some(id => member.roles.cache.has(id)) && !member.permissions.has('Administrator')) flags.push(`Moderator's rank is not listed for ${input.action}.`);
-  if (target && target.id === member.id) flags.push('Moderator reported an action on themselves.');
+  if (allowedRoles.length && !allowedRoles.some(id => member.roles.cache.has(id)) && !member.permissions.has('Administrator')) flags.push(`رتبة المشرف مو ضمن الرتب المسموح لها بـ ${ACTION_META[input.action]?.ar || input.action}.`);
+  if (target && target.id === member.id) flags.push('المشرف رفع تقرير على إجراء ضد نفسه.');
   const earlier = await supabase.from(REPORTS).select('id', { count: 'exact', head: true }).eq('guild_id', member.guild.id).eq('target_user_id', input.targetUserId);
   check(earlier, 'count');
-  if (earlier.count) flags.push(`${earlier.count} earlier report(s) on this user.`);
+  if (earlier.count) flags.push(`فيه ${earlier.count} تقرير سابق على هذا العضو.`);
   // The database assigns the number inside the insert (see migration 032), so it is sequential even under load.
   let report = fromRow(check(await supabase.from(REPORTS).insert({
     guild_id: member.guild.id, moderator_id: member.id, moderator_name: member.displayName,
@@ -372,7 +366,7 @@ export async function createModReport(client: Client, member: GuildMember, input
 async function adjustPoints(guildId: string, userId: string, delta: number) {
   if (!delta) return;
   // One atomic update clamped at zero, recorded in the points ledger (so the dashboard shows where the points came from).
-  const change = () => changePoints({ guildId, userId, delta, source: 'modreport', reason: delta > 0 ? 'Mod report approved' : 'Mod report rejected or reopened' });
+  const change = () => changePoints({ guildId, userId, delta, source: 'modreport', reason: delta > 0 ? 'قبول تقرير إداري' : 'رفض تقرير إداري أو إعادة فتحه' });
   if (await change() === null) {
     await ensureStaff(guildId, userId);
     await change();
@@ -381,7 +375,7 @@ async function adjustPoints(guildId: string, userId: string, delta: number) {
 
 export async function decideModReport(client: Client, id: string, decision: 'approved' | 'rejected', reviewer: { id: string; name?: string }, note = '') {
   const existing = await getModReport(id);
-  if (!existing) throw new Error('Report not found.');
+  if (!existing) throw new Error('ما لقينا التقرير.');
   await assertAdministrator(client, existing.guildId, reviewer.id);
   const s = await getModSettings(existing.guildId);
   const delta = decision === 'approved' ? s.approvePoints : -s.rejectPoints;
@@ -390,7 +384,7 @@ export async function decideModReport(client: Client, id: string, decision: 'app
   if (clean) update.notes = [...existing.notes, { text: clean, userId: reviewer.id, name: reviewer.name || '', createdAt: new Date().toISOString() }];
   // Atomic: only a pending report can be decided, so two reviewers cannot both apply points.
   const saved = check(await supabase.from(REPORTS).update(update).eq('id', existing.id).eq('status', 'pending').select('*'), 'decision') as any[];
-  if (!saved.length) throw new Error('This report was already reviewed.');
+  if (!saved.length) throw new Error('هذا التقرير انراجع من قبل.');
   const report = fromRow(saved[0]);
   await adjustPoints(report.guildId, report.moderatorId, delta);
   await refreshCard(client, report);
@@ -400,7 +394,7 @@ export async function decideModReport(client: Client, id: string, decision: 'app
     const dmLang: PanelLanguage = report.lang || s.language;
     const card = buildReviewCard(report, s, true, dmLang);
     const headline = decision === 'approved' ? `✅ ${L(dmLang, 'تم قبول تقريرك', 'Your report was approved')}${delta ? ` · +${delta} ${L(dmLang, 'نقطة', 'pts')}` : ''}` : `❌ ${L(dmLang, 'تم رفض تقريرك', 'Your report was rejected')}${delta ? ` · ${delta} ${L(dmLang, 'نقطة', 'pts')}` : ''}`;
-    card.components.unshift(text(dmLang === 'ar' ? rtl(headline) : headline));
+    card.components.unshift(text(rtl(headline)));
     dmSent = Boolean(user && await user.send(card).then(() => true).catch(() => false));
   }
   await createLog(report.guildId, decision === 'approved' ? 'MOD_REPORT_APPROVED' : 'MOD_REPORT_REJECTED', report.moderatorId, reviewer.id, { reportId: report.id, number: report.number }).catch(() => undefined);
@@ -409,10 +403,10 @@ export async function decideModReport(client: Client, id: string, decision: 'app
 
 export async function reopenModReport(client: Client, id: string, actorId: string) {
   const existing = await getModReport(id);
-  if (!existing || existing.status === 'pending') throw new Error('This report is already pending.');
+  if (!existing || existing.status === 'pending') throw new Error('هذا التقرير أصلًا ينتظر المراجعة.');
   await assertAdministrator(client, existing.guildId, actorId);
   const saved = check(await supabase.from(REPORTS).update({ status: 'pending', reviewed_by: null, reviewed_at: null, points_applied: 0 }).eq('id', existing.id).eq('status', existing.status).select('*'), 'reopen') as any[];
-  if (!saved.length) throw new Error('This report changed, refresh and try again.');
+  if (!saved.length) throw new Error('التقرير تغيّر، حدّث الصفحة وجرّب مرة ثانية.');
   const report = fromRow(saved[0]);
   await adjustPoints(report.guildId, report.moderatorId, -existing.pointsApplied);
   await refreshCard(client, report);
@@ -422,23 +416,23 @@ export async function reopenModReport(client: Client, id: string, actorId: strin
 
 export async function addModReportNote(client: Client, id: string, author: { id: string; name?: string }, note: string) {
   const clean = note.trim().slice(0, 1000);
-  if (!clean) throw new Error('Write a note first.');
+  if (!clean) throw new Error('اكتب الملاحظة أول.');
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const target = await getModReport(id);
-    if (!target) throw new Error('Report not found.');
+    if (!target) throw new Error('ما لقينا التقرير.');
     await assertAdministrator(client, target.guildId, author.id);
     const notes = [...target.notes, { text: clean, userId: author.id, name: author.name || '', createdAt: new Date().toISOString() }];
     // Only writes when nobody changed the report in the meantime, otherwise reads it again and retries.
     const saved = check(await supabase.from(REPORTS).update({ notes }).eq('id', target.id).eq('updated_at', target.version).select('*'), 'note') as any[];
     if (saved.length) { const report = fromRow(saved[0]); await refreshCard(client, report); return report; }
   }
-  throw new Error('The report is being edited, try again.');
+  throw new Error('التقرير ينعدّل الحين، جرّب مرة ثانية.');
 }
 
 export async function publishModPanel(client: Client, guildId: string, channelId: string, lang: PanelLanguage) {
   const s = await getModSettings(guildId);
   const channel: any = await client.channels.fetch(channelId).catch(() => null);
-  if (!channel?.isTextBased?.() || !('send' in channel) || channel.guildId !== guildId) throw new Error('Choose a text channel in this server.');
+  if (!channel?.isTextBased?.() || !('send' in channel) || channel.guildId !== guildId) throw new Error('اختر روم كتابي في هذا السيرفر.');
   const payload = buildModPanel(s, channel.guild?.name || 'Rift', lang);
   const current = s.panels[lang];
   if (current.messageId && current.channelId === channelId) {

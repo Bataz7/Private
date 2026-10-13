@@ -12,7 +12,7 @@ export function buildTemplate(key: string): FormDefinition {
   const arabic = { ...DEFAULT_SETTINGS, language: 'ar' as const };
   const english = { ...DEFAULT_SETTINGS, language: 'en' as const };
   if (key === 'blank') {
-    return { title: 'Untitled application', description: '', open: false, settings: english, questions: [q({ type: 'short', label: 'Untitled question' })] };
+    return { title: 'تقديم بدون عنوان', description: '', open: false, settings: arabic, questions: [q({ type: 'short', label: 'سؤال بدون عنوان' })] };
   }
   if (key === 'support-en') {
     const helped = q({ type: 'yesno', label: 'Have you worked on a support team before?' });

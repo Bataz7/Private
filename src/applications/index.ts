@@ -4,7 +4,7 @@ import { extensionTimer } from '../extensions/index.js';
 import { applicationsReady, ApplicationsSetupError } from '../services/application.service.js';
 import { expireApplications, handleApplicationButton, handleApplicationMessage, handleApplicationModal, handleApplicationSelect } from './dm-flow.js';
 
-const SETUP_HINT = 'Applications: the database tables are missing. Open the Supabase SQL editor and run supabase/migrations/031_applications.sql, then restart the bot.';
+const SETUP_HINT = 'التقديمات: جداول قاعدة البيانات ناقصة. افتح محرر SQL في Supabase وشغّل supabase/migrations/031_applications.sql، وبعدين أعد تشغيل البوت.';
 let warned = false;
 function warnOnce() { if (warned) return; warned = true; console.error(SETUP_HINT); }
 
@@ -17,7 +17,7 @@ async function guarded(interaction: AnyInteraction, run: () => Promise<unknown>)
   } catch (error) {
     if (!(error instanceof ApplicationsSetupError)) throw error;
     warnOnce();
-    const payload = { content: '⚠️ Applications are not ready yet. Ask an administrator to finish the database setup.', flags: 64 as const };
+    const payload = { content: '⚠️ التقديمات مو جاهزة للحين. اطلب من أحد الأدمن يكمّل إعداد قاعدة البيانات.', flags: 64 as const };
     if (interaction.deferred || interaction.replied) await interaction.followUp(payload).catch(() => undefined);
     else await interaction.reply(payload).catch(() => undefined);
   }

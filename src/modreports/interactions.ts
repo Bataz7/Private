@@ -34,27 +34,27 @@ export function reportModal(lang: PanelLanguage, draft?: Draft) {
 }
 
 async function openForm(i: ButtonInteraction, useDraft: boolean, requested?: string) {
-  if (!i.inCachedGuild()) return i.reply({ content: 'Server only.', ...ephemeral });
+  if (!i.inCachedGuild()) return i.reply({ content: 'هذا داخل السيرفر فقط.', ...ephemeral });
   const s = await getModSettings(i.guild.id);
   const lang = langOf(requested, s.language);
-  if (!s.enabled) return i.reply({ content: L(lang, 'نظام التقارير متوقف حاليًا.', 'Moderation reports are turned off.'), ...ephemeral });
+  if (!s.enabled) return i.reply({ content: L(lang, 'نظام التقارير موقّف حاليًا.', 'Moderation reports are turned off.'), ...ephemeral });
   if (!await canReport(i.member, s)) return i.reply({ content: L(lang, 'هذا متاح للإدارة فقط.', 'Only staff can submit moderation reports.'), ...ephemeral });
   const draft = drafts.get(i.user.id);
   return i.showModal(reportModal(lang, useDraft && draft && Date.now() - draft.at < DRAFT_MS ? draft : undefined));
 }
 
 async function myReports(i: ButtonInteraction, requested?: string) {
-  if (!i.inCachedGuild()) return i.reply({ content: 'Server only.', ...ephemeral });
+  if (!i.inCachedGuild()) return i.reply({ content: 'هذا داخل السيرفر فقط.', ...ephemeral });
   const s = await getModSettings(i.guild.id);
   const lang = langOf(requested, s.language);
   const summary = await moderatorSummary(i.guild.id, i.user.id);
   const icon = { pending: '🕒', approved: '✅', rejected: '❌' } as const;
-  const listing = summary.rows.length ? summary.rows.map(report => `${icon[report.status]} **${pad(report.number)}** · ${actionLabel(report.action, lang)} · <@${report.targetUserId}> · ${ts(report.createdAt)}`).join('\n') : L(lang, 'لا توجد تقارير بعد.', 'No reports yet.');
+  const listing = summary.rows.length ? summary.rows.map(report => `${icon[report.status]} **${pad(report.number)}** · ${actionLabel(report.action, lang)} · <@${report.targetUserId}> · ${ts(report.createdAt)}`).join('\n') : L(lang, 'ما فيه تقارير للحين.', 'No reports yet.');
   return i.reply({ content: `### 📋 ${L(lang, 'تقاريري', 'My reports')}\n✅ ${summary.approved} · ❌ ${summary.rejected} · 🕒 ${summary.pending}\n\n${listing}`, allowedMentions: { parse: [] }, ...ephemeral });
 }
 
 async function submit(i: ModalSubmitInteraction, requested?: string) {
-  if (!i.inCachedGuild()) return i.reply({ content: 'Server only.', ...ephemeral });
+  if (!i.inCachedGuild()) return i.reply({ content: 'هذا داخل السيرفر فقط.', ...ephemeral });
   const s = await getModSettings(i.guild.id);
   const lang = langOf(requested, s.language);
   if (!await canReport(i.member, s)) return i.reply({ content: L(lang, 'هذا متاح للإدارة فقط.', 'Only staff can submit moderation reports.'), ...ephemeral });
@@ -76,11 +76,11 @@ async function submit(i: ModalSubmitInteraction, requested?: string) {
   const report = await createModReport(i.client, i.member, { targetUserId, action: draft.action as ModAction, reason: draft.reason, duration: draft.duration, evidence: draft.evidence, lang });
   drafts.delete(i.user.id);
   const jump = report.reviewChannelId && report.reviewMessageId ? `\nhttps://discord.com/channels/${i.guild.id}/${report.reviewChannelId}/${report.reviewMessageId}` : '';
-  return i.editReply({ content: `✅ ${L(lang, 'تم إرسال التقرير', 'Report submitted')} **${pad(report.number)}** · ${actionLabel(report.action, lang)} · <@${targetUserId}>${report.reviewMessageId ? '' : `\n⚠️ ${L(lang, 'لم يتم تحديد روم المراجعة، أبلغ الإدارة.', 'No review channel is set, tell an administrator.')}`}${jump}`, allowedMentions: { parse: [] } });
+  return i.editReply({ content: `✅ ${L(lang, 'تم إرسال التقرير', 'Report submitted')} **${pad(report.number)}** · ${actionLabel(report.action, lang)} · <@${targetUserId}>${report.reviewMessageId ? '' : `\n⚠️ ${L(lang, 'روم المراجعة مو محدد، بلّغ الإدارة.', 'No review channel is set, tell an administrator.')}`}${jump}`, allowedMentions: { parse: [] } });
 }
 
 async function reviewer(i: ButtonInteraction | ModalSubmitInteraction) {
-  if (!i.inCachedGuild()) { await i.reply({ content: 'Server only.', ...ephemeral }); return null; }
+  if (!i.inCachedGuild()) { await i.reply({ content: 'هذا داخل السيرفر فقط.', ...ephemeral }); return null; }
   const s = await getModSettings(i.guild.id);
   if (!canReviewModReports(i.member)) { await i.reply({ content: L(s.language, 'هذا الإجراء للإدارة العليا فقط.', 'Only administrators can review moderation reports.'), ...ephemeral }); return null; }
   return s;
@@ -88,7 +88,7 @@ async function reviewer(i: ButtonInteraction | ModalSubmitInteraction) {
 
 export function noteModal(id: string, lang: ModLanguage, kind: 'note' | 'reject') {
   return new ModalBuilder().setCustomId(`${kind === 'note' ? 'mr_notemodal' : 'mr_rejectmodal'}:${id}`).setTitle((kind === 'note' ? L(lang, 'إضافة ملاحظة', 'Add a note') : L(lang, 'رفض التقرير', 'Reject report')).slice(0, 45)).addLabelComponents(
-    new LabelBuilder().setLabel((kind === 'note' ? L(lang, 'الملاحظة', 'Note') : L(lang, 'السبب', 'Reason')).slice(0, 45)).setDescription(kind === 'reject' ? L(lang, 'يُرسل للمشرف مع النتيجة', 'Sent to the moderator with the result').slice(0, 100) : L(lang, 'تظهر في بطاقة التقرير', 'Shown on the report card').slice(0, 100))
+    new LabelBuilder().setLabel((kind === 'note' ? L(lang, 'الملاحظة', 'Note') : L(lang, 'السبب', 'Reason')).slice(0, 45)).setDescription(kind === 'reject' ? L(lang, 'ينرسل للمشرف مع النتيجة', 'Sent to the moderator with the result').slice(0, 100) : L(lang, 'تظهر في بطاقة التقرير', 'Shown on the report card').slice(0, 100))
       .setTextInputComponent(new TextInputBuilder().setCustomId('note').setStyle(TextInputStyle.Paragraph).setRequired(kind === 'note').setMaxLength(1000)),
   );
 }
@@ -100,16 +100,16 @@ async function onButton(i: ButtonInteraction) {
   if (action === 'mr_mine') return myReports(i, id);
   const s = await reviewer(i); if (!s) return;
   const report = await getModReport(id);
-  if (!report || report.guildId !== i.guildId) return i.reply({ content: 'Report not found.', ...ephemeral });
+  if (!report || report.guildId !== i.guildId) return i.reply({ content: 'ما لقينا التقرير.', ...ephemeral });
   if (action === 'mr_note') return i.showModal(noteModal(id, s.language, 'note'));
-  if (report.moderatorId === i.user.id && i.guild?.ownerId !== i.user.id) return i.reply({ content: L(s.language, 'لا يمكنك مراجعة تقريرك.', 'You cannot review your own report.'), ...ephemeral });
-  if (action === 'mr_reject') { if (report.status !== 'pending') return i.reply({ content: L(s.language, 'تمت مراجعة هذا التقرير.', 'This report was already reviewed.'), ...ephemeral }); return i.showModal(noteModal(id, s.language, 'reject')); }
+  if (report.moderatorId === i.user.id && i.guild?.ownerId !== i.user.id) return i.reply({ content: L(s.language, 'ما تقدر تراجع تقريرك بنفسك.', 'You cannot review your own report.'), ...ephemeral });
+  if (action === 'mr_reject') { if (report.status !== 'pending') return i.reply({ content: L(s.language, 'هذا التقرير انراجع من قبل.', 'This report was already reviewed.'), ...ephemeral }); return i.showModal(noteModal(id, s.language, 'reject')); }
   await i.deferReply(ephemeral);
   try {
     if (action === 'mr_approve') { const { dmSent } = await decideModReport(i.client, id, 'approved', { id: i.user.id, name: i.user.username }); return i.editReply(`✅ ${L(s.language, 'تم القبول', 'Approved')}${dmSent ? '' : ` · ${L(s.language, 'خاص المشرف مغلق', 'moderator DMs are closed')}`}`); }
     if (action === 'mr_reopen') { await reopenModReport(i.client, id, i.user.id); return i.editReply(`↩️ ${L(s.language, 'أُعيد فتح التقرير', 'Report reopened')}`); }
-  } catch (error) { return i.editReply(`⚠️ ${error instanceof Error ? error.message : 'Failed.'}`); }
-  return i.editReply('Unknown action.');
+  } catch (error) { return i.editReply(`⚠️ ${error instanceof Error ? error.message : 'صار خطأ.'}`); }
+  return i.editReply('إجراء غير معروف.');
 }
 
 async function onModal(i: ModalSubmitInteraction) {
@@ -118,15 +118,15 @@ async function onModal(i: ModalSubmitInteraction) {
   const s = await reviewer(i); if (!s) return;
   // The report must belong to this server; a crafted modal id must not reach another server's report.
   const report = await getModReport(id);
-  if (!report || report.guildId !== i.guildId) return i.reply({ content: 'Report not found.', ...ephemeral });
-  if (action === 'mr_rejectmodal' && report.moderatorId === i.user.id && i.guild?.ownerId !== i.user.id) return i.reply({ content: L(s.language, 'لا يمكنك مراجعة تقريرك.', 'You cannot review your own report.'), ...ephemeral });
+  if (!report || report.guildId !== i.guildId) return i.reply({ content: 'ما لقينا التقرير.', ...ephemeral });
+  if (action === 'mr_rejectmodal' && report.moderatorId === i.user.id && i.guild?.ownerId !== i.user.id) return i.reply({ content: L(s.language, 'ما تقدر تراجع تقريرك بنفسك.', 'You cannot review your own report.'), ...ephemeral });
   const note = i.fields.getTextInputValue('note');
   await i.deferReply(ephemeral);
   try {
     if (action === 'mr_notemodal') { await addModReportNote(i.client, id, { id: i.user.id, name: i.user.username }, note); return i.editReply(`📝 ${L(s.language, 'أُضيفت الملاحظة', 'Note added')}`); }
     if (action === 'mr_rejectmodal') { const { dmSent } = await decideModReport(i.client, id, 'rejected', { id: i.user.id, name: i.user.username }, note); return i.editReply(`❌ ${L(s.language, 'تم الرفض', 'Rejected')}${dmSent ? '' : ` · ${L(s.language, 'خاص المشرف مغلق', 'moderator DMs are closed')}`}`); }
-  } catch (error) { return i.editReply(`⚠️ ${error instanceof Error ? error.message : 'Failed.'}`); }
-  return i.editReply('Unknown action.');
+  } catch (error) { return i.editReply(`⚠️ ${error instanceof Error ? error.message : 'صار خطأ.'}`); }
+  return i.editReply('إجراء غير معروف.');
 }
 
 export const handleModReportButton = onButton;

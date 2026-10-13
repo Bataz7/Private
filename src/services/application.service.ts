@@ -8,6 +8,7 @@ import { getSettings } from './settings.service.js';
 import { ensureStaff } from './shift.service.js';
 import { createLog } from './log.service.js';
 import { isAdministrator } from '../utils/permissions.js';
+import { rtl } from '../utils/v2.js';
 import {
   applicationFromRow, applicationRow, formFromRow, formRow, type ApplicationDoc, type ApplicationFormDoc,
 } from '../models/Application.js';
@@ -18,7 +19,8 @@ const COLORS = { accepted: 0x4fc08d, rejected: 0xe9697b, neutral: 0x8175f5 };
 export const DECIDED = ['pending', 'accepted', 'rejected'] as const;
 
 export const isUuid = (value: unknown) => UUID.test(String(value || ''));
-export const formSettings = (form: Pick<ApplicationFormDoc, 'settings'> | null | undefined): FormSettings => ({ ...DEFAULT_SETTINGS, ...(form?.settings || {}) });
+// البوت عربي دائمًا: لغة النموذج تنقرأ 'ar' مهما كان المحفوظ.
+export const formSettings = (form: Pick<ApplicationFormDoc, 'settings'> | null | undefined): FormSettings => ({ ...DEFAULT_SETTINGS, ...(form?.settings || {}), language: 'ar' });
 export const colorOf = (settings: FormSettings) => parseInt(settings.color.replace('#', ''), 16) || COLORS.neutral;
 export const applyUrl = (formId: string) => `${env.dashboardUrl}/apply/${formId}`;
 export const reviewUrl = (applicationId: string) => `${env.dashboardUrl}/dashboard/applications?id=${applicationId}`;
@@ -30,13 +32,13 @@ const fill = (template: string, vars: Record<string, string>) => template.replac
 
 /** Thrown when the applications tables do not exist yet (migration 031 has not been run). */
 export class ApplicationsSetupError extends Error {
-  constructor() { super('Applications are not set up yet: run supabase/migrations/031_applications.sql in the Supabase SQL editor.'); this.name = 'ApplicationsSetupError'; }
+  constructor() { super('التقديمات ما انضبطت للحين: شغّل supabase/migrations/031_applications.sql في محرر SQL في Supabase.'); this.name = 'ApplicationsSetupError'; }
 }
 export const isUniqueViolation = (error: unknown) => (error as { code?: string } | null)?.code === '23505';
 
 function fail(what: string, error: { message: string; code?: string }): never {
   if (error.code === 'PGRST205' || error.code === '42P01' || /schema cache|does not exist/i.test(error.message)) throw new ApplicationsSetupError();
-  throw Object.assign(new Error(`Supabase ${what} failed: ${error.message}`), { code: error.code });
+  throw Object.assign(new Error(`خطأ في قاعدة البيانات (${what}): ${error.message}`), { code: error.code });
 }
 
 export async function applicationsReady() {
@@ -155,7 +157,7 @@ async function mutateApplication(id: string, change: (app: ApplicationDoc) => Pa
     if (saveError) fail('application update', saveError);
     if (saved) return applicationFromRow(saved);
   }
-  throw new Error('Could not save because the application was changed at the same time. Try again.');
+  throw new Error('ما قدرنا نحفظ لأن التقديم تعدّل بنفس الوقت. جرّب مرة ثانية.');
 }
 
 export async function formCounts(guildId: string) {
@@ -182,7 +184,7 @@ export type Eligibility = { ok: true; member: GuildMember; guild: Guild } | { ok
 export async function checkEligibility(client: Client, form: ApplicationFormDoc, userId: string, source: 'dm' | 'web'): Promise<Eligibility> {
   const s = formSettings(form);
   const lang = s.language;
-  const when = (ms: number) => (source === 'dm' ? `<t:${Math.ceil(ms / 1000)}:R>` : `${lang === 'ar' ? 'بتاريخ' : 'on'} ${new Date(ms).toISOString().slice(0, 10)}`);
+  const when = (ms: number) => (source === 'dm' ? `<t:${Math.ceil(ms / 1000)}:R>` : `بتاريخ ${new Date(ms).toISOString().slice(0, 10)}`);
   const no = (reason: string): Eligibility => ({ ok: false, reason });
   if (!form.open) return no(t(lang, 'eFormClosed'));
   if (s.closesAt && new Date(s.closesAt).getTime() < Date.now()) return no(t(lang, 'eFormExpired'));
@@ -223,43 +225,43 @@ function answerFields(questions: Question[], answers: Record<string, unknown>, b
 }
 
 export function transcript(app: ApplicationDoc) {
-  const lang = app.meta?.lang || 'ar';
-  const lines = [`${app.formTitle}`, `Applicant: ${app.displayName || app.username} (@${app.username}) — ${app.userId}`, `Source: ${app.source === 'web' ? 'Website' : 'Discord DM'}`, `Submitted: ${app.submittedAt ? new Date(app.submittedAt).toISOString() : '-'}`, `Application: #${shortId(app.id)}`, ''];
+  const lang: Language = 'ar';
+  const lines = [`${app.formTitle}`, `المتقدم: ${app.displayName || app.username} (@${app.username}) — ${app.userId}`, `المصدر: ${app.source === 'web' ? 'الموقع' : 'خاص ديسكورد'}`, `وقت الإرسال: ${app.submittedAt ? new Date(app.submittedAt).toISOString() : '-'}`, `التقديم: #${shortId(app.id)}`, ''];
   visibleQuestions(app.questions, app.answers).forEach((question, index) => lines.push(`${index + 1}. ${question.label}`, formatAnswer(question, app.answers[question.id], lang), ''));
   return lines.join('\n');
 }
 
 export function buildReviewPayload(app: ApplicationDoc, form: ApplicationFormDoc | null) {
   const s = formSettings(form);
-  const lang = app.meta?.lang || s.language;
+  const lang: Language = 'ar';
   const up = app.votes.filter(vote => vote.value === 'up').length;
   const down = app.votes.filter(vote => vote.value === 'down').length;
   const color = app.status === 'accepted' ? COLORS.accepted : app.status === 'rejected' ? COLORS.rejected : colorOf(s);
   const header = [
-    `**Applicant:** <@${app.userId}> · \`${app.userId}\``,
-    app.accountCreatedAt ? `**Account created:** <t:${Math.floor(new Date(app.accountCreatedAt).getTime() / 1000)}:R>` : '',
-    app.memberJoinedAt ? `**Joined server:** <t:${Math.floor(new Date(app.memberJoinedAt).getTime() / 1000)}:R>` : '',
-    `**Source:** ${app.source === 'web' ? '🌐 Website' : '💬 Discord DM'}`,
-    app.submittedAt ? `**Submitted:** <t:${Math.floor(new Date(app.submittedAt).getTime() / 1000)}:f>` : '',
+    `**المتقدم:** <@${app.userId}> · \`${app.userId}\``,
+    app.accountCreatedAt ? `**إنشاء الحساب:** <t:${Math.floor(new Date(app.accountCreatedAt).getTime() / 1000)}:R>` : '',
+    app.memberJoinedAt ? `**دخل السيرفر:** <t:${Math.floor(new Date(app.memberJoinedAt).getTime() / 1000)}:R>` : '',
+    `**المصدر:** ${app.source === 'web' ? '🌐 الموقع' : '💬 خاص ديسكورد'}`,
+    app.submittedAt ? `**وقت الإرسال:** <t:${Math.floor(new Date(app.submittedAt).getTime() / 1000)}:f>` : '',
   ].filter(Boolean).join('\n');
   const decision = app.status === 'accepted' || app.status === 'rejected'
-    ? { name: app.status === 'accepted' ? '✅ Accepted' : '❌ Rejected', value: clip(`By <@${app.reviewedBy}>${app.reviewedAt ? ` · <t:${Math.floor(new Date(app.reviewedAt).getTime() / 1000)}:R>` : ''}${app.decisionReason ? `\n> ${app.decisionReason}` : ''}`, 1024) }
+    ? { name: app.status === 'accepted' ? '✅ مقبول' : '❌ مرفوض', value: clip(`بواسطة <@${app.reviewedBy}>${app.reviewedAt ? ` · <t:${Math.floor(new Date(app.reviewedAt).getTime() / 1000)}:R>` : ''}${app.decisionReason ? `\n> ${app.decisionReason}` : ''}`, 1024) }
     : null;
   const fields = answerFields(app.questions, app.answers, 5000 - header.length - (decision?.value.length || 0), lang);
   if (decision) fields.unshift(decision);
   const embeds: EmbedBuilder[] = [];
   for (let index = 0; index < Math.max(1, fields.length); index += 25) {
     const embed = new EmbedBuilder().setColor(color).addFields(fields.slice(index, index + 25));
-    if (index === 0) embed.setAuthor({ name: clip(`${app.displayName || app.username} (@${app.username})`, 256), iconURL: app.avatar || undefined }).setTitle(clip(`📝 ${app.formTitle}`, 256)).setDescription(header);
+    if (index === 0) embed.setAuthor({ name: clip(`${app.displayName || app.username} (@${app.username})`, 256), iconURL: app.avatar || undefined }).setTitle(clip(`📝 ${app.formTitle}`, 256)).setDescription(rtl(header));
     embeds.push(embed);
   }
-  embeds.at(-1)!.setFooter({ text: `Application #${shortId(app.id)} · 👍 ${up} · 👎 ${down}` }).setTimestamp(app.submittedAt ? new Date(app.submittedAt) : new Date());
-  const link = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Open in dashboard').setURL(reviewUrl(app.id));
+  embeds.at(-1)!.setFooter({ text: `تقديم #${shortId(app.id)} · 👍 ${up} · 👎 ${down}` }).setTimestamp(app.submittedAt ? new Date(app.submittedAt) : new Date());
+  const link = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('افتح في لوحة التحكم').setURL(reviewUrl(app.id));
   const components = app.status === 'pending'
     ? [
       new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder().setCustomId(`app_accept:${app.id}`).setLabel('Accept').setEmoji('✅').setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId(`app_reject:${app.id}`).setLabel('Reject').setEmoji('✖️').setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId(`app_accept:${app.id}`).setLabel('قبول').setEmoji('✅').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`app_reject:${app.id}`).setLabel('رفض').setEmoji('✖️').setStyle(ButtonStyle.Danger),
         new ButtonBuilder().setCustomId(`app_vote:${app.id}:up`).setLabel(String(up)).setEmoji('👍').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId(`app_vote:${app.id}:down`).setLabel(String(down)).setEmoji('👎').setStyle(ButtonStyle.Secondary),
         link,
@@ -288,9 +290,9 @@ export async function announceApplication(client: Client, app: ApplicationDoc, f
   const channel: any = channelId ? await client.channels.fetch(channelId).catch(() => null) : null;
   if (!channel?.isTextBased?.() || !('send' in channel) || channel.guildId !== app.guildId) return null;
   const payload = buildReviewPayload(app, form);
-  const file = new AttachmentBuilder(Buffer.from(transcript(app), 'utf8'), { name: `application-${shortId(app.id)}.txt` });
+  const file = new AttachmentBuilder(new TextEncoder().encode(transcript(app)), { name: `application-${shortId(app.id)}.txt` });
   const message = await channel.send({
-    content: s.pingRoleId ? `<@&${s.pingRoleId}> New application from <@${app.userId}>` : `New application from <@${app.userId}>`,
+    content: s.pingRoleId ? `<@&${s.pingRoleId}> تقديم جديد من <@${app.userId}>` : `تقديم جديد من <@${app.userId}>`,
     allowedMentions: { roles: s.pingRoleId ? [s.pingRoleId] : [], users: [] },
     ...payload, files: [file],
   }).catch((error: unknown) => { console.error('Could not post application for review:', error); return null; });
@@ -346,37 +348,37 @@ const isDangerousRole = (role: Role, staffRoleId?: string | null) =>
 async function assertAdministrator(client: Client, guildId: string, userId: string) {
   const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
   const member = guild ? await guild.members.fetch(userId).catch(() => null) : null;
-  if (!member || !canDecide(member)) throw new Error('Only the server owner and Administrators can accept or reject applications.');
+  if (!member || !canDecide(member)) throw new Error('بس صاحب السيرفر والأدمن يقدرون يقبلون أو يرفضون التقديمات.');
 }
 
 export async function decideApplication(client: Client, id: string, decision: 'accepted' | 'rejected', reviewer: { id: string; name?: string }, reason = '') {
   // The second lock: checked here, before anything changes, whichever button or route called this.
   const existing = await getApplication(id);
-  if (!existing) throw new Error('Application not found.');
+  if (!existing) throw new Error('ما لقينا التقديم.');
   await assertAdministrator(client, existing.guildId, reviewer.id);
   const cleanReason = String(reason || '').trim().slice(0, 1000);
   // The status guard makes the decision atomic: two reviewers clicking at once cannot both win.
   const app = await patchApplication(id, { status: decision, reviewedBy: reviewer.id, reviewedAt: new Date(), decisionReason: cleanReason }, { status: 'pending' });
-  if (!app) throw new Error('This application was already reviewed.');
+  if (!app) throw new Error('هذا التقديم انراجع من قبل.');
   const form = await getForm(app.formId);
   const s = formSettings(form);
-  const lang = app.meta?.lang || s.language;
+  const lang: Language = 'ar';
   const warnings: string[] = [];
   const grantedRoleIds: string[] = [];
   const guild = await client.guilds.fetch(app.guildId).catch(() => null);
   const member = guild ? await guild.members.fetch(app.userId).catch(() => null) : null;
-  if (!member) warnings.push('The applicant is no longer in the server, so roles were not changed.');
+  if (!member) warnings.push('المتقدم ما عاد في السيرفر، فما تغيّرت الرتب.');
   if (decision === 'accepted' && member && guild) {
     const guildSettings = await getSettings(guild.id).catch(() => null);
     const staffRoleId = guildSettings?.staffRoleId || null;
     const add = [...new Set([...s.acceptRoleIds, ...(s.addAsStaff && staffRoleId ? [staffRoleId] : [])])];
     for (const roleId of add) {
       const role = guild.roles.cache.get(roleId);
-      if (role && isDangerousRole(role, staffRoleId)) { warnings.push(`@${role.name} has admin or moderator permissions, so it is never given by an application.`); continue; }
-      await member.roles.add(roleId, `Application #${shortId(app.id)} accepted`).then(() => { grantedRoleIds.push(roleId); }, () => warnings.push(`Could not add @${role?.name || roleId}. Move the bot role above it.`));
+      if (role && isDangerousRole(role, staffRoleId)) { warnings.push(`@${role.name} فيها صلاحيات أدمن أو إشراف، فما تنعطى عن طريق التقديم أبد.`); continue; }
+      await member.roles.add(roleId, `تم قبول التقديم #${shortId(app.id)}`).then(() => { grantedRoleIds.push(roleId); }, () => warnings.push(`ما قدرنا نعطي @${role?.name || roleId}. ارفع رتبة البوت فوقها.`));
     }
-    for (const roleId of s.removeRoleIds) if (member.roles.cache.has(roleId)) await member.roles.remove(roleId, `Application #${shortId(app.id)} accepted`).catch(() => warnings.push(`Could not remove @${guild.roles.cache.get(roleId)?.name || roleId}.`));
-    if (s.addAsStaff) await ensureStaff(guild.id, member.id).catch(error => warnings.push(`Staff profile was not created: ${error instanceof Error ? error.message : error}`));
+    for (const roleId of s.removeRoleIds) if (member.roles.cache.has(roleId)) await member.roles.remove(roleId, `تم قبول التقديم #${shortId(app.id)}`).catch(() => warnings.push(`ما قدرنا نشيل @${guild.roles.cache.get(roleId)?.name || roleId}.`));
+    if (s.addAsStaff) await ensureStaff(guild.id, member.id).catch(error => warnings.push(`ما انسوى ملف الستاف: ${error instanceof Error ? error.message : error}`));
   }
   const vars = { user: `<@${app.userId}>`, server: guild?.name || app.meta?.guildName || '', form: app.formTitle };
   let dmSent = false;
@@ -387,13 +389,13 @@ export async function decideApplication(client: Client, id: string, decision: 'a
       ? acceptedEmbed(input, { roleIds: grantedRoleIds.slice(0, 10) })
       : rejectedEmbed(input, { reason: cleanReason && s.shareRejectReason ? cleanReason : '', retryAt: s.cooldownDays ? new Date(Date.now() + s.cooldownDays * DAY) : null });
     dmSent = await member.send({ embeds: [embed] }).then(() => true).catch(() => false);
-    if (!dmSent) warnings.push('The applicant has DMs closed, so they were not notified.');
+    if (!dmSent) warnings.push('المتقدم قافل الخاص، فما وصله إشعار.');
   }
   await refreshReviewMessage(client, app);
   if (app.reviewThreadId) {
     const thread: any = await client.channels.fetch(app.reviewThreadId).catch(() => null);
     if (thread?.send) {
-      await thread.send({ content: `${decision === 'accepted' ? '✅ Accepted' : '❌ Rejected'} by <@${reviewer.id}>${cleanReason ? `: ${clip(cleanReason, 1500)}` : ''}`, allowedMentions: { parse: [] } }).catch(() => undefined);
+      await thread.send({ content: `${decision === 'accepted' ? '✅ مقبول' : '❌ مرفوض'} بواسطة <@${reviewer.id}>${cleanReason ? `: ${clip(cleanReason, 1500)}` : ''}`, allowedMentions: { parse: [] } }).catch(() => undefined);
       await thread.setArchived?.(true).catch(() => undefined);
     }
   }
@@ -409,12 +411,12 @@ export async function toggleVote(id: string, userId: string, value: 'up' | 'down
     if (existing?.value !== value) votes.push({ userId, value });
     return { votes };
   });
-  if (!updated) throw new Error('Voting is closed for this application.');
+  if (!updated) throw new Error('التصويت مقفل على هذا التقديم.');
   return updated;
 }
 
 export async function addNote(id: string, note: { text: string; userId: string; name: string }) {
   const updated = await mutateApplication(id, app => ({ notes: [...app.notes, { ...note, createdAt: new Date() }] }));
-  if (!updated) throw new Error('Application not found.');
+  if (!updated) throw new Error('ما لقينا التقديم.');
   return updated;
 }

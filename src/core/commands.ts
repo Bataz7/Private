@@ -1,20 +1,20 @@
-import { AttachmentBuilder, EmbedBuilder, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder, type ChatInputCommandInteraction, type GuildMember, type User } from '../lib/djs/index.js';
+import { commandLocalization, EmbedBuilder, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder, type ChatInputCommandInteraction, type GuildMember, type User } from '../lib/djs/index.js';
 import { env } from '../config/env.js';
 import { supabase } from '../supabase/client.js';
 import { Staff } from '../models/Staff.js';
 import { Shift } from '../models/Shift.js';
-import { Complaint } from '../models/Complaint.js';
-import { StaffRating } from '../models/StaffRating.js';
 import { getSettings } from '../services/settings.service.js';
 import { activeMs, duration, isOnBreak } from '../services/shift.service.js';
 import { isAdministrator, isStaff } from '../utils/permissions.js';
 import { buildStaffCard } from '../utils/staff-card.js';
+import { staffCardData } from './profile-stats.js';
+import { slashName } from '../i18n/commands.js';
 import { pointRules, pointsBreakdown } from './points.js';
 import { AssistanceLimitError, createAssistance, RepeatAssistanceError } from './assistance.js';
 import { submitStaffRating } from './ratings.js';
 import { SetupMissingError } from './db.js';
 
-// Slash commands of the staff core. Replies follow the server's bot language; everything personal is private.
+// Slash commands of the staff core. الردود كلها بالعربي (t يرجّع النص العربي)؛ كل شي شخصي مخفي.
 const PURPLE = 0x8175f5;
 const GREEN = 0x4fc08d;
 type Ctx = { i: ChatInputCommandInteraction; ar: boolean; me: GuildMember; t: (en: string, ar: string) => string };
@@ -39,36 +39,40 @@ const HELP: HelpItem[] = [
   { name: 'complaint panel', audience: 'admin', en: 'Post the complaint panel', ar: 'إرسال لوحة الشكاوى' },
   { name: 'help', audience: 'everyone', en: 'This list', ar: 'هذي القائمة' },
 ];
-const MODULE_AUDIENCE: Record<string, Audience> = { rate: 'everyone', complaint: 'everyone', help: 'everyone', team: 'admin' };
+const MODULE_AUDIENCE: Record<string, Audience> = { rate: 'everyone', complaint: 'everyone', help: 'everyone', team: 'admin', 'weekly-top': 'everyone' };
 
 const guildOnly = <T extends { setContexts(...contexts: InteractionContextType[]): unknown; toJSON(): unknown }>(builder: T) => { builder.setContexts(InteractionContextType.Guild); return builder; };
 
+// الأسماء الداخلية إنجليزية (للمطابقة)، والأوصاف عربية. الأسماء العربية من قاموس src/i18n/commands.ts.
 export const coreCommandJson = [
-  guildOnly(new SlashCommandBuilder().setName('points').setDescription('Your points and where they came from')
-    .addUserOption(o => o.setName('user').setDescription('Another staff member (administrators only)').setRequired(false))),
-  guildOnly(new SlashCommandBuilder().setName('leaderboard').setDescription('Top 10 staff by points')),
-  guildOnly(new SlashCommandBuilder().setName('profile').setDescription('Your performance card')
-    .addUserOption(o => o.setName('user').setDescription('Another staff member (administrators only)').setRequired(false))),
-  guildOnly(new SlashCommandBuilder().setName('assist').setDescription('Log that you helped a member (+1 point)')
-    .addUserOption(o => o.setName('member').setDescription('The member you helped').setRequired(true))
-    .addStringOption(o => o.setName('type').setDescription('What kind of help').setRequired(false).addChoices(
-      { name: 'General support', value: 'General Support' }, { name: 'Question', value: 'Question' }, { name: 'Technical issue', value: 'Technical' },
-      { name: 'Report / moderation', value: 'Moderation' }, { name: 'Other', value: 'Other' }))
-    .addStringOption(o => o.setName('note').setDescription('Short note for management').setRequired(false).setMaxLength(300))),
-  guildOnly(new SlashCommandBuilder().setName('rate').setDescription('Rate a staff member from 1 to 5 stars')
-    .addUserOption(o => o.setName('staff').setDescription('The staff member').setRequired(true))
-    .addIntegerOption(o => o.setName('stars').setDescription('How many stars').setRequired(true).addChoices(
-      { name: '★★★★★  Excellent', value: 5 }, { name: '★★★★  Very good', value: 4 }, { name: '★★★  Good', value: 3 }, { name: '★★  Needs work', value: 2 }, { name: '★  Poor', value: 1 }))
-    .addStringOption(o => o.setName('comment').setDescription('Optional comment').setRequired(false).setMaxLength(500))),
-  guildOnly(new SlashCommandBuilder().setName('team').setDescription('Team overview: who is on shift and what is waiting')
+  guildOnly(new SlashCommandBuilder().setName('points').setDescription('نقاطك ومن وين جات')
+    .addUserOption(o => o.setName('user').setDescription('إداري ثاني (للأدمن فقط)').setRequired(false))),
+  guildOnly(new SlashCommandBuilder().setName('leaderboard').setDescription('أفضل 10 ستاف بالنقاط')),
+  guildOnly(new SlashCommandBuilder().setName('profile').setDescription('بطاقة أدائك')
+    .addUserOption(o => o.setName('user').setDescription('إداري ثاني (للأدمن فقط)').setRequired(false))),
+  guildOnly(new SlashCommandBuilder().setName('assist').setDescription('تسجّل إنك ساعدت عضو (+1 نقطة)')
+    .addUserOption(o => o.setName('member').setDescription('العضو اللي ساعدته').setRequired(true))
+    .addStringOption(o => o.setName('type').setDescription('نوع المساعدة').setRequired(false).addChoices(
+      { name: 'دعم عام', value: 'General Support' }, { name: 'سؤال', value: 'Question' }, { name: 'مشكلة تقنية', value: 'Technical' },
+      { name: 'بلاغ / إشراف', value: 'Moderation' }, { name: 'غير ذلك', value: 'Other' }))
+    .addStringOption(o => o.setName('note').setDescription('ملاحظة قصيرة للإدارة').setRequired(false).setMaxLength(300))),
+  guildOnly(new SlashCommandBuilder().setName('rate').setDescription('تقيّم إداري من 1 لـ 5 نجوم')
+    .addUserOption(o => o.setName('staff').setDescription('الإداري').setRequired(true))
+    .addIntegerOption(o => o.setName('stars').setDescription('كم نجمة').setRequired(true).addChoices(
+      { name: '★★★★★  ممتاز', value: 5 }, { name: '★★★★  جيد جداً', value: 4 }, { name: '★★★  جيد', value: 3 }, { name: '★★  يحتاج تحسين', value: 2 }, { name: '★  ضعيف', value: 1 }))
+    .addStringOption(o => o.setName('comment').setDescription('تعليق (اختياري)').setRequired(false).setMaxLength(500))),
+  guildOnly(new SlashCommandBuilder().setName('team').setDescription('نظرة على الفريق: مين في الشفت ووش ينتظر مراجعة')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)),
-  guildOnly(new SlashCommandBuilder().setName('help').setDescription('What you can do with Rift')),
+  guildOnly(new SlashCommandBuilder().setName('help').setDescription('وش تقدر تسوي مع Rift')),
 ].map(command => command.toJSON());
 
+const shownName = (path: string) => slashName(path).replace(/^\//, '');
+
 export async function handleCoreCommand(i: ChatInputCommandInteraction) {
-  if (!i.inCachedGuild()) return void await i.reply({ content: 'This command only works in a server.', flags: 64 });
+  if (!i.inCachedGuild()) return void await i.reply({ content: 'هذا الأمر يشتغل في السيرفر بس.', flags: 64 });
   const settings = await getSettings(i.guild.id).catch(() => null);
-  const ar = settings?.botLanguage === 'ar';
+  // البوت عربي بالكامل (طلب المالك)، بغض النظر عن bot_language.
+  const ar = true;
   const t = (en: string, arText: string) => (ar ? arText : en);
   if (!settings) return void await i.reply({ content: t('Rift is not set up on this server yet. An administrator can set it up from the dashboard.', 'Rift ما انضبط في هذا السيرفر بعد. الأدمن يقدر يضبطه من الداشبورد.'), flags: 64 });
   const ctx: Ctx = { i, ar, me: i.member, t };
@@ -147,20 +151,11 @@ async function profile(ctx: Ctx) {
   const user = await targetOf(ctx); if (!user) return;
   const { i, t } = ctx;
   await i.deferReply({ flags: 64 });
-  const guildId = i.guild!.id;
-  const [staff, shifts, complaints, ratings] = await Promise.all([
-    Staff.findOne({ guildId, userId: user.id }),
-    Shift.find({ guildId, userId: user.id }),
-    Complaint.find({ guildId, staffUserId: user.id, status: 'approved' }),
-    StaffRating.find({ guildId, staffUserId: user.id }),
-  ]);
-  if (!staff) return void await i.editReply({ content: t('This member is not on the staff list yet.', 'هذا العضو مو في قائمة الستاف بعد.') });
-  const image = buildStaffCard({
-    name: user.username, avatar: user.displayAvatarURL({ extension: 'png', size: 256 }), points: staff.points ?? 0, complaints: complaints.length,
-    shiftHours: shifts.reduce((sum, shift) => sum + activeMs(shift), 0) / 3_600_000, voiceHours: (staff.voiceMinutes ?? 0) / 60, messages: staff.messageCount ?? 0,
-    helped: staff.claimed ?? 0, ratingAverage: ratings.length ? ratings.reduce((sum, row) => sum + row.rating, 0) / ratings.length : 0, ratingCount: ratings.length,
-  });
-  return void await i.editReply(image);
+  const data = await staffCardData(i.guild!, user);
+  if (!data) return void await i.editReply({ content: t('This member is not on the staff list yet.', 'هذا العضو مو في قائمة الستاف بعد.') });
+  // editReply ما يغيّر الـ flags (المخفي محدد من deferReply)، فنرسل علم Components V2 بس.
+  const card = buildStaffCard(data, false);
+  return void await i.editReply(card);
 }
 
 // ---- Assist ---------------------------------------------------------------------------------------
@@ -248,10 +243,10 @@ async function help({ i, t, ar, me }: Ctx) {
   const { extensionCommands } = await import('../extensions/index.js');
   const known = new Set(HELP.map(item => item.name.split(' ')[0]));
   const extra: HelpItem[] = extensionCommands().map(command => command.json).filter(json => !known.has(json.name)).map(json => ({
-    name: json.name, audience: json.default_member_permissions ? 'admin' as const : MODULE_AUDIENCE[json.name] ?? 'staff' as const, en: json.description, ar: json.description,
+    name: json.name, audience: json.default_member_permissions ? 'admin' as const : MODULE_AUDIENCE[json.name] ?? 'staff' as const, en: json.description, ar: commandLocalization()[json.name]?.description || json.description,
   }));
   const mine = [...HELP, ...extra].filter(item => item.audience === 'everyone' || (item.audience === 'staff' && staff) || (item.audience === 'admin' && admin));
-  const group = (audience: Audience) => mine.filter(item => item.audience === audience).map(item => `\`/${item.name}\` · ${ar ? item.ar : item.en}`).join('\n').slice(0, 1024);
+  const group = (audience: Audience) => mine.filter(item => item.audience === audience).map(item => `\`/${shownName(item.name)}\` · ${ar ? item.ar : item.en}`).join('\n').slice(0, 1024);
   const embed = new EmbedBuilder().setColor(PURPLE).setTitle(t('Rift commands', 'أوامر Rift'));
   if (staff && group('staff')) embed.addFields({ name: t('For staff', 'للستاف'), value: group('staff') });
   if (group('everyone')) embed.addFields({ name: t('For everyone', 'للجميع'), value: group('everyone') });

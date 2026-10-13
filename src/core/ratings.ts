@@ -10,8 +10,8 @@ const findByReviewer = async (guildId: string, staffUserId: string, reviewerUser
 
 // One rating per member per staff member. Used by the rating panel (modal) and /rate, so both award points the same way.
 export async function submitStaffRating(guild: Guild, reviewerId: string, staffUserId: string, rating: number, rawComment: string) {
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new Error('Choose 1 to 5 stars.');
-  if (reviewerId === staffUserId) throw new Error('You cannot rate yourself.');
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new Error('اختر من 1 إلى 5 نجوم.');
+  if (reviewerId === staffUserId) throw new Error('ما تقدر تقيّم نفسك.');
   const comment = String(rawComment ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim().slice(0, 1000);
   let previous = await findByReviewer(guild.id, staffUserId, reviewerId);
   // The update only applies if the stored rating is still the one we read: two submissions at the same moment can no longer
@@ -19,11 +19,11 @@ export async function submitStaffRating(guild: Guild, reviewerId: string, staffU
   let replaced = false;
   for (let attempt = 0; previous && attempt < 3; attempt++) {
     const { data, error } = await supabase.from('staff_ratings').update({ rating, comment, created_at: new Date().toISOString() }).eq('id', previous.id).eq('rating', previous.rating).select('id');
-    if (error) throw new Error(`Saving the rating failed: ${error.message}`);
+    if (error) throw new Error(`ما قدرنا نحفظ التقييم: ${error.message}`);
     if (data?.length) { replaced = true; break; }
     previous = await findByReviewer(guild.id, staffUserId, reviewerId);
   }
-  if (previous && !replaced) throw new Error('Your rating could not be saved because it changed at the same moment. Try again.');
+  if (previous && !replaced) throw new Error('ما انحفظ تقييمك لأنه تغيّر بنفس اللحظة. جرّب مرة ثانية.');
   if (!previous) {
     try { await StaffRating.create({ guildId: guild.id, staffUserId, reviewerUserId: reviewerId, rating, comment, createdAt: new Date() }); }
     catch (error) {
@@ -36,7 +36,7 @@ export async function submitStaffRating(guild: Guild, reviewerId: string, staffU
     }
   }
   const delta = ratingPoints(rating) - (previous ? ratingPoints(previous.rating) : 0);
-  if (delta) await changePoints({ guildId: guild.id, userId: staffUserId, delta, source: 'rating', reason: `${rating}/5 rating`, actorId: reviewerId });
+  if (delta) await changePoints({ guildId: guild.id, userId: staffUserId, delta, source: 'rating', reason: `تقييم ${rating}/5`, actorId: reviewerId });
 
   const all = await StaffRating.find({ guildId: guild.id, staffUserId });
   const ratingCount = all.length;
@@ -49,7 +49,7 @@ export async function submitStaffRating(guild: Guild, reviewerId: string, staffU
       allowedMentions: { parse: [] },
       embeds: [buildRatingCard({
         rating, comment, updated: Boolean(previous), ar: settings?.botLanguage === 'ar', staffId: staffUserId, staffAvatar: staff?.displayAvatarURL({ extension: 'png', size: 128 }),
-        reviewerName: reviewer?.displayName || 'Member', reviewerAvatar: reviewer?.displayAvatarURL({ extension: 'png', size: 64 }), average: averageRating, count: ratingCount, pointsDelta: delta, source: 'discord',
+        reviewerName: reviewer?.displayName || 'عضو', reviewerAvatar: reviewer?.displayAvatarURL({ extension: 'png', size: 64 }), average: averageRating, count: ratingCount, pointsDelta: delta, source: 'discord',
       })],
     }).catch(() => undefined);
   }

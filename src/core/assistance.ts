@@ -16,7 +16,7 @@ export class AssistanceLimitError extends Error {}
 export async function createAssistance(data: { guildId: string; staffUserId: string; memberUserId: string; type?: string; note?: string }): Promise<AssistanceDoc> {
   // Two credits for the same pair at the same moment used to both pass the check below.
   const lockKey = `${data.guildId}:${data.staffUserId}:${data.memberUserId}`;
-  if (inFlight.has(lockKey)) throw new RepeatAssistanceError('This help is already being credited.');
+  if (inFlight.has(lockKey)) throw new RepeatAssistanceError('هذي المساعدة جاري تسجيلها الحين.');
   inFlight.add(lockKey);
   try { return await credit(data); } finally { inFlight.delete(lockKey); }
 }
@@ -30,12 +30,12 @@ async function countSince(guildId: string, staffUserId: string, since: Date, mem
 }
 
 async function credit(data: { guildId: string; staffUserId: string; memberUserId: string; type?: string; note?: string }): Promise<AssistanceDoc> {
-  if (await countSince(data.guildId, data.staffUserId, new Date(Date.now() - 24 * 3_600_000)) >= MAX_ASSISTS_PER_DAY) throw new AssistanceLimitError(`This staff member reached the daily limit of ${MAX_ASSISTS_PER_DAY} credited helps.`);
+  if (await countSince(data.guildId, data.staffUserId, new Date(Date.now() - 24 * 3_600_000)) >= MAX_ASSISTS_PER_DAY) throw new AssistanceLimitError(`هذا الإداري وصل الحد اليومي (${MAX_ASSISTS_PER_DAY} مساعدة محسوبة).`);
   // The same member can be credited for the same staff member once per 10 minutes, so points cannot be farmed.
-  if (await countSince(data.guildId, data.staffUserId, new Date(Date.now() - REPEAT_WINDOW_MS), data.memberUserId)) throw new RepeatAssistanceError('This help was already credited in the last 10 minutes.');
+  if (await countSince(data.guildId, data.staffUserId, new Date(Date.now() - REPEAT_WINDOW_MS), data.memberUserId)) throw new RepeatAssistanceError('هذي المساعدة انحسبت خلال آخر 10 دقايق.');
   await ensureStaff(data.guildId, data.staffUserId);
   const assistance = await Assistance.create({ ...data, type: data.type || 'General Support', note: String(data.note || '').slice(0, 300) }).catch(error => orSetupMissing(error, 'Assist logging'));
-  await changePoints({ guildId: data.guildId, userId: data.staffUserId, delta: 1, claimed: 1, source: 'assist', reason: `Helped <@${data.memberUserId}>`, ref: assistance.id });
+  await changePoints({ guildId: data.guildId, userId: data.staffUserId, delta: 1, claimed: 1, source: 'assist', reason: `ساعد <@${data.memberUserId}>`, ref: assistance.id });
   await createLog(data.guildId, 'ASSISTANCE_RECORDED', data.staffUserId, data.staffUserId, { assistanceId: assistance.id, memberUserId: data.memberUserId, type: assistance.type }).catch(() => undefined);
   return assistance;
 }

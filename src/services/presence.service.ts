@@ -60,14 +60,14 @@ export async function presenceVariables(client: Client): Promise<Record<string, 
 }
 
 export function fillPresence(text: string, vars: Record<string, string>) {
-  return text.replace(VARIABLE_PATTERN, (_, key: string) => vars[key] ?? '').slice(0, 128) || 'Rift Staff Operations';
+  return text.replace(VARIABLE_PATTERN, (_, key: string) => vars[key] ?? '').slice(0, 128) || 'عمليات ستاف Rift';
 }
 
 export function activityFor(entry: PresenceEntry, config: PresenceConfig, vars: Record<string, string>): ActivitiesOptions {
   const text = fillPresence(entry.text, vars);
   const type = TYPE_MAP[entry.type] ?? ActivityType.Playing;
   // Custom statuses show `state` as the text; Discord ignores `name` for them.
-  if (type === ActivityType.Custom) return { name: 'Custom Status', type, state: text };
+  if (type === ActivityType.Custom) return { name: 'حالة مخصصة', type, state: text };
   if (type === ActivityType.Streaming && config.url) return { name: text, type, url: config.url };
   // Streaming needs a Twitch or YouTube link; without one it shows as Playing.
   return { name: text, type: type === ActivityType.Streaming ? ActivityType.Playing : type };

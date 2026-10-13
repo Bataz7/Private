@@ -1,6 +1,6 @@
 import { setOutgoingTransform, type Client } from '../lib/djs/index.js';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { ROOT } from '../config/env.js';
 import { status } from './terminal.js';
 
 export const BRAND_COLOR = 0x8175f5;
@@ -11,7 +11,7 @@ export const BRAND_COLOR = 0x8175f5;
 // and button / select emojis. Titles, footers, modals and the presence keep standard emojis (custom ones do not
 // render there). If an emoji is not uploaded yet, the standard one stays, so nothing ever breaks.
 type Entry = { name: string; chars: string[]; file: string; hash: string };
-const dir = fileURLToPath(new URL('../../assets/emojis/', import.meta.url));
+const dir = `${ROOT}/assets/emojis/`;
 const entries: Entry[] = (() => { try { return JSON.parse(readFileSync(`${dir}emojis.json`, 'utf8')); } catch { return []; } })();
 const ids = new Map<string, string>();
 const byChar = new Map<string, string>();
@@ -163,7 +163,7 @@ export async function syncEmojis(client: Client, { upload = false, quiet = false
   }
   ids.clear();
   for (const entry of entries) { const emoji = found.get(entry.name); if (emoji) ids.set(entry.name, emoji.id); }
-  if (!quiet) console.log(`  ${status(ids.size === entries.length ? 'ok' : 'wait', 'Emojis', `${ids.size}/${entries.length} ready${created ? `, ${created} uploaded` : ''}${ids.size < entries.length ? ' (missing ones use standard emojis)' : ''}`)}`);
+  if (!quiet) console.log(`  ${status(ids.size === entries.length ? 'ok' : 'wait', 'الإيموجي', `${ids.size}/${entries.length} جاهز${created ? `، ${created} انرفع` : ''}${ids.size < entries.length ? ' (الناقص يستخدم الإيموجي العادي)' : ''}`)}`);
   return ids.size;
 }
 
@@ -175,6 +175,6 @@ export async function waitForEmojis(client: Client, timeoutMs = 120_000) {
     await new Promise(done => setTimeout(done, 5_000));
     ready = await syncEmojis(client, { quiet: true });
   }
-  console.log(`  ${status(ready === entries.length ? 'ok' : 'wait', 'Emojis', `${ready}/${entries.length} ready`)}`);
+  console.log(`  ${status(ready === entries.length ? 'ok' : 'wait', 'الإيموجي', `${ready}/${entries.length} جاهز`)}`);
   return ready;
 }

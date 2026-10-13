@@ -2,6 +2,8 @@
  * supabase-lite — بديل خفيف لـ @supabase/supabase-js (قاعدة البيانات فقط: PostgREST + rpc) بدون مكتبات.
  * نفس الواجهة: supabase.from('t').select('*').eq('a', 1).order('x', { ascending: false }).limit(5) → { data, error, count }
  */
+import { limiter } from "../limit.ts";
+import { deadline } from "../timeout.ts";
 
 export interface PostgrestError {
   message: string;
@@ -152,12 +154,21 @@ export class PostgrestBuilder<T = any> implements PromiseLike<PostgrestResponse<
     if (this.prefer.length) headers.Prefer = [...new Set(this.prefer)].join(",");
     if (this.singleMode === "single" && this.method === "GET") headers.Accept = "application/vnd.pgrst.object+json";
     let res: Response;
+    let text: string;
     try {
-      res = await this.client.fetch(url, {
-        method: this.method,
-        headers,
-        body: this.body === undefined ? undefined : JSON.stringify(this.body),
-        signal: this.signal ?? AbortSignal.timeout(this.client.timeoutMs),
+      [res, text] = await this.client.gate(async () => {
+        const t = this.signal ? null : deadline(this.client.timeoutMs);
+        try {
+          const r = await this.client.fetch(url, {
+            method: this.method,
+            headers,
+            body: this.body === undefined ? undefined : JSON.stringify(this.body),
+            signal: this.signal ?? t!.signal,
+          });
+          return [r, this.method === "HEAD" ? "" : await r.text()] as const;
+        } finally {
+          t?.done();
+        }
       });
     } catch (e) {
       return { data: null as T, error: { message: `FetchError: ${(e as Error).message}`, code: "", details: null, hint: null }, count: null, status: 0, statusText: "" };
@@ -168,7 +179,6 @@ export class PostgrestBuilder<T = any> implements PromiseLike<PostgrestResponse<
       const total = range.split("/")[1];
       if (total && total !== "*") count = Number(total);
     }
-    const text = this.method === "HEAD" ? "" : await res.text();
     if (!res.ok) {
       let err: PostgrestError = { message: text || res.statusText, code: String(res.status), details: null, hint: null };
       try {
@@ -253,6 +263,8 @@ export class SupabaseClient {
   readonly headers: Record<string, string>;
   readonly fetch: typeof fetch;
   timeoutMs = 20_000;
+  /** أقصى عدد طلبات متزامنة (DB_CONCURRENCY، الافتراضي 6). */
+  readonly gate = limiter(Number(globalThis.process?.env?.DB_CONCURRENCY) || 6);
   constructor(readonly supabaseUrl: string, readonly supabaseKey: string, o: SupabaseClientOptions = {}) {
     this.restUrl = `${supabaseUrl.replace(/\/+$/, "")}/rest/v1`;
     this.headers = {

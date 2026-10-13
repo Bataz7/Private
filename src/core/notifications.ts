@@ -36,9 +36,9 @@ export async function sendNotification(client: Client, input: SendNotificationIn
   await assertAdministrator(client, input.guildId, input.sender.id);
   const message = clean(input.message);
   const title = clean(input.title).slice(0, 120);
-  if (!message) throw new Error('Write a message first.');
-  if (message.length > 2000) throw new Error('The message cannot exceed 2000 characters.');
-  if (!['dashboard', 'discord', 'both'].includes(input.delivery)) throw new Error('Choose a valid delivery method.');
+  if (!message) throw new Error('اكتب الرسالة أول.');
+  if (message.length > 2000) throw new Error('الرسالة ما تتعدى 2000 حرف.');
+  if (!['dashboard', 'discord', 'both'].includes(input.delivery)) throw new Error('اختر طريقة إرسال صحيحة.');
   const level: NotificationLevel = input.level in NOTIFICATION_LEVELS ? input.level : 'info';
 
   const guild = client.guilds.cache.get(input.guildId) || await client.guilds.fetch(input.guildId);
@@ -50,7 +50,7 @@ export async function sendNotification(client: Client, input: SendNotificationIn
   if (input.target === 'user') {
     const id = String(input.recipientUserId || '');
     const member = /^\d{15,22}$/.test(id) ? await guild.members.fetch(id).catch(() => null) : null;
-    if (!isTeam(member)) throw new Error('Choose a staff member or administrator of this server.');
+    if (!isTeam(member)) throw new Error('اختر إداري أو أدمن من هذا السيرفر.');
     recipients = [member];
   } else if (input.target === 'staff') {
     const rows = await Staff.find({ guildId: input.guildId, active: true });
@@ -58,11 +58,11 @@ export async function sendNotification(client: Client, input: SendNotificationIn
     recipients = [...(fetched?.values() ?? [])].filter(isTeam);
   } else {
     const role = guild.roles.cache.get(String(input.roleId || ''));
-    if (!role || role.id === guild.id) throw new Error('Choose a role.');
+    if (!role || role.id === guild.id) throw new Error('اختر رتبة.');
     if (guild.members.cache.size < guild.memberCount) await guild.members.fetch().catch(() => undefined);
     recipients = [...role.members.values()].filter(isTeam).slice(0, 100);
   }
-  if (!recipients.length) throw new Error('Nobody matches that choice.');
+  if (!recipients.length) throw new Error('ما فيه أحد ينطبق عليه هذا الاختيار.');
 
   const ar = settings?.botLanguage === 'ar';
   const meta = NOTIFICATION_LEVELS[level];
@@ -84,7 +84,7 @@ export async function sendNotification(client: Client, input: SendNotificationIn
     const payload = {
       allowedMentions: { parse: [] as never[] },
       embeds: [new EmbedBuilder().setColor(meta.color).setAuthor({ name: `${ar ? meta.ar : meta.en} · ${guild.name}` }).setTitle(heading.slice(0, 256)).setDescription(message.slice(0, 4000)).setFooter({ text: `${ar ? 'من' : 'From'} ${input.sender.username} · Rift` })],
-      ...(link ? { components: [new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setURL(link).setLabel(ar ? 'فتح الداشبورد' : 'Open dashboard').setEmoji('📥'))] } : {}),
+      ...(link ? { components: [new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setURL(link).setLabel(ar ? 'افتح لوحة التحكم' : 'Open dashboard').setEmoji('📥'))] } : {}),
     };
     for (const member of recipients) {
       const ok = await member.send(payload).then(() => true).catch(() => false);

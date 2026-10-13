@@ -1,30 +1,34 @@
-import { ActionRowBuilder, ActivityType, ButtonBuilder, ButtonStyle, Client, EmbedBuilder, GatewayIntentBits, Partials, Events } from './lib/djs/index.js';
+import { Client, GatewayIntentBits, Partials, Events, type Guild, type GuildMember, type VoiceState } from './lib/djs/index.js';
 import { env } from './config/env.js';
 import { handleCommand } from './commands/index.js';
 import { handleButton } from './interactions/buttons.js';
 import { handleModal } from './interactions/modals.js';
 import { handleSelectMenu } from './interactions/selects.js';
-import { Shift } from './models/Shift.js';
-import { GuildSettings } from './models/GuildSettings.js';
+import { Shift, type ShiftDoc } from './models/Shift.js';
+import { GuildSettings, type GuildSettingsDoc } from './models/GuildSettings.js';
 import { createLog } from './services/log.service.js';
 import { Staff } from './models/Staff.js';
 import { StaffRating } from './models/StaffRating.js';
 import { StaffDailyActivity } from './models/StaffDailyActivity.js';
-import { activeMs, awardInteractionPoints, awardShiftPoints, awardVoiceInteractionPoints, endShift, ensureStaff, getActiveShift, isOnBreak, resumeShift, startShift, duration } from './services/shift.service.js';
+import { activeMs, awardInteractionPoints, awardShiftPoints, awardVoiceInteractionPoints, DismissedError, endShift, ensureStaff, getActiveShift, isOnBreak, resumeShift } from './services/shift.service.js';
 import { supabase } from './supabase/client.js';
 import { bootBanner, bootFailure, bootReady, bootStep } from './utils/startup.js';
-import { autoShiftConfig, endIfIdle, onStaffMessage, onStaffVoice } from './services/auto-shift.service.js';
+import { autoShiftConfig, endIfIdle, forgetShift, onStaffMessage, onStaffVoice, touchShift, voiceCountsForShift } from './services/auto-shift.service.js';
+import { clearPresenceStop, confirmPresence, confirmPresenceAnywhere, hasPendingCheck, isPresenceStopped, loadRecentPresenceStops, onPresenceReaction, PRESENCE_BUTTON, presenceConfig, presenceStep, sendPresenceCheck, stopForPresence, syncPendingCheck } from './services/presence-check.service.js';
 import { emojiList, installEmojiHook, syncEmojis } from './utils/emoji.js';
 import { runWeeklyReports } from './services/weekly-report.service.js';
 import { syncBotPresence } from './services/presence.service.js';
 import { markBotStopped, tracked } from './status/heartbeat.js';
 import { dispatchButton, dispatchCommand, dispatchMessage, dispatchModal, dispatchSelect, readyExtensions } from './extensions/index.js';
 import { registerCommandsIfChanged } from './commands/register.js';
+import { isHomeGuild, homeGuildId, OTHER_GUILD_REPLY, resolveHomeGuild } from './config/home-guild.js';
+import { setVoiceJoined, voiceJoinedAt } from './services/presence-check.service.js';
 
 installEmojiHook();
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.DirectMessages, GatewayIntentBits.MessageContent],
+  // الرياكشنات: رياكشن على رسالة «هل انت موجود؟» يأكد التواجد.
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.DirectMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.DirectMessageReactions],
   partials: [Partials.Channel],
   // User text (notes, reasons, titles) is echoed in many messages; never let it ping @everyone, @here or roles.
   allowedMentions: { parse: ['users'], repliedUser: false }
@@ -32,49 +36,82 @@ const client = new Client({
 
 let reconcilingShiftRoles = false;
 
+if (process.env.RIFT_MEMDEBUG) setInterval(() => {
+  const g = [...client.guilds.cache.values()];
+  console.log(`[cache] users=${client.users.cache.size} members=${g.reduce((a, x) => a + x.members.cache.size, 0)} channels=${g.reduce((a, x) => a + x.channels.cache.size, 0)} roles=${g.reduce((a, x) => a + x.roles.cache.size, 0)} voice=${g.reduce((a, x) => a + x.voiceStates.cache.size, 0)} sessions=${voiceSessions.size}`);
+}, 10_000);
+
+// الذاكرة: جمع قمامة دوري يرجّع الذاكرة للنظام (يبقي البوت تحت 20 ميقا على txiki)
+setInterval(() => { (globalThis as { Bun?: { gc?: (sync?: boolean) => void } }).Bun?.gc?.(true); }, Number(process.env.GC_INTERVAL_MS) || 30_000);
+
 bootBanner();
-bootStep('BOOT', 'Loading Rift staff operations');
-const voiceSessions = new Map<string, { lastAt: number; remainderMs: number }>();
+bootStep('BOOT', 'تشغيل نظام ستاف Rift');
+// صوت كل إداري: آخر مرة انحسبت دقائقه + متى دخل (لتحقق التواجد). ينحذف لما يطلع، فحجمه = اللي في الفويس.
+const voiceSessions = new Map<string, { lastAt: number; remainderMs: number; joinedAt?: number }>();
+// مؤقت «قعد في الفويس كفاية» لكل عضو دخل ولسه ما بدأ له شفت. ينلغي لو طلع.
+const voiceStartTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+// إعدادات السيرفر للمسارات الكثيرة (كل رسالة/فويس): كاش 15 ثانية بدل استعلام كل مرة. تعديلات الداشبورد توصل خلال 15 ثانية.
+const SETTINGS_TTL_MS = 15_000;
+const settingsCache = new Map<string, { value: GuildSettingsDoc | null; at: number }>();
+async function settingsFor(guildId: string, now = Date.now()) {
+  const cached = settingsCache.get(guildId);
+  if (cached && now - cached.at < SETTINGS_TTL_MS) return cached.value;
+  const value = await GuildSettings.findOne({ guildId }).catch(() => cached?.value ?? null);
+  settingsCache.set(guildId, { value, at: now });
+  if (settingsCache.size > 8) settingsCache.delete(settingsCache.keys().next().value!);
+  return value;
+}
 // Presence (status, rotating lines, per-line types, {servers} {members} {staff} {onshift} {server}): src/services/presence.service.ts
 
 client.once(Events.ClientReady, async ready => {
   try {
-    bootStep('DISCORD', `Connected as ${ready.user.tag}`);
+    bootStep('DISCORD', `متصل باسم ${ready.user.tag}`);
+    // سيرفر واحد: GUILD_ID، وإلا أول سيرفر (مع تنبيه). أحداث وأوامر السيرفرات الثانية تنتجاهل.
+    const home = resolveHomeGuild([...client.guilds.cache.keys()]);
+    if (home.fallback) bootStep('تنبيه', `GUILD_ID ناقص أو البوت مو فيه — اعتمدنا أول سيرفر (${home.id}). حطه في .env`);
+    if (client.guilds.cache.size > 1) bootStep('تنبيه', `البوت في ${client.guilds.cache.size} سيرفرات؛ يشتغل بس في ${home.id}`);
     await syncEmojis(client, { upload: true }).catch(error => console.error('Emoji sync failed:', error));
     setInterval(() => { void syncEmojis(client, { quiet: true }).catch(() => undefined); }, 30 * 60_000);
-    await registerCommandsIfChanged(client).then(changed => { if (changed) bootStep('COMMANDS', 'Slash commands updated'); }).catch(error => console.error('Command registration failed:', error));
+    await registerCommandsIfChanged(client).then(changed => { if (changed) bootStep('COMMANDS', 'تحدّثت أوامر السلاش'); }).catch(error => console.error('Command registration failed:', error));
     const { error } = await supabase.from('guild_settings').select('guild_id').limit(1);
     if (error) {
       bootFailure(`Supabase schema unavailable: ${error.message}`);
       if (error.code === 'PGRST205') {
-        bootStep('ACTION', 'Open Supabase SQL Editor and run migrations 001 through 005.');
-        bootStep('CHECK', 'Confirm .env SUPABASE_URL points to the same Supabase project.');
+        bootStep('ACTION', 'افتح Supabase SQL Editor وشغّل ملفات التحديث من 001 لآخر ملف.');
+        bootStep('CHECK', 'تأكد إن SUPABASE_URL في .env يأشر لنفس مشروع Supabase.');
       } else {
-        bootStep('ACTION', 'Check Supabase URL/key and apply migrations 001 through 005.');
+        bootStep('ACTION', 'راجع رابط/مفتاح Supabase وطبّق ملفات التحديث.');
       }
       await client.destroy();
       return;
     }
-    bootStep('DATABASE', 'Supabase connected and schema verified');
+    bootStep('DATABASE', 'Supabase متصل والجداول سليمة');
     await deduplicateRatings();
 
     await reconcileShiftRoles(client);
-    // Staff already sitting in voice when the bot (re)starts should be on shift too.
-    for (const guild of client.guilds.cache.values()) {
-      for (const state of guild.voiceStates.cache.values()) {
-        if (state.member?.user.bot || !state.channelId || state.selfDeaf || state.serverDeaf) continue;
-        void ensureVoiceShift(guild, state.id).catch(() => undefined);
-      }
+    // اللي وقف شفتهم تحقق التواجد قبل إعادة التشغيل ما يرجع لهم شفت من الفويس.
+    await loadRecentPresenceStops().catch(() => 0);
+    // Staff already sitting in voice when the bot (re)starts should be on shift too (a restart is not activity).
+    const homeGuild = client.guilds.cache.get(homeGuildId());
+    for (const state of homeGuild?.voiceStates.cache.values() ?? []) {
+      if (state.member?.user.bot || !activeVoice(state)) continue;
+      const now = Date.now();
+      voiceSessions.set(`${homeGuild!.id}:${state.id}`, { lastAt: now, remainderMs: 0, joinedAt: now });
+      setVoiceJoined(homeGuild!.id, state.id, now);
+      // إعادة التشغيل مو نشاط (touch=false) وما تنتظر مهلة الدخول (joinedAt=null).
+      void ensureVoiceShift(homeGuild!, state.id, false, null).catch(() => undefined);
     }
-  await syncBotPresence(client);
-  setInterval(() => { void syncBotPresence(client); }, 2000);
+    await syncBotPresence(client);
+    // تغييرات الحالة من الداشبورد توصل خلال 15 ثانية (كانت كل ثانيتين = قراءة قاعدة بيانات بلا داعي)
+    setInterval(() => { void syncBotPresence(client); }, Number(process.env.PRESENCE_POLL_MS) || 15_000);
     const [staffCount, onShiftCount] = await Promise.all([Staff.countDocuments({ active: true }).catch(() => 0), Shift.countDocuments({ status: 'active' }).catch(() => 0)]);
-    const firstSettings = await GuildSettings.findOne({ guildId: env.guildId || client.guilds.cache.first()?.id || '' }).catch(() => null);
+    const firstSettings = await settingsFor(homeGuildId());
     const auto = autoShiftConfig(firstSettings);
     await readyExtensions(client);
     bootReady({
       tag: ready.user.tag, guilds: client.guilds.cache.size, staff: staffCount, onShift: onShiftCount, pingMs: Math.max(0, Math.round(client.ws.ping)),
-      autoShift: auto.enabled ? `${auto.messages} msgs / ${Math.round(auto.windowMs / 60_000)}m starts · ${Math.round(auto.idleMs / 60_000)}m idle ends` : 'off',
+      autoShift: auto.enabled ? `يبدأ بـ ${auto.messages} رسالة خلال ${Math.round(auto.windowMs / 60_000)} دقيقة · ينتهي بعد ${Math.round(auto.idleMs / 60_000)} دقيقة خمول` : 'متوقف',
       emojis: `${emojiList().filter(item => item.id).length}/${emojiList().length} ready`,
       dashboardUrl: env.dashboardUrl,
     });
@@ -84,7 +121,7 @@ client.once(Events.ClientReady, async ready => {
     setInterval(() => { void tracked('weekly', () => runWeeklyReports(client)).catch(error => console.error('Weekly reports failed:', error)); }, 15 * 60_000);
     setTimeout(() => { void tracked('weekly', () => runWeeklyReports(client)).catch(error => console.error('Weekly reports failed:', error)); }, 20_000);
   } catch (error) {
-    bootFailure(error instanceof Error ? error.message : 'Unknown startup error');
+    bootFailure(error instanceof Error ? error.message : 'خطأ غير معروف وقت التشغيل');
     await client.destroy();
   }
 });
@@ -111,8 +148,8 @@ async function reconcileShiftRoles(bot: Client) {
   if (reconcilingShiftRoles) return;
   reconcilingShiftRoles = true;
   try {
-  for (const guild of bot.guilds.cache.values()) {
-    const settings = await GuildSettings.findOne({ guildId: guild.id }).catch(() => null);
+  for (const guild of [bot.guilds.cache.get(homeGuildId())].filter((g): g is Guild => Boolean(g))) {
+    const settings = await settingsFor(guild.id);
     if (!settings?.onShiftRoleId) continue;
     const activeShifts = await Shift.find({ guildId: guild.id, status: 'active' }).catch(() => []);
     const activeUserIds = new Set(activeShifts.map(shift => shift.userId));
@@ -121,8 +158,8 @@ async function reconcileShiftRoles(bot: Client) {
     for (const member of members.values()) {
       const hasShiftRole = member.roles.cache.has(settings.onShiftRoleId);
       const shouldHaveRole = activeUserIds.has(member.id);
-      if (shouldHaveRole && !hasShiftRole) await member.roles.add(settings.onShiftRoleId, 'Active shift role synchronization').catch(() => undefined);
-      if (!shouldHaveRole && hasShiftRole) await member.roles.remove(settings.onShiftRoleId, 'No active shift found').catch(() => undefined);
+      if (shouldHaveRole && !hasShiftRole) await member.roles.add(settings.onShiftRoleId, 'مزامنة رتبة الشفت النشط').catch(() => undefined);
+      if (!shouldHaveRole && hasShiftRole) await member.roles.remove(settings.onShiftRoleId, 'ما عنده شفت نشط').catch(() => undefined);
     }
   }
   } finally {
@@ -130,53 +167,74 @@ async function reconcileShiftRoles(bot: Client) {
   }
 }
 
+/** في الفويس ومو ديفن ومو في روم الـ AFK. */
+function activeVoice(state: VoiceState | null | undefined) {
+  return Boolean(state && voiceCountsForShift({ channelId: state.channelId, selfDeaf: state.selfDeaf, serverDeaf: state.serverDeaf, afkChannelId: state.guild.afkChannelId }));
+}
+
 async function monitorShifts(bot: Client) {
-  const active = await Shift.find({ status: 'active' }).catch(() => []);
+  const active = homeGuildId() ? await Shift.find({ guildId: homeGuildId(), status: 'active' }).catch(() => []) : await Shift.find({ status: 'active' }).catch(() => []);
   const now = Date.now();
+  // إعدادات كل سيرفر مرة وحدة بكل دورة.
+  const settingsOf = new Map<string, GuildSettingsDoc | null>();
   for (const shift of active) {
+    const id = `${shift.guildId}:${shift.userId}`;
     const currentBreak = shift.breaks.at(-1);
     if (currentBreak && !currentBreak.endedAt) {
       const breakMs = now - new Date(currentBreak.startedAt).getTime();
       if (breakMs >= 30 * 60 * 1000) {
         const resumed = await resumeShift(shift.guildId, shift.userId).catch(() => null);
-        if (resumed) {
-          const guild = await bot.guilds.fetch(shift.guildId).catch(() => null);
-          await createLog(shift.guildId, 'BREAK_AUTO_ENDED', shift.userId, shift.userId, { shiftId: String(shift._id) });
-        }
+        if (resumed) await createLog(shift.guildId, 'BREAK_AUTO_ENDED', shift.userId, shift.userId, { shiftId: String(shift._id) }).catch(() => undefined);
       }
       continue;
     }
-    const guild = await bot.guilds.fetch(shift.guildId).catch(() => null);
-    const settings = await GuildSettings.findOne({ guildId: shift.guildId }).catch(() => null);
+    const guild: Guild | null = bot.guilds.cache.get(shift.guildId) ?? await bot.guilds.fetch(shift.guildId).catch(() => null);
+    if (!settingsOf.has(shift.guildId)) settingsOf.set(shift.guildId, await settingsFor(shift.guildId, now));
+    const settings = settingsOf.get(shift.guildId);
     if (!guild || !settings) continue;
     const member = await guild.members.fetch(shift.userId).catch(() => null);
-    // Sitting in an unmuted voice channel keeps the shift alive.
-    if (member?.voice.channelId && !member.voice.selfDeaf && !member.voice.serverDeaf) {
-      await recordShiftActivity(shift.guildId, shift.userId);
+    const inVoice = activeVoice(member?.voice);
+
+    // تحقق التواجد: «هل انت موجود؟» بعد ساعة فويس بدون تفاعل، وإيقاف صامت بعد 30 دقيقة بدون رد.
+    const presence = presenceConfig(settings);
+    await syncPendingCheck(bot, shift);
+    const step = presenceStep({
+      now, startedAt: shift.startedAt.getTime(), lastActivityAt: shift.lastActivityAt?.getTime() ?? null, voiceJoinedAt: voiceSessions.get(id)?.joinedAt ?? voiceJoinedAt(shift.guildId, shift.userId),
+      checkSentAt: shift.checkSentAt?.getTime() ?? null, inVoice, onBreak: false,
+    }, presence);
+    if (step === 'timeout') {
+      if (await stopForPresence(bot, guild, shift, settings, member)) { forgetShift(shift.guildId, shift.userId); voiceSessions.delete(id); }
+      continue;
+    }
+    // ينتظر رد: لا نقاط ولا إنهاء خمول (لو ما رد، الشفت ينقفل عند وقت السؤال).
+    if (step === 'wait') continue;
+    if (inVoice) {
       await recordVoiceActivity(shift, now);
-      shift.lastActivityAt = new Date(now);
+      if (!presence.enabled) {
+        // التحقق مقفل: الفويس يبقي الشفت شغال مثل قبل.
+        shift.lastActivityAt = new Date(now);
+        await Shift.update(shift.id, { lastActivityAt: shift.lastActivityAt }).catch(() => undefined);
+      } else if (step === 'send' && member) await sendPresenceCheck(bot, guild, member, shift, now, settings).catch(error => console.error('Presence check failed:', error));
     }
     if (activeMs(shift) >= 12 * 60 * 60 * 1000) {
       const ended = await endShift(shift.guildId, shift.userId).catch(() => null);
-      if (ended && member) { await member.roles.remove(settings.onShiftRoleId, 'Maximum 12-hour shift reached').catch(() => undefined); await member.send({ content: 'Your shift was ended automatically after reaching the 12-hour maximum.' }).catch(() => undefined); }
+      if (ended) {
+        forgetShift(shift.guildId, shift.userId);
+        await createLog(shift.guildId, 'SHIFT_AUTO_ENDED', shift.userId, null, { shiftId: String(ended._id), reason: 'max_12h' }).catch(() => undefined);
+      }
+      if (ended && member && settings.onShiftRoleId) { await member.roles.remove(settings.onShiftRoleId, 'وصل الحد الأقصى للشفت (12 ساعة)').catch(() => undefined); } // بصمت: ما يوصل العضو أي رسالة
       continue;
     }
+    // تحديث جزئي: حفظ كامل ممكن يرجّع check_sent_at قديم فوق تأكيد صار في نفس اللحظة.
     const awardedPoints = await awardShiftPoints(shift).catch(() => 0);
-    if (awardedPoints > 0) await shift.save().catch(() => undefined);
-    // A member who left the server (member is null) is closed the same way, at their last activity.
-    await endIfIdle(bot, shift, settings, member, now);
+    if (awardedPoints > 0) await Shift.update(shift.id, { pointsAwarded: shift.pointsAwarded }).catch(() => undefined);
+    // اللي في الفويس يمشي عليهم تحقق التواجد؛ شفتات الرسائل تنتهي بعد الخمول. A member who left the server (member is null)
+    // is closed the same way, at their last activity.
+    if (!inVoice) await endIfIdle(bot, shift, settings, member, now);
   }
 }
 
-async function recordShiftActivity(guildId: string, userId: string) {
-  const shift = await Shift.findOne({ guildId, userId, status: 'active' }).catch(() => null);
-  if (!shift || isOnBreak(shift)) return;
-  shift.lastActivityAt = new Date();
-  if (shift.checkSentAt) shift.checkSentAt = null;
-  await shift.save().catch(() => undefined);
-}
-
-async function recordVoiceMinutes(guildId: string, userId: string, minutes: number, at: Date, shift?: import('./models/Shift.js').ShiftDoc) {
+async function recordVoiceMinutes(guildId: string, userId: string, minutes: number, at: Date, shift?: ShiftDoc) {
   if (minutes <= 0) return;
   const staff = await Staff.findOne({ guildId, userId }).catch(() => null);
   // Partial update: a full save() would write back a stale points value over the ledger's atomic changes.
@@ -193,16 +251,23 @@ async function recordVoiceMinutes(guildId: string, userId: string, minutes: numb
   if (shift) await awardVoiceInteractionPoints(shift, minutes).catch(() => 0);
 }
 
-async function recordVoiceActivity(shift: import('./models/Shift.js').ShiftDoc, now = Date.now()) {
+async function recordVoiceActivity(shift: ShiftDoc, now = Date.now()) {
   const key = `${shift.guildId}:${shift.userId}`;
   const session = voiceSessions.get(key) ?? { lastAt: now, remainderMs: 0 };
   const elapsedMs = Math.max(0, now - session.lastAt) + session.remainderMs;
   const minutes = Math.floor(elapsedMs / 60_000);
-  voiceSessions.set(key, { lastAt: now, remainderMs: elapsedMs % 60_000 });
+  voiceSessions.set(key, { lastAt: now, remainderMs: elapsedMs % 60_000, joinedAt: session.joinedAt });
   await recordVoiceMinutes(shift.guildId, shift.userId, minutes, new Date(now), shift);
 }
 
 client.on(Events.InteractionCreate, async interaction => {
+  // البوت لسيرفر واحد: أوامر السيرفرات الثانية ترد برسالة ثابتة، وباقي تفاعلاتها تنتجاهل.
+  if (!isHomeGuild(interaction.guildId)) {
+    if (interaction.isChatInputCommand()) await interaction.reply({ content: OTHER_GUILD_REPLY, flags: 64 }).catch(() => undefined);
+    return;
+  }
+  // أي تفاعل مع البوت في السيرفر = موجود (زر التحقق نفسه يتعامل معه الزر).
+  if (interaction.guildId && !interaction.customId.startsWith(`${PRESENCE_BUTTON}:`)) void confirmPresence(client, interaction.guildId, interaction.user.id).catch(() => undefined);
   try {
     if (interaction.isChatInputCommand()) { if (!await dispatchCommand(interaction)) await handleCommand(interaction); }
     else if (interaction.isButton()) { if (!await dispatchButton(interaction)) await handleButton(interaction); }
@@ -211,8 +276,8 @@ client.on(Events.InteractionCreate, async interaction => {
   } catch (error) {
     const code = (error as { code?: number }).code;
     if (code === 10062 || code === 40060) return;
-    console.error(error);
-    const message = error instanceof Error ? error.message : 'Unexpected error.';
+    if (!(error instanceof DismissedError)) console.error(error);
+    const message = error instanceof Error ? error.message : 'صار خطأ غير متوقع.';
     if (interaction.isRepliable()) {
       const payload = { content: `⚠️ ${message}`, flags: 64 as const };
       if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => undefined);
@@ -221,15 +286,23 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
+// رياكشن على رسالة التحقق = موجود. (الحدث ما له معالج في الـ client، فيوصل كـ raw.)
+client.on('raw', (packet: { t: string; d: { user_id?: string; message_id?: string } }) => {
+  if (packet.t === 'MESSAGE_REACTION_ADD' && isHomeGuild((packet.d as { guild_id?: string }).guild_id)) void onPresenceReaction(client, packet.d).catch(() => undefined);
+});
+
 client.on(Events.MessageCreate, async message => {
-  if (message.author.bot) return;
+  if (message.author.bot || !isHomeGuild(message.guildId)) return;
+  // أي رسالة في السيرفر (أو رد بالخاص) تأكد التواجد لو فيه «هل انت موجود؟» معلّق.
+  if (message.guildId) await confirmPresence(client, message.guildId, message.author.id).catch(() => undefined);
+  else await confirmPresenceAnywhere(client, message.author.id).catch(() => undefined);
   if (await dispatchMessage(message)) return;
   if (!message.guild) return;
   const authorMember = await message.guild.members.fetch(message.author.id).catch(() => null);
-  const settings = await GuildSettings.findOne({ guildId: message.guild.id }).catch(() => null);
+  const settings = await settingsFor(message.guild.id);
   if (authorMember && settings && (authorMember.roles.cache.has(settings.staffRoleId) || authorMember.permissions.has('Administrator'))) {
     const authorStaff = await ensureStaff(message.guild.id, message.author.id).catch(error => {
-      console.error(`Automatic staff registration failed for ${message.author.id}:`, error);
+      if (!(error instanceof DismissedError)) console.error(`Automatic staff registration failed for ${message.author.id}:`, error);
       return null;
     });
     if (!authorStaff) return;
@@ -248,29 +321,67 @@ client.on(Events.MessageCreate, async message => {
 });
 
 /** Starts a shift for a staff member who joined voice. Returns nothing when they are not staff or auto shifts are off. */
-async function ensureVoiceShift(guild: import('./lib/djs/index.js').Guild, userId: string) {
-  const settings = await GuildSettings.findOne({ guildId: guild.id }).catch(() => null);
+async function ensureVoiceShift(guild: Guild, userId: string, touch = true, joinedAt: number | null = null) {
+  const settings = await settingsFor(guild.id);
   if (!settings) return;
-  const member = await guild.members.fetch(userId).catch(() => null);
+  const member: GuildMember | null = await guild.members.fetch(userId).catch(() => null);
   if (!member || (!member.roles.cache.has(settings.staffRoleId) && !member.permissions.has('Administrator'))) return;
-  await onStaffVoice(guild, member, settings);
+  await onStaffVoice(guild, member, settings, { touch, joinedAt });
+}
+
+/** بعد مهلة الدخول (الافتراضي 60 ثانية) لو للحين في الفويس فعلياً: يبدأ الشفت. يتجاهل الدخلات القصيرة. */
+async function scheduleVoiceStart(guild: Guild, userId: string, joinedAt: number) {
+  const key = `${guild.id}:${userId}`;
+  const old = voiceStartTimers.get(key); if (old) clearTimeout(old);
+  const dwellMs = autoShiftConfig(await settingsFor(guild.id)).voiceDwellMs;
+  const timer = setTimeout(() => {
+    voiceStartTimers.delete(key);
+    if (voiceSessions.get(key)?.joinedAt !== joinedAt || !activeVoice(guild.voiceStates.cache.get(userId))) return;
+    void ensureVoiceShift(guild, userId, false, joinedAt).catch(() => undefined);
+  }, dwellMs + 500);
+  voiceStartTimers.set(key, timer);
+}
+
+/** تغيير سوّاه العضو بنفسه في الفويس (دخول، تنقّل، ميوت، ديفن، كاميرا، بث) — مو ميوت من السيرفر ولا نقل للـ AFK. */
+function voiceAction(oldState: VoiceState, newState: VoiceState) {
+  if (!newState.channelId || newState.channelId === newState.guild.afkChannelId) return false;
+  return oldState.channelId !== newState.channelId || oldState.selfMute !== newState.selfMute || oldState.selfDeaf !== newState.selfDeaf
+    || oldState.selfVideo !== newState.selfVideo || oldState.streaming !== newState.streaming;
 }
 
 client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
-  if (newState.member?.user.bot) return;
-  const key = `${newState.guild.id}:${newState.id}`;
+  if (newState.member?.user.bot || !isHomeGuild(newState.guild.id)) return;
+  const guildId = newState.guild.id;
+  const key = `${guildId}:${newState.id}`;
   const now = Date.now();
-  const wasActive = Boolean(oldState.channelId && !oldState.selfDeaf && !oldState.serverDeaf);
-  const isActive = Boolean(newState.channelId && !newState.selfDeaf && !newState.serverDeaf);
-  const shift = await getActiveShift(newState.guild.id, newState.id).catch(() => null);
-  if (wasActive && shift && !isOnBreak(shift)) await recordVoiceActivity(shift, now);
-  if (!isActive) { voiceSessions.delete(key); return; }
-  await ensureVoiceShift(newState.guild, newState.id);
-  const activeShift = await getActiveShift(newState.guild.id, newState.id).catch(() => null);
-  if (activeShift && !isOnBreak(activeShift)) {
-    await recordShiftActivity(newState.guild.id, newState.id);
-    await recordVoiceActivity(activeShift, now);
+  const wasActive = activeVoice(oldState);
+  const isActive = activeVoice(newState);
+  // طلع من الفويس كلياً: يقدر يرجع له شفت تلقائي من الفويس لما يدخل من جديد.
+  if (!newState.channelId) clearPresenceStop(guildId, newState.id);
+  const acted = voiceAction(oldState, newState);
+  if (acted) await confirmPresence(client, guildId, newState.id, now).catch(() => undefined);
+  const pendingCheck = hasPendingCheck(guildId, newState.id);
+  const shift = await getActiveShift(guildId, newState.id).catch(() => null);
+  if (wasActive && shift && !isOnBreak(shift) && !pendingCheck) await recordVoiceActivity(shift, now);
+  if (!isActive) {
+    voiceSessions.delete(key);
+    setVoiceJoined(guildId, newState.id, null);
+    const timer = voiceStartTimers.get(key); if (timer) { clearTimeout(timer); voiceStartTimers.delete(key); }
+    // آخر لحظة نعرف إنه كان موجود فيها (إلا لو فيه سؤال ينتظر رد: وقتها يحسم التحقق).
+    if (wasActive && shift && !isOnBreak(shift) && !pendingCheck) await touchShift(shift, now).catch(() => undefined);
+    return;
   }
+  if (!wasActive) {
+    const session = voiceSessions.get(key);
+    voiceSessions.set(key, { lastAt: session?.lastAt ?? now, remainderMs: session?.remainderMs ?? 0, joinedAt: now });
+    setVoiceJoined(guildId, newState.id, now);
+    if (!shift) void scheduleVoiceStart(newState.guild, newState.id, now).catch(() => undefined);
+  }
+  if (!acted || isPresenceStopped(guildId, newState.id, now) && !shift) return;
+  // عنده شفت: يتحسب نشاط. ما عنده: يبدأ بس لو قعد كفاية (المؤقت فوق يتكفل بالدخلة الأولى).
+  await ensureVoiceShift(newState.guild, newState.id, true, voiceSessions.get(key)?.joinedAt ?? now);
+  const activeShift = shift ?? await getActiveShift(guildId, newState.id).catch(() => null);
+  if (activeShift && !isOnBreak(activeShift) && !wasActive) await recordVoiceActivity(activeShift, now);
 });
 
 process.on('SIGINT', async () => {

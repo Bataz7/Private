@@ -13,10 +13,12 @@
     "start:bun": "bun --smol src/index.ts",
     "dev": "bun --smol --watch src/index.ts",
     "dashboard": "bun --smol src/dashboard/server.ts",
+    "build:web": "bun scripts/build-web.ts",
     "register": "bun scripts/register-commands.ts",
     "typecheck": "tsc --noEmit",
-    "test": "for f in tests/*.test.ts; do bun test \"$f\" || exit 1; done",
-    "check": "tsc --noEmit && bun run test"
+    "test": "for f in tests/*.test.ts tests/*.test.tsx; do [ -e \"$f\" ] || continue; bun test \"$f\" || exit 1; done",
+    "check": "tsc --noEmit && bun run test",
+    "build": "bun scripts/build.ts"
   },
   "devDependencies": {
     "@types/bun": "1.4.3",

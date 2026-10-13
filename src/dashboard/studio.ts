@@ -1,4 +1,4 @@
-import type { Request, Response } from 'express';
+import type { Context } from '../web/server/http.js';
 import { ChannelType, type Client } from '../lib/djs/index.js';
 import type { DashboardContext, DashboardExtension } from './extensions.js';
 import {
@@ -11,10 +11,13 @@ import { isDangerousRole } from '../studio/roles.js';
 import { createLog } from '../services/log.service.js';
 import { safeFetchBuffer } from '../utils/safe-fetch.js';
 import { emojiList } from '../utils/emoji.js';
+import type { Mount } from '../web/server/router.js';
+import { publicMessage } from '../web/server/errors.js';
+import { rateLimit } from '../web/server/security.js';
 
 const MAX_MESSAGES = 100;
-const fail = (res: Response, status: number, error: string) => res.status(status).json({ error });
-const userIdOf = (context: DashboardContext, req: Request) => context.sessionUser(req)?.id ?? '';
+const fail = (c: Context, status: number, error: string) => c.status(status).json({ error });
+const userIdOf = (context: DashboardContext, c: Context) => context.sessionUser(c)?.id ?? '';
 
 const view = (row: StudioRow) => ({
   id: row.id, name: row.name, data: row.data, sent: row.sent || [], createdAt: row.createdAt, updatedAt: row.updatedAt,
@@ -32,7 +35,7 @@ async function downloadFiles(doc: StudioDoc) {
 
 async function textChannel(discord: Client, guildId: string, channelId: string) {
   const channel: any = await discord.channels.fetch(channelId).catch(() => null);
-  if (!channel?.isTextBased?.() || !('send' in channel) || channel.guildId !== guildId) throw new StudioError('Choose a text channel in this server.');
+  if (!channel?.isTextBased?.() || !('send' in channel) || channel.guildId !== guildId) throw new StudioError('اختر روم كتابي في هذا السيرفر.');
   return channel;
 }
 
@@ -67,29 +70,29 @@ async function assertSafeRoles(context: DashboardContext, guildId: string, edito
 
 export const studioDashboard: DashboardExtension = {
   name: 'studio',
-  styles: ['discord-preview', 'studio'],
-  mountApi(context) {
-    const { app, discord, selectedGuildId, requireAdministrator } = context;
+  mountApi(context, app: Mount) {
+    const { discord, selectedGuildId, requireAdministrator } = context;
+    const writeLimit = rateLimit('studio-writes', 60_000, 40);
 
     // Every studio route is administrator-only; errors become clear JSON messages instead of crashes.
-    const route = (handler: (req: Request, res: Response, guildId: string) => Promise<unknown>) => (req: Request, res: Response) => {
+    const route = (handler: (c: Context, guildId: string) => Promise<unknown>) => (c: Context) =>
       (async () => {
-        if (!await requireAdministrator(req, res)) return;
-        await handler(req, res, selectedGuildId(req));
+        if (!await requireAdministrator(c)) return;
+        await handler(c, selectedGuildId(c));
       })().catch(error => {
-        if (res.headersSent) return;
-        if (error instanceof StudioSetupError) return fail(res, 503, error.message);
-        if (error instanceof StudioError) return fail(res, 400, error.message);
-        const raw = (error as any)?.rawError?.errors ? `${(error as any).message}: ${JSON.stringify((error as any).rawError.errors).slice(0, 400)}` : error instanceof Error ? error.message : 'Unexpected error.';
-        console.error(`Studio API ${req.method} ${req.path}:`, raw);
-        fail(res, 400, raw);
+        if (c.sent) return;
+        if (error instanceof StudioSetupError) return fail(c, 503, error.message);
+        if (error instanceof StudioError) return fail(c, 400, publicMessage(error, error.message));
+        // أخطاء التحقق من ديسكورد (حقول الرسالة) مفيدة للمحرر؛ غيرها رسالة عامة.
+        const details = (error as any)?.rawError?.errors ? JSON.stringify((error as any).rawError.errors).slice(0, 400) : '';
+        console.error(`Studio API ${c.method} ${c.path}:`, error instanceof Error ? error.message : error, details);
+        fail(c, 400, details ? `ديسكورد رفض الرسالة: ${details}` : publicMessage(error, 'تعذّر تنفيذ العملية.'));
       });
-    };
 
-    const own = async (req: Request, res: Response, guildId: string) => {
-      const id = String(req.params.id || '');
+    const own = async (c: Context, guildId: string) => {
+      const id = String(c.params.id || '');
       const row = UUID.test(id) ? await getStudio(id) : null;
-      if (!row || row.guildId !== guildId) { fail(res, 404, 'Message not found.'); return null; }
+      if (!row || row.guildId !== guildId) { fail(c, 404, 'الرسالة مو موجودة.'); return null; }
       return row;
     };
     const varsFor = (guildId: string, channelId: string) => {
@@ -98,85 +101,85 @@ export const studioDashboard: DashboardExtension = {
     };
 
     // Roles, text channels and the bot's custom emojis, for pickers and the preview.
-    app.get('/api/studio/options', route(async (_req, res, guildId) => {
+    app.get('/api/studio/options', route(async (c, guildId) => {
       const guild = await context.getGuild(guildId);
       const [roles, channels, me] = await Promise.all([guild.roles.fetch(), guild.channels.fetch(), guild.members.fetchMe().catch(() => null)]);
       const top = me?.roles.highest.position ?? 0;
-      res.json({
+      c.json({
         roles: [...roles.values()].filter(role => role.id !== guild.id && !role.managed).sort((a, b) => b.position - a.position)
           .map(role => ({ id: role.id, name: role.name, color: role.hexColor, manageable: role.position < top, dangerous: isDangerousRole(role) })),
         channels: [...channels.values()].filter(channel => channel && (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement))
-          .sort((a, b) => (a!.rawPosition ?? 0) - (b!.rawPosition ?? 0))
+          .sort((a, b) => (a!.position ?? 0) - (b!.position ?? 0))
           .map(channel => ({ id: channel!.id, name: `${channel!.parent?.name ? `${channel!.parent.name} / ` : ''}${channel!.name}` })),
         emojis: emojiList().filter(item => item.id).map(item => ({ name: item.name, id: item.id, chars: item.chars })),
       });
     }));
 
-    app.get('/api/studio', route(async (_req, res, guildId) => {
+    app.get('/api/studio', route(async (c, guildId) => {
       const rows = await listStudio(guildId);
-      res.json({ messages: rows.map(view), templates: Object.entries(STUDIO_TEMPLATES).map(([key, item]) => ({ key, name: item.name, mode: item.doc.mode })) });
+      c.json({ messages: rows.map(view), templates: Object.entries(STUDIO_TEMPLATES).map(([key, item]) => ({ key, name: item.name, mode: item.doc.mode })) });
     }));
 
-    app.post('/api/studio', route(async (req, res, guildId) => {
-      if (await countStudio(guildId) >= MAX_MESSAGES) return fail(res, 400, `A server can keep up to ${MAX_MESSAGES} saved messages.`);
-      const template = STUDIO_TEMPLATES[String(req.body?.template || 'blank')] || STUDIO_TEMPLATES.blank!;
-      const data = req.body?.data ? sanitizeDoc(req.body.data) : sanitizeDoc(structuredClone(template.doc));
-      await assertSafeRoles(context, guildId, userIdOf(context, req), data);
-      const row = await createStudio({ guildId, name: String(req.body?.name || template.name).slice(0, 80), data, userId: userIdOf(context, req) });
-      res.json({ message: view(row) });
-    }));
+    app.post('/api/studio', route(async (c, guildId) => {
+      if (await countStudio(guildId) >= MAX_MESSAGES) return fail(c, 400, `السيرفر يقدر يحفظ ${MAX_MESSAGES} رسالة كحد أقصى.`);
+      const template = STUDIO_TEMPLATES[String(c.body?.template || 'blank')] || STUDIO_TEMPLATES.blank!;
+      const data = c.body?.data ? sanitizeDoc(c.body.data) : sanitizeDoc(structuredClone(template.doc));
+      await assertSafeRoles(context, guildId, userIdOf(context, c), data);
+      const row = await createStudio({ guildId, name: String(c.body?.name || template.name).slice(0, 80), data, userId: userIdOf(context, c) });
+      c.json({ message: view(row) });
+    }), { guards: [writeLimit] });
 
-    app.post('/api/studio/import', route(async (req, res, guildId) => {
-      const link = String(req.body?.link || '').trim();
+    app.post('/api/studio/import', route(async (c, guildId) => {
+      const link = String(c.body?.link || '').trim();
       if (link) {
         const match = /channels\/(\d+)\/(\d+)\/(\d+)/.exec(link);
-        if (!match || match[1] !== guildId) return fail(res, 400, 'Paste a message link from this server.');
+        if (!match || match[1] !== guildId) return fail(c, 400, 'الصق رابط رسالة من هذا السيرفر.');
         const channel = await textChannel(discord, match[1], match[2]!);
         const message = await channel.messages.fetch(match[3]).catch(() => null);
-        if (!message) return fail(res, 404, 'I could not read that message. Check the link and my channel permissions.');
-        return res.json({ data: importApi({ content: message.content, embeds: message.embeds.map((embed: any) => embed.toJSON()), components: message.components.map((component: any) => component.toJSON()), flags: message.flags.bitfield }) });
+        if (!message) return fail(c, 404, 'ما قدرت أقرأ الرسالة. تأكد من الرابط ومن صلاحياتي في الروم.');
+        return c.json({ data: importApi({ content: message.content, embeds: message.embeds.map((embed: any) => embed.toJSON()), components: message.components.map((component: any) => component.toJSON()), flags: message.flags.bitfield }) });
       }
-      res.json({ data: importApi(req.body?.json) });
-    }));
+      c.json({ data: importApi(c.body?.json) });
+    }), { guards: [writeLimit] });
 
-    app.get('/api/studio/:id', route(async (req, res, guildId) => { const row = await own(req, res, guildId); if (row) res.json({ message: view(row) }); }));
+    app.get('/api/studio/:id', route(async (c, guildId) => { const row = await own(c, guildId); if (row) c.json({ message: view(row) }); }));
 
-    app.put('/api/studio/:id', route(async (req, res, guildId) => {
-      const row = await own(req, res, guildId); if (!row) return;
-      const data = sanitizeDoc(req.body?.data);
-      await assertSafeRoles(context, guildId, userIdOf(context, req), data);
-      const updated = await updateStudio(row.id, { data, name: String(req.body?.name || row.name).trim().slice(0, 80) || 'Untitled message', userId: userIdOf(context, req) });
-      res.json({ message: view(updated) });
-    }));
+    app.put('/api/studio/:id', route(async (c, guildId) => {
+      const row = await own(c, guildId); if (!row) return;
+      const data = sanitizeDoc(c.body?.data);
+      await assertSafeRoles(context, guildId, userIdOf(context, c), data);
+      const updated = await updateStudio(row.id, { data, name: String(c.body?.name || row.name).trim().slice(0, 80) || 'رسالة بدون عنوان', userId: userIdOf(context, c) });
+      c.json({ message: view(updated) });
+    }), { guards: [writeLimit] });
 
-    app.post('/api/studio/:id/duplicate', route(async (req, res, guildId) => {
-      const row = await own(req, res, guildId); if (!row) return;
-      if (await countStudio(guildId) >= MAX_MESSAGES) return fail(res, 400, `A server can keep up to ${MAX_MESSAGES} saved messages.`);
-      const copy = await createStudio({ guildId, name: `${row.name} (copy)`.slice(0, 80), data: sanitizeDoc(row.data), userId: userIdOf(context, req) });
-      res.json({ message: view(copy) });
-    }));
+    app.post('/api/studio/:id/duplicate', route(async (c, guildId) => {
+      const row = await own(c, guildId); if (!row) return;
+      if (await countStudio(guildId) >= MAX_MESSAGES) return fail(c, 400, `السيرفر يقدر يحفظ ${MAX_MESSAGES} رسالة كحد أقصى.`);
+      const copy = await createStudio({ guildId, name: `${row.name} (copy)`.slice(0, 80), data: sanitizeDoc(row.data), userId: userIdOf(context, c) });
+      c.json({ message: view(copy) });
+    }), { guards: [writeLimit] });
 
-    app.delete('/api/studio/:id', route(async (req, res, guildId) => {
-      const row = await own(req, res, guildId); if (!row) return;
+    app.delete('/api/studio/:id', route(async (c, guildId) => {
+      const row = await own(c, guildId); if (!row) return;
       await deleteStudio(row.id);
-      res.json({ ok: true });
-    }));
+      c.json({ ok: true });
+    }), { guards: [writeLimit] });
 
-    app.post('/api/studio/:id/send', route(async (req, res, guildId) => {
-      const row = await own(req, res, guildId); if (!row) return;
-      const channel = await textChannel(discord, guildId, String(req.body?.channelId || ''));
+    app.post('/api/studio/:id/send', route(async (c, guildId) => {
+      const row = await own(c, guildId); if (!row) return;
+      const channel = await textChannel(discord, guildId, String(c.body?.channelId || ''));
       const payload = renderDoc(row.data, row.id, varsFor(guildId, channel.id));
       const files = await downloadFiles(row.data);
       const message = await channel.send({ ...payload, ...(files.length ? { files } : {}) });
       const sent: SentRef[] = [...(row.sent || []), { channelId: channel.id, messageId: message.id, at: new Date().toISOString() }].slice(-20);
       await updateStudio(row.id, { sent });
-      await createLog(guildId, 'STUDIO_MESSAGE_SENT', userIdOf(context, req), userIdOf(context, req), { messageId: row.id, channelId: channel.id }).catch(() => undefined);
-      res.json({ ok: true, url: `https://discord.com/channels/${guildId}/${channel.id}/${message.id}` });
-    }));
+      await createLog(guildId, 'STUDIO_MESSAGE_SENT', userIdOf(context, c), userIdOf(context, c), { messageId: row.id, channelId: channel.id }).catch(() => undefined);
+      c.json({ ok: true, url: `https://discord.com/channels/${guildId}/${channel.id}/${message.id}` });
+    }), { guards: [writeLimit] });
 
     // Re-renders every copy that was sent. Messages deleted in Discord are dropped from the list.
-    app.post('/api/studio/:id/update-sent', route(async (req, res, guildId) => {
-      const row = await own(req, res, guildId); if (!row) return;
+    app.post('/api/studio/:id/update-sent', route(async (c, guildId) => {
+      const row = await own(c, guildId); if (!row) return;
       let updated = 0; const failed: string[] = []; const keep: SentRef[] = [];
       for (const ref of row.sent || []) {
         const channel: any = await discord.channels.fetch(ref.channelId).catch(() => null);
@@ -185,13 +188,13 @@ export const studioDashboard: DashboardExtension = {
         keep.push(ref);
         const { flags: _flags, ...payload } = renderDoc(row.data, row.id, varsFor(guildId, ref.channelId));
         const wasV2 = Boolean(message.flags?.has?.(1 << 15));
-        if (wasV2 !== (row.data.mode === 'v2')) { failed.push(`#${channel.name}: cannot switch between V2 and classic on an existing message`); continue; }
+        if (wasV2 !== (row.data.mode === 'v2')) { failed.push(`#${channel.name}: ما ينفع التحويل بين V2 والعادي في رسالة موجودة`); continue; }
         const files = await downloadFiles(row.data);
-        await message.edit({ ...payload, ...(row.data.mode === 'embed' ? {} : { content: null, embeds: [] }), ...(files.length ? { files, attachments: [] } : {}) }).then(() => { updated += 1; }).catch((error: any) => failed.push(`#${channel.name}: ${error?.message || 'failed'}`));
+        await message.edit({ ...payload, ...(row.data.mode === 'embed' ? {} : { content: null, embeds: [] }), ...(files.length ? { files, attachments: [] } : {}) }).then(() => { updated += 1; }).catch((error: any) => failed.push(`#${channel.name}: ${publicMessage(error, 'فشل التعديل')}`));
       }
       await updateStudio(row.id, { sent: keep });
-      res.json({ ok: true, updated, failed, total: keep.length });
-    }));
+      c.json({ ok: true, updated, failed, total: keep.length });
+    }), { guards: [writeLimit] });
   },
 };
 

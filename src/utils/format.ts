@@ -5,6 +5,6 @@ export function discordDate(date: Date, style: 't' | 'T' | 'd' | 'D' | 'f' | 'F'
 export function parseDateInput(input: string) {
   const value = input.trim();
   const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) throw new Error('Invalid date. Use YYYY-MM-DD.');
+  if (Number.isNaN(date.getTime())) throw new Error('التاريخ غير صحيح. اكتبه بصيغة سنة-شهر-يوم.');
   return date;
 }

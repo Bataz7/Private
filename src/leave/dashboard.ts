@@ -1,4 +1,4 @@
-import type { Request, Response } from 'express';
+import type { Context } from '../web/server/http.js';
 import { MessageFlags, type Guild, type Message, type TextBasedChannel } from '../lib/djs/index.js';
 import type { DashboardContext, DashboardExtension } from '../dashboard/extensions.js';
 import { LeaveRequest, type LeaveRequestDoc } from '../models/LeaveRequest.js';
@@ -16,6 +16,9 @@ import { buildLeavePanel, buildResignationPanel, LEAVE_PANEL_TITLES, RESIGNATION
 import { createLeave, createResignation, findBlockingLeave, findBlockingResignation, findLeave, findResignation } from './requests.js';
 import { decideResignation } from './resignation.js';
 import { parseDay, type RequestKind } from './util.js';
+import type { Mount } from '../web/server/router.js';
+import { publicMessage, statusFor } from '../web/server/errors.js';
+import { rateLimit } from '../web/server/security.js';
 
 // Dashboard side of the leave / resignation system. Everyone on staff sees their own requests and can file one;
 // administrators see every request, decide with an optional note, choose the panel and requests channels,
@@ -25,48 +28,50 @@ const plain = (doc: LeaveRequestDoc | ResignationRequestDoc) => ({ ...((doc as a
 
 export const leaveDashboard: DashboardExtension = {
   name: 'leave',
-  styles: ['leave-workflow'],
-  mountApi(context) {
-    const { app, discord, supabase } = context;
-    const me = (req: Request) => context.sessionUser(req);
-    const guildOf = (req: Request) => context.selectedGuildId(req);
-    const isAdminUser = (req: Request) => { const user = me(req); return Boolean(user?.isOwner || user?.isAdministrator); };
+  mountApi(context, app: Mount) {
+    const { discord, supabase } = context;
+    const fileLimit = rateLimit('leave-file', 60_000, 6, 'طلبات كثيرة بوقت قصير. انتظر شوي.');
+    const writeLimit = rateLimit('leave-writes', 60_000, 40);
+    const me = (c: Context) => context.sessionUser(c);
+    const guildOf = (c: Context) => context.selectedGuildId(c);
+    const isAdminUser = (c: Context) => context.isAdmin(c).catch(() => false);
 
-    function fail(res: Response, error: unknown, fallback = 'Could not complete this action.') {
-      if (error instanceof AdminOnlyError) return res.status(403).json({ error: 'Only administrators can do this.' });
-      const message = error instanceof Error ? error.message : fallback;
-      return res.status(/not found/i.test(message) ? 404 : /already|no longer|out of date/i.test(message) ? 409 : 400).json({ error: message });
+    function fail(c: Context, error: unknown, fallback = 'تعذّر تنفيذ العملية.') {
+      if (error instanceof AdminOnlyError) return c.status(403).json({ error: 'هذا للأدمن فقط.' });
+      const message = publicMessage(error, '');
+      if (!message) console.error(`[leave] ${c.method} ${c.path}:`, error);
+      return c.status(statusFor(error)).json({ error: message || fallback });
     }
 
     /** Runs a route only when migration 029 is in place; otherwise answers with a clear message. */
-    const guarded = (handler: (req: Request, res: Response) => Promise<unknown>) => async (req: Request, res: Response) => {
+    const guarded = (handler: (c: Context) => Promise<unknown>) => async (c: Context) => {
       try {
-        if (!await schemaReady()) return res.status(503).json({ error: MIGRATION_HINT });
-        await handler(req, res);
-      } catch (error) { if (!res.headersSent) fail(res, error); }
+        if (!await schemaReady()) return c.status(503).json({ error: MIGRATION_HINT });
+        await handler(c);
+      } catch (error) { if (!c.sent) fail(c, error); }
     };
-    const adminOnly = (handler: (req: Request, res: Response) => Promise<unknown>) => guarded(async (req, res) => { if (!await context.requireAdministrator(req, res)) return; await handler(req, res); });
+    const adminOnly = (handler: (c: Context) => Promise<unknown>) => guarded(async (c: Context) => { if (!await context.requireAdministrator(c)) return; await handler(c); });
 
     async function peopleFor(guild: Guild | null, ids: string[]) {
       const people: Record<string, { displayName: string; username: string; avatar: string }> = {};
-      const unique = [...new Set(ids)].slice(0, 400);
+      const unique = [...new Set(ids)].slice(0, 150);
       const missing = unique.filter(id => !guild?.members.cache.has(id));
       for (let index = 0; index < missing.length; index += 100) await guild?.members.fetch({ user: missing.slice(index, index + 100) }).catch(() => undefined);
       for (const id of unique) {
         const member = guild?.members.cache.get(id);
         if (member) { people[id] = { displayName: member.displayName, username: member.user.username, avatar: member.displayAvatarURL({ extension: 'png', size: 64 }) }; continue; }
         const user = await discord.users.fetch(id).catch(() => null);
-        people[id] = { displayName: user?.globalName || user?.username || `User ${id.slice(-4)}`, username: user?.username || '', avatar: user?.displayAvatarURL({ extension: 'png', size: 64 }) || '' };
+        people[id] = { displayName: user?.globalName || user?.username || `عضو ${id.slice(-4)}`, username: user?.username || '', avatar: user?.displayAvatarURL({ extension: 'png', size: 64 }) || '' };
       }
       return people;
     }
 
     // ---- lists -----------------------------------------------------------------------------------
-    const list = (view: 'leaves' | 'resignations') => async (req: Request, res: Response) => {
-      const guildId = guildOf(req);
-      const admin = isAdminUser(req);
-      const user = me(req);
-      if (!await schemaReady()) return res.json({ ready: false, message: MIGRATION_HINT, rows: [], people: {}, admin });
+    const list = (view: 'leaves' | 'resignations') => async (c: Context) => {
+      const guildId = guildOf(c);
+      const admin = await isAdminUser(c);
+      const user = me(c);
+      if (!await schemaReady()) return c.json({ ready: false, message: MIGRATION_HINT, rows: [], people: {}, admin });
       const filters = admin ? { guildId } : { guildId, userId: user?.id || '' };
       const rows = view === 'leaves'
         ? await LeaveRequest.find(filters).sort({ createdAt: -1 }).limit(300)
@@ -74,37 +79,37 @@ export const leaveDashboard: DashboardExtension = {
       const guild = await context.getGuild(guildId).catch(() => null);
       const ids = rows.flatMap(row => [row.userId, row.reviewedBy || '']).filter(Boolean);
       const settings = await getSettings(guildId).catch(() => null);
-      res.json({
+      c.json({
         ready: true, admin, people: await peopleFor(guild, ids), rows: rows.map(plain),
         requestsChannelId: view === 'leaves' ? settings?.leaveChannelId || '' : settings?.resignationChannelId || '',
       });
     };
-    const safe = (handler: (req: Request, res: Response) => Promise<unknown>) => async (req: Request, res: Response) => {
-      try { await handler(req, res); } catch (error) { if (!res.headersSent) fail(res, error); }
+    const safe = (handler: (c: Context) => Promise<unknown>) => async (c: Context) => {
+      try { await handler(c); } catch (error) { if (!c.sent) fail(c, error); }
     };
     app.get('/api/leaves', safe(list('leaves')));
     app.get('/api/resignations', safe(list('resignations')));
 
     // ---- filing a request (for your own account) --------------------------------------------------
-    const staffOnly = (req: Request, res: Response) => {
-      const user = me(req);
+    const staffOnly = (c: Context) => {
+      const user = me(c);
       if (user && (user.isStaff || user.isAdministrator || user.isOwner)) return true;
-      res.status(403).json({ error: 'The staff role is required to file this request.' });
+      c.status(403).json({ error: 'تحتاج رتبة الستاف عشان ترفع هذا الطلب.' });
       return false;
     };
 
-    app.post('/api/leaves', guarded(async (req, res) => {
-      if (!staffOnly(req, res)) return;
-      const guildId = guildOf(req); const userId = String(me(req)?.id || '');
-      const reason = String(req.body.reason || '').trim();
-      if (!userId) return res.status(401).json({ error: 'Your dashboard session expired. Log in again.' });
-      if (!req.body.startDate && !req.body.start) return res.status(400).json({ error: 'Choose a leave start date.' });
-      if (!req.body.endDate && !req.body.end) return res.status(400).json({ error: 'Choose a leave end date.' });
-      if (!reason) return res.status(400).json({ error: 'Write a leave reason.' });
+    app.post('/api/leaves', guarded(async (c: Context) => {
+      if (!staffOnly(c)) return;
+      const guildId = guildOf(c); const userId = String(me(c)?.id || '');
+      const reason = String(c.body.reason || '').trim().slice(0, 1500);
+      if (!userId) return c.status(401).json({ error: 'انتهت جلستك. سجّل دخولك من جديد.' });
+      if (!c.body.startDate && !c.body.start) return c.status(400).json({ error: 'اختر تاريخ بداية الإجازة.' });
+      if (!c.body.endDate && !c.body.end) return c.status(400).json({ error: 'اختر تاريخ نهاية الإجازة.' });
+      if (!reason) return c.status(400).json({ error: 'اكتب سبب الإجازة.' });
       let startDate: Date; let endDate: Date;
-      try { startDate = parseDay(String(req.body.startDate || req.body.start)); endDate = parseDay(String(req.body.endDate || req.body.end)); } catch { return res.status(400).json({ error: 'Use valid leave dates (YYYY-MM-DD).' }); }
-      if (endDate.getTime() < startDate.getTime()) return res.status(400).json({ error: 'Leave end date must be after start date.' });
-      if (await findBlockingLeave(guildId, userId)) return res.status(409).json({ error: 'You already have an active leave request.' });
+      try { startDate = parseDay(String(c.body.startDate || c.body.start)); endDate = parseDay(String(c.body.endDate || c.body.end)); } catch { return c.status(400).json({ error: 'اكتب تواريخ صحيحة (سنة-شهر-يوم).' }); }
+      if (endDate.getTime() < startDate.getTime()) return c.status(400).json({ error: 'تاريخ نهاية الإجازة لازم يكون بعد البداية.' });
+      if (await findBlockingLeave(guildId, userId)) return c.status(409).json({ error: 'عندك طلب إجازة شغال.' });
       const request = await createLeave({ guildId, userId, startDate, endDate, reason });
       const settings = await getSettings(guildId).catch(() => null);
       const posted = await postRequestCard(discord, 'leave', request);
@@ -112,99 +117,104 @@ export const leaveDashboard: DashboardExtension = {
       const dm = user ? await user.send({ embeds: [requestSubmittedEmbed('leave', request, settings?.botLanguage === 'ar')] }).catch(() => null) : null;
       if (dm) await patchRow('leave_requests', request.id, { dmMessageId: dm.id });
       await createLog(guildId, 'LEAVE_REQUESTED', userId, userId, { leaveId: String(request.id), source: 'dashboard' });
-      res.json({ request: plain(request), sentToManagement: Boolean(posted) });
-    }));
+      c.json({ request: plain(request), sentToManagement: Boolean(posted) });
+    }), { guards: [fileLimit] });
 
-    app.post('/api/resignations', guarded(async (req, res) => {
-      if (!staffOnly(req, res)) return;
-      const guildId = guildOf(req); const userId = String(me(req)?.id || '');
-      const lastDayText = String(req.body.lastWorkingDay || req.body.last_day || '').trim();
-      const reason = String(req.body.reason || '').trim();
-      if (!userId) return res.status(401).json({ error: 'Your dashboard session expired. Log in again.' });
-      if (!lastDayText) return res.status(400).json({ error: 'Choose the last working day.' });
-      if (!reason) return res.status(400).json({ error: 'Write a resignation reason.' });
+    app.post('/api/resignations', guarded(async (c: Context) => {
+      if (!staffOnly(c)) return;
+      const guildId = guildOf(c); const userId = String(me(c)?.id || '');
+      const lastDayText = String(c.body.lastWorkingDay || c.body.last_day || '').trim();
+      const reason = String(c.body.reason || '').trim().slice(0, 1500);
+      if (!userId) return c.status(401).json({ error: 'انتهت جلستك. سجّل دخولك من جديد.' });
+      if (!lastDayText) return c.status(400).json({ error: 'اختر آخر يوم عمل.' });
+      if (!reason) return c.status(400).json({ error: 'اكتب سبب الاستقالة.' });
       let lastWorkingDay: Date;
-      try { lastWorkingDay = parseDay(lastDayText); } catch { return res.status(400).json({ error: 'Use a valid last working day (YYYY-MM-DD).' }); }
+      try { lastWorkingDay = parseDay(lastDayText); } catch { return c.status(400).json({ error: 'اكتب آخر يوم عمل بصيغة صحيحة (سنة-شهر-يوم).' }); }
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const latest = new Date(today); latest.setFullYear(latest.getFullYear() + 1);
-      if (lastWorkingDay < today || lastWorkingDay > latest) return res.status(400).json({ error: 'The last working day must be between today and one year from today.' });
-      if (await findBlockingResignation(guildId, userId)) return res.status(409).json({ error: 'You already have an active resignation request.' });
-      const request = await createResignation({ guildId, userId, lastWorkingDay, reason, notes: String(req.body.notes || '').trim() });
+      if (lastWorkingDay < today || lastWorkingDay > latest) return c.status(400).json({ error: 'آخر يوم عمل لازم يكون بين اليوم وبعد سنة.' });
+      if (await findBlockingResignation(guildId, userId)) return c.status(409).json({ error: 'عندك طلب استقالة شغال.' });
+      const request = await createResignation({ guildId, userId, lastWorkingDay, reason, notes: String(c.body.notes || '').trim().slice(0, 1500) });
       const settings = await getSettings(guildId).catch(() => null);
       const posted = await postRequestCard(discord, 'resignation', request);
       const user = await discord.users.fetch(userId).catch(() => null);
       const dm = user ? await user.send({ embeds: [requestSubmittedEmbed('resignation', request, settings?.botLanguage === 'ar')] }).catch(() => null) : null;
       if (dm) await patchRow('resignation_requests', request.id, { dmMessageId: dm.id });
       await createLog(guildId, 'RESIGNATION_REQUESTED', userId, userId, { resignationId: String(request.id), source: 'dashboard' });
-      res.json({ request: plain(request), sentToManagement: Boolean(posted) });
-    }));
+      c.json({ request: plain(request), sentToManagement: Boolean(posted) });
+    }), { guards: [fileLimit] });
 
     // ---- decisions (administrators; the services lock again) ---------------------------------------
-    app.patch('/api/leaves/:id', adminOnly(async (req, res) => {
-      const guildId = guildOf(req);
-      const request = await findLeave(req.params.id);
-      if (!request || request.guildId !== guildId) return res.status(404).json({ error: 'Leave request not found' });
-      const reviewer = { id: String(me(req)?.id || '') };
-      const note = String(req.body.note || '');
-      const status = String(req.body.status || '');
-      if (status === 'approved') { const result = await approveLeaveRequest(discord, request.id, reviewer, note); return res.json({ request: plain(result.request), rolesUpdated: result.rolesUpdated, dmSent: result.dmSent }); }
-      if (status === 'rejected') { const result = await rejectLeaveRequest(discord, request.id, reviewer, note); return res.json({ request: plain(result.request), dmSent: result.dmSent }); }
-      res.status(400).json({ error: 'Invalid leave status' });
-    }));
+    app.patch('/api/leaves/:id', adminOnly(async (c: Context) => {
+      if (!idOk(c)) return c.status(400).json({ error: 'رقم الطلب غير صحيح.' });
+      const guildId = guildOf(c);
+      const request = await findLeave(c.params.id);
+      if (!request || request.guildId !== guildId) return c.status(404).json({ error: 'طلب الإجازة مو موجود.' });
+      const reviewer = { id: String(me(c)?.id || '') };
+      const note = String(c.body.note || '').slice(0, 1500);
+      const status = String(c.body.status || '');
+      if (status === 'approved') { const result = await approveLeaveRequest(discord, request.id, reviewer, note); return c.json({ request: plain(result.request), rolesUpdated: result.rolesUpdated, dmSent: result.dmSent }); }
+      if (status === 'rejected') { const result = await rejectLeaveRequest(discord, request.id, reviewer, note); return c.json({ request: plain(result.request), dmSent: result.dmSent }); }
+      c.status(400).json({ error: 'حالة الإجازة غير صحيحة.' });
+    }), { guards: [writeLimit] });
 
-    app.patch('/api/resignations/:id', adminOnly(async (req, res) => {
-      const requested = String(req.body.status || '');
+    app.patch('/api/resignations/:id', adminOnly(async (c: Context) => {
+      if (!idOk(c)) return c.status(400).json({ error: 'رقم الطلب غير صحيح.' });
+      const requested = String(c.body.status || '');
       const status = requested === 'accepted' ? 'approved' : requested;
-      if (status !== 'approved' && status !== 'rejected') return res.status(400).json({ error: 'Invalid resignation status.' });
-      const result = await decideResignation(discord, String(req.params.id), status, { id: String(me(req)?.id || '') }, String(req.body.note || ''), undefined, guildOf(req));
-      res.json({ request: plain(result.request), dmSent: result.dmSent });
-    }));
+      if (status !== 'approved' && status !== 'rejected') return c.status(400).json({ error: 'حالة الاستقالة غير صحيحة.' });
+      const result = await decideResignation(discord, String(c.params.id), status, { id: String(me(c)?.id || '') }, String(c.body.note || '').slice(0, 1500), undefined, guildOf(c));
+      c.json({ request: plain(result.request), dmSent: result.dmSent });
+    }), { guards: [writeLimit] });
 
     // An administrator moves the end of a running leave (for example when the member asked in person).
-    app.post('/api/leaves/:id/extend', adminOnly(async (req, res) => {
-      const endText = String(req.body.endDate || '').trim();
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(endText)) return res.status(400).json({ error: 'Choose the new end date.' });
-      const result = await adminExtendLeave(discord, String(req.params.id), parseDay(endText), { id: String(me(req)?.id || '') }, String(req.body.note || ''), guildOf(req));
-      res.json({ request: plain(result.request), dmSent: result.dmSent });
-    }));
+    app.post('/api/leaves/:id/extend', adminOnly(async (c: Context) => {
+      if (!idOk(c)) return c.status(400).json({ error: 'رقم الطلب غير صحيح.' });
+      const endText = String(c.body.endDate || '').trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(endText)) return c.status(400).json({ error: 'اختر تاريخ النهاية الجديد.' });
+      const result = await adminExtendLeave(discord, String(c.params.id), parseDay(endText), { id: String(me(c)?.id || '') }, String(c.body.note || '').slice(0, 1500), guildOf(c));
+      c.json({ request: plain(result.request), dmSent: result.dmSent });
+    }), { guards: [writeLimit] });
 
     // Ends a running leave for the member (roles come back, the member is told).
-    app.post('/api/leaves/:id/close', adminOnly(async (req, res) => {
-      const result = await closeLeaveByAdmin(discord, String(req.params.id), { id: String(me(req)?.id || '') }, guildOf(req));
-      res.json({ request: plain(result.request), rolesOk: result.rolesOk, dmSent: result.dmSent });
-    }));
+    app.post('/api/leaves/:id/close', adminOnly(async (c: Context) => {
+      if (!idOk(c)) return c.status(400).json({ error: 'رقم الطلب غير صحيح.' });
+      const result = await closeLeaveByAdmin(discord, String(c.params.id), { id: String(me(c)?.id || '') }, guildOf(c));
+      c.json({ request: plain(result.request), rolesOk: result.rolesOk, dmSent: result.dmSent });
+    }), { guards: [writeLimit] });
 
     // Approve or reject a member's request for more time.
-    app.post('/api/leaves/:id/extension', adminOnly(async (req, res) => {
-      const decision = req.body.decision === 'approved' ? 'approved' : req.body.decision === 'rejected' ? 'rejected' : null;
-      if (!decision) return res.status(400).json({ error: 'Invalid decision.' });
-      const result = await decideLeaveExtension(discord, String(req.params.id), decision, { id: String(me(req)?.id || '') }, guildOf(req));
-      res.json({ ok: true, dmSent: result.dmSent });
-    }));
+    app.post('/api/leaves/:id/extension', adminOnly(async (c: Context) => {
+      if (!idOk(c)) return c.status(400).json({ error: 'رقم الطلب غير صحيح.' });
+      const decision = c.body.decision === 'approved' ? 'approved' : c.body.decision === 'rejected' ? 'rejected' : null;
+      if (!decision) return c.status(400).json({ error: 'القرار غير صحيح.' });
+      const result = await decideLeaveExtension(discord, String(c.params.id), decision, { id: String(me(c)?.id || '') }, guildOf(c));
+      c.json({ ok: true, dmSent: result.dmSent });
+    }), { guards: [writeLimit] });
 
     // ---- panels and channels ---------------------------------------------------------------------
-    app.get('/api/requests-workflow/options', adminOnly(async (req, res) => {
-      const guildId = guildOf(req);
+    app.get('/api/requests-workflow/options', adminOnly(async (c: Context) => {
+      const guildId = guildOf(c);
       const guild = await context.getGuild(guildId);
       const channels = (await guild.channels.fetch()).filter(channel => channel?.isTextBased() && !channel.isThread()).map(channel => ({ id: channel!.id, name: channel!.name ?? channel!.id }));
       const settings = await getSettings(guildId).catch(() => null);
       const panels = await RequestPanelSettings.findOne({ guildId }).catch(() => null);
-      res.json({
+      c.json({
         channels,
         leave: { panelChannelId: panels?.leavePanelChannelId || '', requestsChannelId: settings?.leaveChannelId || '' },
         resignation: { panelChannelId: panels?.resignationPanelChannelId || '', requestsChannelId: settings?.resignationChannelId || '' },
       });
     }));
 
-    async function sendPanel(req: Request, res: Response, kind: RequestKind) {
-      const guildId = guildOf(req);
+    async function sendPanel(c: Context, kind: RequestKind) {
+      const guildId = guildOf(c);
       const guild = await context.getGuild(guildId);
-      const channel = await guild.channels.fetch(String(req.body.channelId || '')).catch(() => null);
-      if (!channel?.isTextBased()) return res.status(400).json({ error: 'Choose a text channel in this server.' });
+      const channel = await guild.channels.fetch(String(c.body.channelId || '')).catch(() => null);
+      if (!channel?.isTextBased()) return c.status(400).json({ error: 'اختر روم كتابي في هذا السيرفر.' });
       const settings = await getSettings(guildId).catch(() => null);
-      if (!settings) return res.status(400).json({ error: 'Server not configured. Set up your server from the dashboard first.' });
-      const requestsId = String(req.body.requestsChannelId || '');
-      if (requestsId && !(await guild.channels.fetch(requestsId).catch(() => null))?.isTextBased()) return res.status(400).json({ error: 'Choose a text channel in this server for the requests.' });
+      if (!settings) return c.status(400).json({ error: 'السيرفر مو مضبوط. اضبطه من الإعدادات أول.' });
+      const requestsId = String(c.body.requestsChannelId || '');
+      if (requestsId && !(await guild.channels.fetch(requestsId).catch(() => null))?.isTextBased()) return c.status(400).json({ error: 'اختر روم كتابي في هذا السيرفر للطلبات.' });
       const language = settings.botLanguage === 'ar' ? 'ar' : 'en';
       const result = kind === 'leave'
         ? await upsertPanel(channel, buildLeavePanel(language, guild), { must: 'leave_request', mustNot: 'resignation_request', titles: LEAVE_PANEL_TITLES })
@@ -213,45 +223,46 @@ export const leaveDashboard: DashboardExtension = {
       const saved = await supabase.from('request_panel_settings').upsert({ guild_id: guildId, ...(kind === 'leave' ? { leave_panel_channel_id: channel.id } : { resignation_panel_channel_id: channel.id }), updated_at: new Date().toISOString() }, { onConflict: 'guild_id' });
       if (saved.error) console.error('[leave] Could not save the panel channel:', saved.error.message);
       if (requestsId) await supabase.from('guild_settings').update(kind === 'leave' ? { leave_channel_id: requestsId } : { resignation_channel_id: requestsId }).eq('guild_id', guildId);
-      res.json({ ok: true, updated: result.updated, removedDuplicates: result.removedDuplicates });
+      c.json({ ok: true, updated: result.updated, removedDuplicates: result.removedDuplicates });
     }
-    app.post('/api/leaves/panel', adminOnly((req, res) => sendPanel(req, res, 'leave')));
-    app.post('/api/resignations/panel', adminOnly((req, res) => sendPanel(req, res, 'resignation')));
+    app.post('/api/leaves/panel', adminOnly((c: Context) => sendPanel(c, 'leave')), { guards: [writeLimit] });
+    app.post('/api/resignations/panel', adminOnly((c: Context) => sendPanel(c, 'resignation')), { guards: [writeLimit] });
 
-    const kindOf = (req: Request) => KINDS[String(req.params.kind)] ?? null;
+    const idOk = (c: Context) => /^\d{1,18}$/.test(String(c.params.id || ''));
+    const kindOf = (c: Context) => KINDS[String(c.params.kind)] ?? null;
 
-    app.get('/api/requests/:kind/closed-count', adminOnly(async (req, res) => {
-      const kind = kindOf(req);
-      if (!kind) return res.status(404).json({ error: 'Unknown request type.' });
-      res.json({ closed: await countClosedRequests(kind, guildOf(req), Number(req.query.olderThanDays) || 0) });
+    app.get('/api/requests/:kind/closed-count', adminOnly(async (c: Context) => {
+      const kind = kindOf(c);
+      if (!kind) return c.status(404).json({ error: 'نوع الطلب غير معروف.' });
+      c.json({ closed: await countClosedRequests(kind, guildOf(c), Number(c.q('olderThanDays')) || 0) });
     }));
 
-    app.post('/api/requests/:kind/channel', adminOnly(async (req, res) => {
-      const kind = kindOf(req);
-      if (!kind) return res.status(404).json({ error: 'Unknown request type.' });
-      const guildId = guildOf(req);
-      const channelId = String(req.body?.channelId || '');
+    app.post('/api/requests/:kind/channel', adminOnly(async (c: Context) => {
+      const kind = kindOf(c);
+      if (!kind) return c.status(404).json({ error: 'نوع الطلب غير معروف.' });
+      const guildId = guildOf(c);
+      const channelId = String(c.body?.channelId || '');
       const channel = channelId ? await (await context.getGuild(guildId)).channels.fetch(channelId).catch(() => null) : null;
-      if (!channel?.isTextBased()) return res.status(400).json({ error: 'Choose a text channel in this server.' });
+      if (!channel?.isTextBased()) return c.status(400).json({ error: 'اختر روم كتابي في هذا السيرفر.' });
       const { error } = await supabase.from('guild_settings').update(kind === 'leave' ? { leave_channel_id: channelId } : { resignation_channel_id: channelId }).eq('guild_id', guildId);
-      if (error) return res.status(400).json({ error: error.message });
-      res.json({ ok: true });
-    }));
+      if (error) throw new Error(error.message);
+      c.json({ ok: true });
+    }), { guards: [writeLimit] });
 
-    app.post('/api/requests/:kind/resend-pending', adminOnly(async (req, res) => {
-      const kind = kindOf(req);
-      if (!kind) return res.status(404).json({ error: 'Unknown request type.' });
-      const guildId = guildOf(req);
-      if (!requestsChannelId(await getSettings(guildId).catch(() => null), kind)) return res.status(400).json({ error: 'Choose the requests channel first.' });
-      res.json(await resendPendingRequests(discord, kind, guildId));
-    }));
+    app.post('/api/requests/:kind/resend-pending', adminOnly(async (c: Context) => {
+      const kind = kindOf(c);
+      if (!kind) return c.status(404).json({ error: 'نوع الطلب غير معروف.' });
+      const guildId = guildOf(c);
+      if (!requestsChannelId(await getSettings(guildId).catch(() => null), kind)) return c.status(400).json({ error: 'اختر روم الطلبات أول.' });
+      c.json(await resendPendingRequests(discord, kind, guildId));
+    }), { guards: [writeLimit] });
 
-    app.post('/api/requests/:kind/clear-closed', adminOnly(async (req, res) => {
-      const kind = kindOf(req);
-      if (!kind) return res.status(404).json({ error: 'Unknown request type.' });
-      if (req.body?.confirm !== true) return res.status(400).json({ error: 'Confirm the cleanup first.' });
-      res.json(await clearClosedRequests(kind, guildOf(req), String(me(req)?.id || ''), Number(req.body.olderThanDays) || 0));
-    }));
+    app.post('/api/requests/:kind/clear-closed', adminOnly(async (c: Context) => {
+      const kind = kindOf(c);
+      if (!kind) return c.status(404).json({ error: 'نوع الطلب غير معروف.' });
+      if (c.body?.confirm !== true) return c.status(400).json({ error: 'أكّد التنظيف أول.' });
+      c.json(await clearClosedRequests(kind, guildOf(c), String(me(c)?.id || ''), Number(c.body.olderThanDays) || 0));
+    }), { guards: [writeLimit] });
   },
 };
 
